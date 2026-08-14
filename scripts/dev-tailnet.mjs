@@ -47,6 +47,30 @@ function fail(lines) {
   process.exit(1)
 }
 
+/**
+ * Every address on this machine another device could reach, excluding container
+ * bridges. A tailnet address only helps if the other device is ON the tailnet —
+ * and a laptop with Tailscale closed is the single most common reason "I cannot
+ * see it" — so the LAN address has to be offered too.
+ */
+function reachableAddresses() {
+  const SKIP = /^(lo|docker|br-|veth|virbr|wt)/
+  try {
+    const rows = JSON.parse(sh('ip', ['-j', '-4', 'addr', 'show', 'scope', 'global']))
+    const out = []
+    for (const row of rows) {
+      if (SKIP.test(row.ifname)) continue
+      for (const info of row.addr_info ?? []) {
+        if (info.family !== 'inet') continue
+        out.push({ iface: row.ifname, ip: info.local })
+      }
+    }
+    return out
+  } catch {
+    return []
+  }
+}
+
 function tailnet() {
   let ip = null
   let dns = null
@@ -112,7 +136,7 @@ function ensureCert({ ip, dns }) {
       '-out',
       CERT,
       '-subj',
-      `/CN=${dns ?? ip}`,
+      `/CN=${dns ?? addresses[0]?.ip ?? 'localhost'}`,
       '-addext',
       `subjectAltName=${names.join(',')}`,
     ])
@@ -124,7 +148,8 @@ function ensureCert({ ip, dns }) {
 
 const { ip, dns } = tailnet()
 const status = supabaseStatus()
-ensureCert({ ip, dns })
+const addresses = reachableAddresses()
+ensureCert({ dns, addresses })
 
 const host = dns ?? ip
 // Same origin as the app: supabase-js appends /auth/v1, /rest/v1 and friends to
@@ -134,9 +159,16 @@ const supabaseUrl = `https://${host}:${PORT}/supabase-api`
 console.log('')
 console.log('  Campus · dev server en el tailnet (HTTPS)')
 console.log('  ─────────────────────────────────────────')
-if (dns) console.log(`  app        https://${dns}:${PORT}`)
-console.log(`  app        https://${ip}:${PORT}`)
+if (dns) console.log(`  tailnet    https://${dns}:${PORT}`)
+for (const address of addresses) {
+  console.log(
+    `  ${(address.ip === ip ? 'tailnet' : 'LAN').padEnd(10)} https://${address.ip}:${PORT}`,
+  )
+}
 console.log(`  tester     https://${host}:${PORT}/dev`)
+console.log('')
+console.log('  Si la URL de tailnet no abre, ese dispositivo no está conectado a')
+console.log('  Tailscale — chequealo con `tailscale status` ahí. Usá la de LAN.')
 console.log('')
 console.log(`  supabase   proxeado por el mismo origen → ${status.API_URL}`)
 console.log('')
@@ -151,7 +183,9 @@ console.log('')
 
 const child = spawn(
   './node_modules/.bin/vite',
-  ['--host', ip, '--port', String(PORT), '--strictPort'],
+  // Every interface, not just the tailnet one: a laptop with Tailscale closed can
+  // still reach this over the LAN, and "I cannot see it" is almost always that.
+  ['--host', '0.0.0.0', '--port', String(PORT), '--strictPort'],
   {
     stdio: 'inherit',
     env: {

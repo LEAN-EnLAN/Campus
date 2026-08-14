@@ -103,10 +103,13 @@ Supabase se proxea por el mismo origen en `/supabase-api`, lo que resuelve tres 
 una: sin contenido mixto, sin CORS, y **la API de la base no necesita estar expuesta a la
 red en absoluto** — el browser sólo le habla a Vite.
 
-Verificado end to end sobre `https://casa.tail61165e.ts.net:5173` con toda request a
-loopback abortada en el browser: 33 materias de UNR traídas de Postgres, aviso de
-correlativas faltantes visible, 0 requests a `127.0.0.1`, 0 contenido mixto, 0 respuestas
-4xx, 0 errores de consola.
+La URL de Supabase es **relativa al origen** (`/supabase-api`), resuelta en runtime contra
+`window.location.origin`. Eso importa: si fuera absoluta, abrir la app por la IP de LAN
+igual mandaría todas las requests al nombre de MagicDNS, y un dispositivo que no lo resuelve
+carga la app y después falla en cada query.
+
+Verificado desde las tres direcciones — LAN, IP de tailnet y MagicDNS: 40 materias en cada
+una, con las llamadas a la API saliendo por el mismo origen desde el que se abrió.
 
 **Sólo tailnet.** No usa `tailscale funnel`, que publicaría el dev server en la internet
 pública.

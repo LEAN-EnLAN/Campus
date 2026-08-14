@@ -26,7 +26,7 @@
  * dev server to the public internet.
  */
 import { execFileSync, spawn } from 'node:child_process'
-import { existsSync, mkdirSync, statSync } from 'node:fs'
+import { existsSync, mkdirSync } from 'node:fs'
 import { join } from 'node:path'
 import process from 'node:process'
 
@@ -108,18 +108,31 @@ function supabaseStatus() {
  * Regenerated when it is missing or older than 300 days. Not committed: it is a
  * machine-local development credential.
  */
-function ensureCert({ ip, dns }) {
-  const fresh =
-    existsSync(CERT) &&
-    existsSync(KEY) &&
-    (Date.now() - statSync(CERT).mtimeMs) / 86_400_000 < 300
-
-  if (fresh) return
-
+function ensureCert({ dns, addresses }) {
   mkdirSync(CERT_DIR, { recursive: true })
-  const names = [dns ? `DNS:${dns}` : null, 'DNS:localhost', `IP:${ip}`, 'IP:127.0.0.1'].filter(
-    Boolean,
-  )
+
+  const names = [
+    dns ? `DNS:${dns}` : null,
+    'DNS:localhost',
+    ...addresses.map((a) => `IP:${a.ip}`),
+    'IP:127.0.0.1',
+  ].filter(Boolean)
+
+  // Regenerate whenever the address set changed, not just on age: a certificate
+  // that does not cover the address you typed fails the handshake, and a failed
+  // handshake is indistinguishable from a dead server.
+  let covered = false
+  if (existsSync(CERT) && existsSync(KEY)) {
+    try {
+      const san = sh('openssl', ['x509', '-in', CERT, '-noout', '-ext', 'subjectAltName'])
+      covered = names.every((n) =>
+        san.includes(n.startsWith('IP:') ? `IP Address:${n.slice(3)}` : n),
+      )
+    } catch {
+      covered = false
+    }
+  }
+  if (covered) return
 
   try {
     sh('openssl', [
@@ -152,9 +165,11 @@ const addresses = reachableAddresses()
 ensureCert({ dns, addresses })
 
 const host = dns ?? ip
-// Same origin as the app: supabase-js appends /auth/v1, /rest/v1 and friends to
-// this, and the Vite proxy strips the prefix before forwarding to Kong.
-const supabaseUrl = `https://${host}:${PORT}/supabase-api`
+// Origin-RELATIVE on purpose. src/lib/supabase.ts resolves it against
+// window.location.origin, so the app works identically whether you opened it by
+// LAN IP, tailnet IP, MagicDNS name or localhost. An absolute host here sends a
+// laptop without MagicDNS to a name it cannot resolve, and every query fails.
+const supabaseUrl = '/supabase-api'
 
 console.log('')
 console.log('  Campus · dev server en el tailnet (HTTPS)')
@@ -170,7 +185,7 @@ console.log('')
 console.log('  Si la URL de tailnet no abre, ese dispositivo no está conectado a')
 console.log('  Tailscale — chequealo con `tailscale status` ahí. Usá la de LAN.')
 console.log('')
-console.log(`  supabase   proxeado por el mismo origen → ${status.API_URL}`)
+console.log(`  supabase   proxeado por el mismo origen (${supabaseUrl}) → ${status.API_URL}`)
 console.log('')
 console.log('  El cert es autofirmado: la primera vez el browser te avisa.')
 console.log('  Aceptás una vez por dispositivo y listo.')

@@ -82,10 +82,7 @@ function PlanScreen() {
 
   return (
     <div className="flex flex-col gap-8">
-      <PageHeader
-        eyebrow={plan.curriculum?.version}
-        title={plan.curriculum?.name ?? 'Tu plan'}
-      />
+      <PageHeader eyebrow={plan.curriculum?.version} title={plan.programName ?? 'Tu plan'} />
 
       <ProgressLine value={earned} total={plan.progress.total} />
 
@@ -121,6 +118,7 @@ function PlanScreen() {
 
       {plan.curriculum?.sourceUrl ? (
         <footer className="border-rule-soft text-ink-muted border-t pt-4 text-xs">
+          {plan.curriculum?.name ? `${plan.curriculum.name}. ` : null}
           Plan tomado de{' '}
           <a
             href={plan.curriculum.sourceUrl}

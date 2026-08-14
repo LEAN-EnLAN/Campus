@@ -39,6 +39,7 @@ export function DeadlineRow({
   subjectId,
   onToggle,
   overdue = false,
+  dayLabel,
   className,
 }: {
   item: AcademicItem
@@ -46,6 +47,11 @@ export function DeadlineRow({
   subjectId?: string | null
   onToggle?: (done: boolean) => void
   overdue?: boolean
+  /**
+   * Which day this falls on. Required outside a section that already states the
+   * day — "Próximamente · 09:00" without a day tells the student nothing.
+   */
+  dayLabel?: string | null
   className?: string
 }) {
   const time = timeOf(item)
@@ -91,6 +97,12 @@ export function DeadlineRow({
           {item.title}
         </span>
         <span className="text-ink-muted mt-0.5 flex flex-wrap items-center gap-x-2 text-xs">
+          {dayLabel ? (
+            <>
+              <span className="text-ink font-medium">{dayLabel}</span>
+              <span aria-hidden="true">·</span>
+            </>
+          ) : null}
           <span>{KIND_LABEL[item.kind]}</span>
           {subjectName ? (
             <>

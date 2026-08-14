@@ -91,13 +91,19 @@ function CourseDetailScreen() {
   }
 
   async function handleCapture(values: QuickCaptureValues) {
-    await createItem.mutateAsync({
-      title: values.title,
-      kind: values.kind,
-      curriculumSubjectId: courseId,
-      dueAt: values.dueAt,
-    })
-    setCaptureOpen(false)
+    // The dialog stays open and `createItem.error` is what the student reads; catching
+    // here just keeps a failed save from surfacing as an unhandled rejection.
+    try {
+      await createItem.mutateAsync({
+        title: values.title,
+        kind: values.kind,
+        curriculumSubjectId: courseId,
+        dueAt: values.dueAt,
+      })
+      setCaptureOpen(false)
+    } catch {
+      /* surfaced through createItem.error */
+    }
   }
 
   async function handleAddResource(event: React.FormEvent) {
@@ -161,11 +167,21 @@ function CourseDetailScreen() {
             {(setStatus.error as Error).message}
           </p>
         ) : null}
+        <MutationAlert error={toggleItem.error ?? deleteResource.error} />
       </section>
 
       <section aria-labelledby="fechas" className="flex flex-col gap-1">
         <SectionHeading id="fechas">Fechas</SectionHeading>
-        {items.length === 0 ? (
+        {/* A failed fetch is not an empty list: telling the student "no tenés nada"
+            here makes them re-add an entrega they already had. */}
+        {itemsQuery.error ? (
+          <ErrorState
+            className="mt-2"
+            title="No pudimos cargar tus fechas"
+            error={itemsQuery.error as Error}
+            onRetry={() => void itemsQuery.refetch()}
+          />
+        ) : items.length === 0 ? (
           <p className="text-ink-muted py-3 text-sm">
             No tenés nada anotado para esta materia.
           </p>
@@ -236,6 +252,14 @@ function CourseDetailScreen() {
 
       <section aria-labelledby="material" className="flex flex-col gap-3">
         <SectionHeading id="material">Material</SectionHeading>
+
+        {resourcesQuery.error ? (
+          <ErrorState
+            title="No pudimos cargar tu material"
+            error={resourcesQuery.error as Error}
+            onRetry={() => void resourcesQuery.refetch()}
+          />
+        ) : null}
 
         {resources.length > 0 ? (
           <ul>
@@ -308,6 +332,19 @@ function CourseDetailScreen() {
         error={createItem.error ? (createItem.error as Error).message : null}
       />
     </div>
+  )
+}
+
+/**
+ * A failed mutation with no optimistic update leaves the control exactly as it was.
+ * Without this the student cannot tell a no-op from a failure, and taps again.
+ */
+function MutationAlert({ error }: { error: unknown }) {
+  if (!error) return null
+  return (
+    <p role="alert" aria-live="polite" className="text-danger text-sm font-medium">
+      {(error as Error).message}
+    </p>
   )
 }
 

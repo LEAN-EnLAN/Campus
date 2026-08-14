@@ -186,6 +186,8 @@ export function useSaveAcademicContext() {
 
 interface CurriculumBundle {
   curriculum: Curriculum | null
+  /** The carrera this plan belongs to — what the student calls their degree. */
+  programName: string | null
   subjects: CurriculumSubject[]
   prerequisites: PrerequisiteEdge[]
 }
@@ -201,7 +203,9 @@ export function useCurriculumBundle(curriculumId: string | null) {
       const [curriculumResult, subjectsResult] = await Promise.all([
         supabase
           .from('curricula')
-          .select('id, program_id, name, version, source_url, source_kind, source_fetched_at')
+          .select(
+            'id, program_id, name, version, source_url, source_kind, source_fetched_at, programs (name)',
+          )
           .eq('id', id)
           .single(),
         supabase
@@ -236,8 +240,19 @@ export function useCurriculumBundle(curriculumId: string | null) {
         prerequisites = (data as PrerequisiteRow[]).map(toPrerequisiteEdge)
       }
 
+      // PostgREST embeds can arrive as an object or a single-element array
+      // depending on how the relationship is inferred; accept both.
+      const curriculumRow = curriculumResult.data as unknown as CurriculumRow & {
+        programs: { name: string } | { name: string }[] | null
+      }
+      const embedded = curriculumRow.programs
+      const programName = Array.isArray(embedded)
+        ? (embedded[0]?.name ?? null)
+        : (embedded?.name ?? null)
+
       return {
-        curriculum: toCurriculum(curriculumResult.data as CurriculumRow),
+        curriculum: toCurriculum(curriculumRow),
+        programName,
         subjects,
         prerequisites,
       }
@@ -312,6 +327,7 @@ export function useSetSubjectStatus() {
 export interface AcademicPlan {
   context: AcademicContext | null
   curriculum: Curriculum | null
+  programName: string | null
   views: SubjectView[]
   byYear: ReturnType<typeof groupByYear>
   progress: ReturnType<typeof computeProgress>
@@ -323,6 +339,11 @@ export interface AcademicPlan {
   hasContext: boolean
   /** The context query has resolved at least once and is not refetching. */
   contextSettled: boolean
+  /**
+   * The context fetch itself failed. Distinct from `!hasContext`: a network error
+   * must never be read as 'this student has no carrera'.
+   */
+  contextError: Error | null
 }
 
 /**
@@ -355,6 +376,7 @@ export function useAcademicPlan(): AcademicPlan {
   return {
     context,
     curriculum: bundleQuery.data?.curriculum ?? null,
+    programName: bundleQuery.data?.programName ?? null,
     views,
     byYear,
     progress,
@@ -369,5 +391,6 @@ export function useAcademicPlan(): AcademicPlan {
     isUnmapped: context !== null && context.curriculumId === null,
     hasContext: context !== null,
     contextSettled: !contextQuery.isLoading && !contextQuery.isFetching,
+    contextError: (contextQuery.error as Error | null) ?? null,
   }
 }

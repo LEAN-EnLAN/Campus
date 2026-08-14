@@ -40,11 +40,16 @@ function AppLayout() {
   // means it holds no matter how they arrived: signup, a bookmark, or a reload.
   useEffect(() => {
     if (loading || !session) return
-    // `contextSettled` matters: mid-refetch the query still reads null, and
-    // redirecting on that would bounce a student who just finished onboarding.
-    if (!plan.contextSettled || plan.hasContext) return
+    // Three guards, each for a different way this went wrong before:
+    //   contextSettled — mid-refetch the query still reads null, which would bounce
+    //                    a student who had just finished onboarding;
+    //   contextError   — a failed fetch is NOT "no carrera". Redirecting on it sends a
+    //                    returning student back through the wizard, where re-running
+    //                    onboarding would deactivate the context they already had;
+    //   hasContext     — the actual condition we care about.
+    if (!plan.contextSettled || plan.contextError || plan.hasContext) return
     void navigate({ to: '/onboarding' })
-  }, [loading, session, plan.contextSettled, plan.hasContext, navigate])
+  }, [loading, session, plan.contextSettled, plan.contextError, plan.hasContext, navigate])
 
   // Cmd/Ctrl+K captures, "/" searches — the two things a student does most.
   useEffect(() => {
@@ -82,13 +87,19 @@ function AppLayout() {
   if (!session) return null
 
   async function handleCapture(values: QuickCaptureValues) {
-    await createItem.mutateAsync({
-      title: values.title,
-      kind: values.kind,
-      curriculumSubjectId: values.curriculumSubjectId,
-      dueAt: values.dueAt,
-    })
-    setCaptureOpen(false)
+    // The dialog stays open and `createItem.error` is what the student reads; catching
+    // here just keeps a failed save from surfacing as an unhandled rejection.
+    try {
+      await createItem.mutateAsync({
+        title: values.title,
+        kind: values.kind,
+        curriculumSubjectId: values.curriculumSubjectId,
+        dueAt: values.dueAt,
+      })
+      setCaptureOpen(false)
+    } catch {
+      /* surfaced through createItem.error */
+    }
   }
 
   return (

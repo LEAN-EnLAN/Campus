@@ -144,6 +144,12 @@ function LibraryScreen() {
         </form>
       </section>
 
+      {deleteResource.error ? (
+        <p role="alert" aria-live="polite" className="text-danger text-sm font-medium">
+          {(deleteResource.error as Error).message}
+        </p>
+      ) : null}
+
       {resourcesQuery.error ? (
         <ErrorState
           error={resourcesQuery.error as Error}

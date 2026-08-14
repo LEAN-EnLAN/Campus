@@ -173,6 +173,31 @@ describe('computeSubjectViews', () => {
     expect(views.find((v) => v.id === 'a')?.unlocks).toEqual(['b'])
   })
 
+  // UTN's Ordenanza declares each correlativa under one "PARA CURSAR Y RENDIR"
+  // heading, which the seed emits as a to_take edge AND a to_pass edge. Listing the
+  // dependent once per edge duplicated it in the UI and duplicated the React key.
+  it('does not list a dependant twice when it is both a to_take and a to_pass correlativa', () => {
+    const views = computeSubjectViews({
+      subjects: [subject('a', 'Análisis I'), subject('b', 'Análisis II', 2)],
+      prerequisites: [edge('b', 'a', 'to_take'), edge('b', 'a', 'to_pass')],
+      states: [],
+    })
+
+    expect(views.find((v) => v.id === 'a')?.unlocks).toEqual(['b'])
+  })
+
+  it('does not claim a to_pass-only correlativa unlocks anything', () => {
+    // B was never blocked by A for cursar, so saying A "habilita" B would be false.
+    const views = computeSubjectViews({
+      subjects: [subject('a', 'Álgebra'), subject('b', 'Sintaxis', 2)],
+      prerequisites: [edge('b', 'a', 'to_pass')],
+      states: [],
+    })
+
+    expect(views.find((v) => v.id === 'b')?.status).toBe('available')
+    expect(views.find((v) => v.id === 'a')?.unlocks).toEqual([])
+  })
+
   it('handles a three-level chain transitively through stored state', () => {
     const subjects = [subject('a', 'AM I'), subject('b', 'AM II', 2), subject('c', 'AM III', 3)]
     const prerequisites = [edge('b', 'a'), edge('c', 'b')]

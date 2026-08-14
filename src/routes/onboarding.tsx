@@ -83,7 +83,9 @@ function OnboardingScreen() {
     void navigate({ to: '/today' })
   }
 
-  if (loading) return null
+  // Gate on the session too, not just the auth load: otherwise the whole wizard
+  // paints for one tick before the redirect effect fires.
+  if (loading || !session) return null
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-xl flex-col px-5 py-10 sm:px-6">

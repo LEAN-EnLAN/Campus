@@ -41,7 +41,7 @@ async function step(page, name, fn) {
     steps.push({ step: stepIndex, name, passed: false, detail: message })
     console.log(`  ✖ ${String(stepIndex).padStart(2)}. ${name}\n       ${message}`)
     await page
-      .screenshot({ path: join(outDir, `FAILED-${stepIndex}.png`), fullPage: true })
+      ?.screenshot({ path: join(outDir, `FAILED-${stepIndex}.png`), fullPage: true })
       .catch(() => {})
     throw error
   } finally {
@@ -51,27 +51,34 @@ async function step(page, name, fn) {
 
 async function main() {
   const status = supabaseStatus()
-  const preview = await startPreview()
-  const browser = await chromium.launch()
-  const context = await browser.newContext({
-    viewport: { width: 1280, height: 900 },
-    locale: 'es-AR',
-    timezoneId: 'America/Argentina/Buenos_Aires',
-  })
-  const page = await context.newPage()
+  // Acquire inside the try so a failure part-way through setup still releases what
+  // was already taken — otherwise an orphaned preview keeps port 4173 bound.
+  let preview = null
+  let browser = null
+  let page = null
 
   const email = `journey-${process.pid}-${Date.now()}@campus.test`
   const password = 'campus-journey-123456'
   let userId = null
 
   const consoleErrors = []
-  page.on('console', (m) => {
-    if (m.type() === 'error' && !/favicon|fonts\.g/i.test(m.text()))
-      consoleErrors.push(m.text())
-  })
-  page.on('pageerror', (e) => consoleErrors.push(e.message))
 
   try {
+    preview = await startPreview()
+    browser = await chromium.launch()
+    const context = await browser.newContext({
+      viewport: { width: 1280, height: 900 },
+      locale: 'es-AR',
+      timezoneId: 'America/Argentina/Buenos_Aires',
+    })
+    page = await context.newPage()
+
+    page.on('console', (m) => {
+      if (m.type() === 'error' && !/favicon|fonts\.g/i.test(m.text()))
+        consoleErrors.push(m.text())
+    })
+    page.on('pageerror', (e) => consoleErrors.push(e.message))
+
     // ---- 1. sign up -------------------------------------------------------
     await step(page, 'Crear cuenta', async () => {
       await page.goto(`${PREVIEW_URL}/login`, { waitUntil: 'networkidle' })
@@ -206,7 +213,7 @@ async function main() {
       await section.getByText('TP 1 · integrales', { exact: true }).waitFor({ timeout: 20_000 })
 
       const heading = await page.getByRole('heading', { level: 1 }).innerText()
-      if (!/una cosa|\\d+ cosas/.test(heading))
+      if (!/una cosa|\d+ cosas/.test(heading))
         throw new Error(`el título no cuenta la entrega: ${heading}`)
       return heading
     })
@@ -342,15 +349,21 @@ async function main() {
       const admin = createClient(status.API_URL, status.SERVICE_ROLE_KEY, {
         auth: { persistSession: false, autoRefreshToken: false },
       })
-      const { data } = await admin.auth.admin.listUsers({ perPage: 200 })
-      userId = data?.users?.find((u) => u.email === email)?.id ?? null
+      // Paginate: a single page silently stops finding the user once the local
+      // auth.users table grows past perPage, leaving test accounts behind forever.
+      for (let page = 1; page <= 50 && !userId; page += 1) {
+        const { data } = await admin.auth.admin.listUsers({ page, perPage: 200 })
+        const users = data?.users ?? []
+        if (users.length === 0) break
+        userId = users.find((u) => u.email === email)?.id ?? null
+      }
       if (userId) await admin.auth.admin.deleteUser(userId)
     } catch {
       /* cleanup is best-effort */
     }
 
-    await browser.close()
-    preview.stop()
+    if (browser) await browser.close()
+    preview?.stop()
 
     const failed = steps.filter((s) => !s.passed).length
     writeFileSync(

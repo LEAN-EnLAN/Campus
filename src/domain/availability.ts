@@ -80,7 +80,10 @@ export function computeSubjectViews({
   // Only consider edges whose endpoints both exist in this curriculum. A dangling
   // edge (bad seed, subject from another plan version) must not block a student.
   const requirementsOf = new Map<string, PrerequisiteEdge[]>()
-  const unlocksOf = new Map<string, string[]>()
+  // A Set, not an array: a real plan declares the same correlativa twice, once as
+  // `to_take` and once as `to_pass` (that is how UTN's Ordenanza reads), and an
+  // array would list the dependent subject twice in the UI.
+  const unlocksOf = new Map<string, Set<string>>()
 
   for (const edge of prerequisites) {
     if (!subjectById.has(edge.curriculumSubjectId)) continue
@@ -90,10 +93,13 @@ export function computeSubjectViews({
     if (reqs) reqs.push(edge)
     else requirementsOf.set(edge.curriculumSubjectId, [edge])
 
-    if (edge.kind !== 'recommended') {
+    // Only `to_take` counts as unlocking. A `to_pass` correlativa never blocked the
+    // cursada, so claiming it "habilita" the dependent would be a false causal claim:
+    // the student could already take it.
+    if (edge.kind === 'to_take') {
       const unlocked = unlocksOf.get(edge.requiredCurriculumSubjectId)
-      if (unlocked) unlocked.push(edge.curriculumSubjectId)
-      else unlocksOf.set(edge.requiredCurriculumSubjectId, [edge.curriculumSubjectId])
+      if (unlocked) unlocked.add(edge.curriculumSubjectId)
+      else unlocksOf.set(edge.requiredCurriculumSubjectId, new Set([edge.curriculumSubjectId]))
     }
   }
 
@@ -134,7 +140,7 @@ export function computeSubjectViews({
       grade: state?.grade ?? null,
       notes: state?.notes ?? null,
       missingRequirements: missing,
-      unlocks: unlocksOf.get(subject.id) ?? [],
+      unlocks: [...(unlocksOf.get(subject.id) ?? [])],
     }
   })
 }

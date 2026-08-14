@@ -38,14 +38,21 @@ const TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']
 
 async function main() {
   const status = supabaseStatus()
-  const student = await seedStudent(status, 'a11y')
-  const preview = await startPreview()
-  const browser = await chromium.launch()
+  // Acquire INSIDE the try: if a later acquisition throws, the earlier one still
+  // has to be released, or the preview server keeps port 4173 and the test user
+  // survives forever.
+  let student = null
+  let preview = null
+  let browser = null
 
   const scans = []
   const totals = { critical: 0, serious: 0, moderate: 0, minor: 0 }
 
   try {
+    student = await seedStudent(status, 'a11y')
+    preview = await startPreview()
+    browser = await chromium.launch()
+
     const authContext = await browser.newContext({ viewport: { width: 1280, height: 800 } })
     const authPage = await authContext.newPage()
     await loginThroughUi(authPage, student)
@@ -111,9 +118,9 @@ async function main() {
       await context.close()
     }
   } finally {
-    await browser.close()
-    preview.stop()
-    await student.cleanup()
+    if (browser) await browser.close()
+    preview?.stop()
+    if (student) await student.cleanup()
   }
 
   const blocking = totals.critical + totals.serious

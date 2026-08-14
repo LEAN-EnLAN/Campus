@@ -21,6 +21,20 @@ const DATE_FORMAT = new Intl.DateTimeFormat('es-AR', {
   month: 'long',
 })
 
+const WEEKDAY_FORMAT = new Intl.DateTimeFormat('es-AR', { weekday: 'long' })
+
+/** "Mañana", "el lunes", "el 3 de septiembre" — how a person says when. */
+function whenLabel(entry: AgendaEntry): string | null {
+  if (entry.dayOffset === null || entry.dayOffset <= 0) return null
+  if (entry.dayOffset === 1) return 'Mañana'
+  const anchor = entry.item.dueAt ?? entry.item.startsAt
+  if (!anchor) return null
+  const date = new Date(anchor)
+  if (Number.isNaN(date.getTime())) return null
+  if (entry.dayOffset <= 7) return capitalize(WEEKDAY_FORMAT.format(date))
+  return date.toLocaleDateString('es-AR', { day: 'numeric', month: 'long' })
+}
+
 function capitalize(text: string): string {
   return text.charAt(0).toUpperCase() + text.slice(1)
 }
@@ -48,6 +62,7 @@ function TodayScreen() {
         key={entry.item.id}
         item={entry.item}
         overdue={overdue}
+        dayLabel={whenLabel(entry)}
         subjectName={subjectName(entry.item.curriculumSubjectId)}
         subjectId={entry.item.curriculumSubjectId}
         onToggle={(done) => toggleItem.mutate({ id: entry.item.id, done })}

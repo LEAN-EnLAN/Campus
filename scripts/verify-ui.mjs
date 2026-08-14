@@ -43,14 +43,21 @@ function isRealError(text) {
 
 async function main() {
   const status = supabaseStatus()
-  const student = await seedStudent(status, 'ui')
-  const preview = await startPreview()
-  const browser = await chromium.launch()
+  // Acquire INSIDE the try: if a later acquisition throws, the earlier one still
+  // has to be released, or the preview server keeps port 4173 and the test user
+  // survives forever.
+  let student = null
+  let preview = null
+  let browser = null
 
   const results = []
   let failures = 0
 
   try {
+    student = await seedStudent(status, 'ui')
+    preview = await startPreview()
+    browser = await chromium.launch()
+
     // Log in once at desktop, reuse the storage state everywhere else.
     const authContext = await browser.newContext({ viewport: { width: 1280, height: 800 } })
     const authPage = await authContext.newPage()
@@ -83,6 +90,7 @@ async function main() {
         let rendered = false
         let overflow = null
         let smallTargets = []
+        let errorBanner = null
 
         try {
           const response = await page.goto(`${PREVIEW_URL}${route.path}`, {
@@ -98,6 +106,14 @@ async function main() {
             { timeout: 15_000 },
           )
           rendered = response !== null && response.ok()
+
+          // A React Query failure renders ErrorState (role="alert") without throwing
+          // or writing to console, so "main has text" would otherwise pass on the
+          // words "No pudimos cargar esto".
+          errorBanner = await page.evaluate(() => {
+            const alert = document.querySelector('main [role="alert"]')
+            return alert ? (alert.textContent ?? '').trim().slice(0, 160) : null
+          })
 
           overflow = await page.evaluate(() => {
             const doc = document.documentElement
@@ -143,6 +159,7 @@ async function main() {
 
         const passed =
           rendered &&
+          errorBanner === null &&
           consoleErrors.length === 0 &&
           pageErrors.length === 0 &&
           overflow !== null &&
@@ -158,6 +175,7 @@ async function main() {
           consoleErrors,
           pageErrors,
           smallTargets,
+          errorBanner,
           screenshot: `${route.name}-${viewport.name}.png`,
           passed,
         })
@@ -167,6 +185,7 @@ async function main() {
           ? ''
           : ` (${[
               !rendered ? 'no render' : null,
+              errorBanner ? `error state rendered: "${errorBanner}"` : null,
               overflow?.overflows
                 ? `overflow ${overflow.scrollWidth}>${overflow.clientWidth}`
                 : null,
@@ -181,9 +200,9 @@ async function main() {
       await context.close()
     }
   } finally {
-    await browser.close()
-    preview.stop()
-    await student.cleanup()
+    if (browser) await browser.close()
+    preview?.stop()
+    if (student) await student.cleanup()
   }
 
   const report = {

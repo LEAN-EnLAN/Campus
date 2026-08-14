@@ -186,6 +186,11 @@ describe('user_subject_states — A/B isolation', () => {
     })
     expect(insertError).toBeNull()
 
+    // A still sees her own row — otherwise a USING (false) policy would pass this test.
+    const { data: mine } = await userA.client.from('user_subject_states').select('id, status')
+    expect(mine).toHaveLength(1)
+    expect(mine?.[0]?.status).toBe('passed')
+
     const { data } = await userB.client.from('user_subject_states').select('id')
     expect(data).toEqual([])
   })
@@ -199,6 +204,12 @@ describe('user_academic_contexts — A/B isolation', () => {
       is_active: true,
     })
     expect(error).toBeNull()
+
+    const { data: mine } = await userA.client
+      .from('user_academic_contexts')
+      .select('id, curriculum_id')
+    expect(mine).toHaveLength(1)
+    expect(mine?.[0]?.curriculum_id).toBe(curriculumId)
 
     const { data } = await userB.client.from('user_academic_contexts').select('id')
     expect(data).toEqual([])
@@ -215,6 +226,10 @@ describe('resources — A/B isolation', () => {
       url: 'https://example.org/a',
     })
     expect(error).toBeNull()
+
+    const { data: mine } = await userA.client.from('resources').select('id, title')
+    expect(mine).toHaveLength(1)
+    expect(mine?.[0]?.title).toBe('Apunte de A')
 
     const { data } = await userB.client.from('resources').select('id')
     expect(data).toEqual([])

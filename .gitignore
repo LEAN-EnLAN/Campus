@@ -8,7 +8,8 @@ coverage
 .harness/runs
 playwright-report
 test-results
-evidence/**/*.png
-evidence/**/*.png
 docs/research/evidence/*.png
 docs/research/screenshots/*.png
+
+# Verification artifacts are reproducible from a candidate; they are not source.
+evidence/

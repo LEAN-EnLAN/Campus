@@ -111,7 +111,12 @@ export function AcademicShell({
           <div className="flex min-w-0 flex-1 flex-col lg:flex-row lg:gap-8 lg:px-8">
             <main
               id="contenido"
-              className="lg:max-w-measure min-w-0 flex-1 px-4 pt-5 pb-28 sm:px-6 md:pt-8 lg:px-0 lg:pb-16"
+              className={cn(
+                'lg:max-w-measure min-w-0 flex-1 px-4 pt-5 pb-28 sm:px-6 md:pt-8 lg:px-0 lg:pb-16',
+                // With no context rail the reserved 260px would read as dead space
+                // on a wide screen, so the notebook surface centres instead.
+                !rail && 'lg:mx-auto',
+              )}
             >
               {children}
             </main>

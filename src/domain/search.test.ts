@@ -104,7 +104,11 @@ describe('search', () => {
   })
 
   it('respects the result limit', () => {
-    expect(search(INPUT, 'a', 1)).toEqual([])
-    expect(search(INPUT, 'i', 1)).toEqual([])
+    // Must use a query that actually reaches the slice: a one-character query
+    // short-circuits on the length guard and would pass even with no limit at all.
+    const unlimited = search(INPUT, 'a' + 'n')
+    expect(unlimited.length).toBeGreaterThan(1)
+    expect(search(INPUT, 'an', 1)).toHaveLength(1)
+    expect(search(INPUT, 'an', 1)[0]).toEqual(unlimited[0])
   })
 })

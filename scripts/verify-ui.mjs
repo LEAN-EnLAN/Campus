@@ -136,12 +136,36 @@ async function main() {
                 if (rect.width === 0 && rect.height === 0) continue
                 const style = getComputedStyle(node)
                 if (style.visibility === 'hidden' || style.display === 'none') continue
-                if (rect.height < 24 || rect.width < 24) {
+
+                // An expanded ::before hit area is invisible to getBoundingClientRect,
+                // so fold its inset back in before judging the target size.
+                const pseudo = getComputedStyle(node, '::before')
+                let width = rect.width
+                let height = rect.height
+                if (
+                  pseudo.content &&
+                  pseudo.content !== 'none' &&
+                  pseudo.position === 'absolute'
+                ) {
+                  const inset = (value) => {
+                    const n = Number.parseFloat(value)
+                    return Number.isFinite(n) ? -n : 0
+                  }
+                  width += inset(pseudo.left) + inset(pseudo.right)
+                  height += inset(pseudo.top) + inset(pseudo.bottom)
+                }
+
+                // Inline links inside prose are excluded: padding every one of them to
+                // 44px would destroy the line rhythm, and they are not discrete controls.
+                const isInlineLink = node.tagName === 'A' && style.display.startsWith('inline')
+                if (isInlineLink) continue
+
+                if (height < 24 || width < 24) {
                   found.push({
                     tag: node.tagName.toLowerCase(),
                     text: (node.textContent ?? '').trim().slice(0, 40),
-                    width: Math.round(rect.width),
-                    height: Math.round(rect.height),
+                    width: Math.round(width),
+                    height: Math.round(height),
                   })
                 }
               }

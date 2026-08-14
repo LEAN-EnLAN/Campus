@@ -161,7 +161,10 @@ function NavLink({ item, current }: { item: NavItem; current: boolean }) {
 function MobileTopBar({ onSearch }: { onSearch: () => void }) {
   return (
     <header className="border-rule bg-paper/90 sticky top-0 z-30 flex items-center justify-between gap-3 border-b px-4 py-3 backdrop-blur-sm md:hidden">
-      <Link to="/today" className="text-ink flex items-center gap-2 font-serif text-base">
+      <Link
+        to="/today"
+        className="text-ink -my-2.5 flex items-center gap-2 py-2.5 font-serif text-base"
+      >
         <span aria-hidden="true" className="bg-accent inline-block h-4 w-1 rounded-full" />
         Campus
       </Link>

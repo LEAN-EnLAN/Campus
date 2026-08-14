@@ -67,7 +67,11 @@ export function DeadlineRow({
           onClick={() => onToggle(!done)}
           aria-pressed={done}
           className={cn(
-            'mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full border transition-colors duration-150',
+            'relative mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full border transition-colors duration-150',
+            // The circle stays 20px because a 44px ring would wreck the row rhythm,
+            // but the HIT AREA is expanded to 44px with a pseudo-element. This is the
+            // most-tapped control in the app and it is used with a thumb.
+            "before:absolute before:-inset-3 before:content-['']",
             done
               ? 'border-success bg-success text-white'
               : 'border-rule hover:border-ink-faint text-transparent',

@@ -160,61 +160,68 @@ export async function seedStudent(status, label) {
   if (createError) throw new Error(`could not create verify user: ${createError.message}`)
   const userId = created.user.id
 
-  // The UTN plan is the one with real correlativas, so it exercises availability.
-  const { data: curriculum, error: curriculumError } = await admin
-    .from('curricula')
-    .select('id, curriculum_subjects (id, year_level, display_order)')
-    .eq('version', 'Plan 2023')
-    .single()
-  if (curriculumError) throw new Error(`no seeded curriculum: ${curriculumError.message}`)
+  // Everything after the user exists must undo the user if it fails: the caller has
+  // no handle to clean up with until this function returns.
+  try {
+    // The UTN plan is the one with real correlativas, so it exercises availability.
+    const { data: curriculum, error: curriculumError } = await admin
+      .from('curricula')
+      .select('id, curriculum_subjects (id, year_level, display_order)')
+      .eq('version', 'Plan 2023')
+      .single()
+    if (curriculumError) throw new Error(`no seeded curriculum: ${curriculumError.message}`)
 
-  const subjects = [...curriculum.curriculum_subjects].sort(
-    (a, b) => a.year_level - b.year_level || a.display_order - b.display_order,
-  )
-  const passed = subjects[0]
-  const inProgress = subjects[1]
+    const subjects = [...curriculum.curriculum_subjects].sort(
+      (a, b) => a.year_level - b.year_level || a.display_order - b.display_order,
+    )
+    const passed = subjects[0]
+    const inProgress = subjects[1]
 
-  await admin.from('user_academic_contexts').insert({
-    user_id: userId,
-    curriculum_id: curriculum.id,
-    is_active: true,
-  })
+    await admin.from('user_academic_contexts').insert({
+      user_id: userId,
+      curriculum_id: curriculum.id,
+      is_active: true,
+    })
 
-  await admin.from('user_subject_states').insert([
-    { user_id: userId, curriculum_subject_id: passed.id, status: 'passed' },
-    { user_id: userId, curriculum_subject_id: inProgress.id, status: 'in_progress' },
-  ])
+    await admin.from('user_subject_states').insert([
+      { user_id: userId, curriculum_subject_id: passed.id, status: 'passed' },
+      { user_id: userId, curriculum_subject_id: inProgress.id, status: 'in_progress' },
+    ])
 
-  const today = new Date()
-  today.setHours(18, 0, 0, 0)
-  const nextWeek = new Date()
-  nextWeek.setDate(nextWeek.getDate() + 4)
-  nextWeek.setHours(9, 0, 0, 0)
+    const today = new Date()
+    today.setHours(18, 0, 0, 0)
+    const nextWeek = new Date()
+    nextWeek.setDate(nextWeek.getDate() + 4)
+    nextWeek.setHours(9, 0, 0, 0)
 
-  await admin.from('academic_items').insert([
-    {
+    await admin.from('academic_items').insert([
+      {
+        user_id: userId,
+        curriculum_subject_id: inProgress.id,
+        kind: 'assignment',
+        title: 'TP 4 · entrega',
+        due_at: today.toISOString(),
+      },
+      {
+        user_id: userId,
+        curriculum_subject_id: inProgress.id,
+        kind: 'midterm',
+        title: 'Primer parcial',
+        due_at: nextWeek.toISOString(),
+      },
+    ])
+
+    await admin.from('resources').insert({
       user_id: userId,
       curriculum_subject_id: inProgress.id,
-      kind: 'assignment',
-      title: 'TP 4 · entrega',
-      due_at: today.toISOString(),
-    },
-    {
-      user_id: userId,
-      curriculum_subject_id: inProgress.id,
-      kind: 'midterm',
-      title: 'Primer parcial',
-      due_at: nextWeek.toISOString(),
-    },
-  ])
-
-  await admin.from('resources').insert({
-    user_id: userId,
-    curriculum_subject_id: inProgress.id,
-    kind: 'link',
-    title: 'Apuntes de la cátedra',
-    url: 'https://example.org/apuntes',
-  })
+      kind: 'link',
+      title: 'Apuntes de la cátedra',
+      url: 'https://example.org/apuntes',
+    })
+  } catch (error) {
+    await admin.auth.admin.deleteUser(userId).catch(() => {})
+    throw error
+  }
 
   return { email, password, userId, cleanup: () => admin.auth.admin.deleteUser(userId) }
 }

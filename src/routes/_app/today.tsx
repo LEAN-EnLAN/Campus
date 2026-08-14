@@ -177,7 +177,18 @@ function TodayScreen() {
             </section>
           ) : null}
 
-          {!plan.hasContext && !plan.isLoading ? (
+          {/* Order matters: an errored context is NOT "no elegiste tu carrera".
+              Rendering that empty state here would invite the student into onboarding,
+              where re-running it deactivates the context they already had. */}
+          {plan.error && !plan.hasContext ? (
+            <ErrorState
+              title="No pudimos cargar tu carrera"
+              error={plan.error}
+              onRetry={() => window.location.reload()}
+            />
+          ) : null}
+
+          {!plan.hasContext && !plan.isLoading && !plan.error ? (
             <EmptyState
               title="Todavía no elegiste tu carrera"
               description="Elegí universidad, facultad, carrera y plan para ver tus materias y correlativas."

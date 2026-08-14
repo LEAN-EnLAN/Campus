@@ -21,6 +21,7 @@ import { PageHeader, SectionHeading } from '@/components/page-header'
 import { Button } from '@/components/ui/button'
 import scenarios from '@/features/dev/scenarios.generated.json'
 import { useAuth } from '@/features/auth/auth-context'
+import { supabaseUrl } from '@/lib/supabase'
 
 export const Route = createFileRoute('/dev')({
   component: DevScreen,
@@ -54,7 +55,13 @@ function DevScreen() {
     const result = await signIn(email, scenarios.password)
     setBusy(null)
     if (result.error) {
-      setError(`${result.error} — ¿corriste \`pnpm tester seed\`?`)
+      // "Revisá tu conexión" is useless on a machine where the app loaded fine.
+      // Name the endpoint it tried: a mismatch with the address bar is the whole bug.
+      setError(
+        `${result.error} La app le está pegando a ${supabaseUrl}. Si eso no arranca con ` +
+          `${window.location.origin}, tenés cargado un bundle viejo: recargá con Ctrl+Shift+R. ` +
+          `Si coincide, corré \`pnpm tester seed\`.`,
+      )
       return
     }
     void navigate({ to: '/today' })
@@ -67,6 +74,11 @@ function DevScreen() {
         title="Escenarios"
         description="Cada uno es una cuenta real con datos reales en Postgres. Entrás con un clic."
       />
+
+      <p className="text-ink-muted mt-4 text-xs">
+        origen <span className="text-ink font-mono">{window.location.origin}</span> · supabase{' '}
+        <span className="text-ink font-mono">{supabaseUrl}</span>
+      </p>
 
       {session ? (
         <p className="text-ink-muted mt-4 text-sm">

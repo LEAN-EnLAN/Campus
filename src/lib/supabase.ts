@@ -27,11 +27,11 @@ if (!configuredUrl || !anonKey) {
  * app loads and then fails on every query. Relative keeps it correct on
  * localhost, a LAN IP, a tailnet IP and a MagicDNS name without a rebuild.
  */
-const url = configuredUrl.startsWith('/')
+export const supabaseUrl = configuredUrl.startsWith('/')
   ? `${window.location.origin}${configuredUrl}`
   : configuredUrl
 
-export const supabase = createClient(url, anonKey, {
+export const supabase = createClient(supabaseUrl, anonKey, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,

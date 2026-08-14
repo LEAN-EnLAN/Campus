@@ -1,0 +1,1317 @@
+{
+  "formatVersion": 1,
+  "id": "utn/utn-frro/isi/Plan 2023",
+  "institution": {
+    "slug": "utn",
+    "name": "Universidad Tecnológica Nacional"
+  },
+  "academicUnit": {
+    "slug": "utn-frro",
+    "name": "Facultad Regional Rosario"
+  },
+  "program": {
+    "slug": "isi",
+    "name": "Ingeniería en Sistemas de Información"
+  },
+  "name": "Diseño Curricular de Ingeniería en Sistemas de Información - Plan 2023 (Ordenanza CSU N° 1877/2022); correlatividades por Ordenanza CSU N° 1878/2022",
+  "version": "Plan 2023",
+  "sourceUrl": "https://www.frro.utn.edu.ar/26/ingenieria-en-sistemas-de-informacion-utn#utn-887",
+  "sourceKind": "pdf",
+  "retrievedAt": "2026-08-14",
+  "prerequisitesKnown": true,
+  "prerequisitesNote": null,
+  "subjects": [
+    {
+      "id": "analisis-matematico-i-1",
+      "code": "1",
+      "name": "Análisis Matemático I",
+      "normalizedName": "analisis matematico i",
+      "yearLevel": 1,
+      "term": "anual",
+      "credits": null,
+      "elective": false,
+      "displayOrder": 1,
+      "verified": true,
+      "prerequisites": []
+    },
+    {
+      "id": "algebra-y-geometria-analitica-2",
+      "code": "2",
+      "name": "Álgebra y Geometría Analítica",
+      "normalizedName": "algebra y geometria analitica",
+      "yearLevel": 1,
+      "term": "anual",
+      "credits": null,
+      "elective": false,
+      "displayOrder": 2,
+      "verified": true,
+      "prerequisites": []
+    },
+    {
+      "id": "fisica-i-3",
+      "code": "3",
+      "name": "Física I",
+      "normalizedName": "fisica i",
+      "yearLevel": 1,
+      "term": "anual",
+      "credits": null,
+      "elective": false,
+      "displayOrder": 3,
+      "verified": true,
+      "prerequisites": []
+    },
+    {
+      "id": "ingles-i-4",
+      "code": "4",
+      "name": "Inglés I",
+      "normalizedName": "ingles i",
+      "yearLevel": 1,
+      "term": "anual",
+      "credits": null,
+      "elective": false,
+      "displayOrder": 4,
+      "verified": true,
+      "prerequisites": []
+    },
+    {
+      "id": "logica-y-estructuras-discretas-5",
+      "code": "5",
+      "name": "Lógica y Estructuras Discretas",
+      "normalizedName": "logica y estructuras discretas",
+      "yearLevel": 1,
+      "term": "anual",
+      "credits": null,
+      "elective": false,
+      "displayOrder": 5,
+      "verified": true,
+      "prerequisites": []
+    },
+    {
+      "id": "algoritmos-y-estructuras-de-datos-6",
+      "code": "6",
+      "name": "Algoritmos y Estructuras de Datos",
+      "normalizedName": "algoritmos y estructuras de datos",
+      "yearLevel": 1,
+      "term": "anual",
+      "credits": null,
+      "elective": false,
+      "displayOrder": 6,
+      "verified": true,
+      "prerequisites": []
+    },
+    {
+      "id": "arquitectura-de-computadoras-7",
+      "code": "7",
+      "name": "Arquitectura de Computadoras",
+      "normalizedName": "arquitectura de computadoras",
+      "yearLevel": 1,
+      "term": "anual",
+      "credits": null,
+      "elective": false,
+      "displayOrder": 7,
+      "verified": true,
+      "prerequisites": []
+    },
+    {
+      "id": "sistemas-y-procesos-de-negocio-8",
+      "code": "8",
+      "name": "Sistemas y Procesos de Negocio",
+      "normalizedName": "sistemas y procesos de negocio",
+      "yearLevel": 1,
+      "term": "anual",
+      "credits": null,
+      "elective": false,
+      "displayOrder": 8,
+      "verified": true,
+      "prerequisites": []
+    },
+    {
+      "id": "analisis-matematico-ii-9",
+      "code": "9",
+      "name": "Análisis Matemático II",
+      "normalizedName": "analisis matematico ii",
+      "yearLevel": 2,
+      "term": "anual",
+      "credits": null,
+      "elective": false,
+      "displayOrder": 9,
+      "verified": true,
+      "prerequisites": [
+        {
+          "subjectId": "analisis-matematico-i-1",
+          "kind": "to_take"
+        },
+        {
+          "subjectId": "analisis-matematico-i-1",
+          "kind": "to_pass"
+        },
+        {
+          "subjectId": "algebra-y-geometria-analitica-2",
+          "kind": "to_take"
+        },
+        {
+          "subjectId": "algebra-y-geometria-analitica-2",
+          "kind": "to_pass"
+        }
+      ]
+    },
+    {
+      "id": "fisica-ii-10",
+      "code": "10",
+      "name": "Física II",
+      "normalizedName": "fisica ii",
+      "yearLevel": 2,
+      "term": "anual",
+      "credits": null,
+      "elective": false,
+      "displayOrder": 10,
+      "verified": true,
+      "prerequisites": [
+        {
+          "subjectId": "analisis-matematico-i-1",
+          "kind": "to_take"
+        },
+        {
+          "subjectId": "analisis-matematico-i-1",
+          "kind": "to_pass"
+        },
+        {
+          "subjectId": "fisica-i-3",
+          "kind": "to_take"
+        },
+        {
+          "subjectId": "fisica-i-3",
+          "kind": "to_pass"
+        }
+      ]
+    },
+    {
+      "id": "ingenieria-y-sociedad-11",
+      "code": "11",
+      "name": "Ingeniería y Sociedad",
+      "normalizedName": "ingenieria y sociedad",
+      "yearLevel": 2,
+      "term": "1c",
+      "credits": null,
+      "elective": false,
+      "displayOrder": 11,
+      "verified": true,
+      "prerequisites": []
+    },
+    {
+      "id": "ingles-ii-12",
+      "code": "12",
+      "name": "Inglés II",
+      "normalizedName": "ingles ii",
+      "yearLevel": 2,
+      "term": "anual",
+      "credits": null,
+      "elective": false,
+      "displayOrder": 12,
+      "verified": true,
+      "prerequisites": [
+        {
+          "subjectId": "ingles-i-4",
+          "kind": "to_take"
+        },
+        {
+          "subjectId": "ingles-i-4",
+          "kind": "to_pass"
+        }
+      ]
+    },
+    {
+      "id": "sintaxis-y-semantica-de-los-lenguajes-13",
+      "code": "13",
+      "name": "Sintaxis y Semántica de los Lenguajes",
+      "normalizedName": "sintaxis y semantica de los lenguajes",
+      "yearLevel": 2,
+      "term": "1c",
+      "credits": null,
+      "elective": false,
+      "displayOrder": 13,
+      "verified": true,
+      "prerequisites": [
+        {
+          "subjectId": "logica-y-estructuras-discretas-5",
+          "kind": "to_take"
+        },
+        {
+          "subjectId": "logica-y-estructuras-discretas-5",
+          "kind": "to_pass"
+        },
+        {
+          "subjectId": "algoritmos-y-estructuras-de-datos-6",
+          "kind": "to_take"
+        },
+        {
+          "subjectId": "algoritmos-y-estructuras-de-datos-6",
+          "kind": "to_pass"
+        }
+      ]
+    },
+    {
+      "id": "paradigmas-de-programacion-14",
+      "code": "14",
+      "name": "Paradigmas de Programación",
+      "normalizedName": "paradigmas de programacion",
+      "yearLevel": 2,
+      "term": "2c",
+      "credits": null,
+      "elective": false,
+      "displayOrder": 14,
+      "verified": true,
+      "prerequisites": [
+        {
+          "subjectId": "logica-y-estructuras-discretas-5",
+          "kind": "to_take"
+        },
+        {
+          "subjectId": "logica-y-estructuras-discretas-5",
+          "kind": "to_pass"
+        },
+        {
+          "subjectId": "algoritmos-y-estructuras-de-datos-6",
+          "kind": "to_take"
+        },
+        {
+          "subjectId": "algoritmos-y-estructuras-de-datos-6",
+          "kind": "to_pass"
+        }
+      ]
+    },
+    {
+      "id": "sistemas-operativos-15",
+      "code": "15",
+      "name": "Sistemas Operativos",
+      "normalizedName": "sistemas operativos",
+      "yearLevel": 2,
+      "term": "2c",
+      "credits": null,
+      "elective": false,
+      "displayOrder": 15,
+      "verified": true,
+      "prerequisites": [
+        {
+          "subjectId": "arquitectura-de-computadoras-7",
+          "kind": "to_take"
+        },
+        {
+          "subjectId": "arquitectura-de-computadoras-7",
+          "kind": "to_pass"
+        }
+      ]
+    },
+    {
+      "id": "analisis-de-sistemas-de-informacion-16",
+      "code": "16",
+      "name": "Análisis de Sistemas de Información",
+      "normalizedName": "analisis de sistemas de informacion",
+      "yearLevel": 2,
+      "term": "anual",
+      "credits": null,
+      "elective": false,
+      "displayOrder": 16,
+      "verified": true,
+      "prerequisites": [
+        {
+          "subjectId": "algoritmos-y-estructuras-de-datos-6",
+          "kind": "to_take"
+        },
+        {
+          "subjectId": "algoritmos-y-estructuras-de-datos-6",
+          "kind": "to_pass"
+        },
+        {
+          "subjectId": "sistemas-y-procesos-de-negocio-8",
+          "kind": "to_take"
+        },
+        {
+          "subjectId": "sistemas-y-procesos-de-negocio-8",
+          "kind": "to_pass"
+        }
+      ]
+    },
+    {
+      "id": "probabilidad-y-estadistica-17",
+      "code": "17",
+      "name": "Probabilidad y Estadística",
+      "normalizedName": "probabilidad y estadistica",
+      "yearLevel": 3,
+      "term": "anual",
+      "credits": null,
+      "elective": false,
+      "displayOrder": 17,
+      "verified": true,
+      "prerequisites": [
+        {
+          "subjectId": "analisis-matematico-i-1",
+          "kind": "to_take"
+        },
+        {
+          "subjectId": "analisis-matematico-i-1",
+          "kind": "to_pass"
+        },
+        {
+          "subjectId": "algebra-y-geometria-analitica-2",
+          "kind": "to_take"
+        },
+        {
+          "subjectId": "algebra-y-geometria-analitica-2",
+          "kind": "to_pass"
+        }
+      ]
+    },
+    {
+      "id": "economia-18",
+      "code": "18",
+      "name": "Economía",
+      "normalizedName": "economia",
+      "yearLevel": 3,
+      "term": "anual",
+      "credits": null,
+      "elective": false,
+      "displayOrder": 18,
+      "verified": true,
+      "prerequisites": [
+        {
+          "subjectId": "analisis-matematico-i-1",
+          "kind": "to_take"
+        },
+        {
+          "subjectId": "analisis-matematico-i-1",
+          "kind": "to_pass"
+        },
+        {
+          "subjectId": "algebra-y-geometria-analitica-2",
+          "kind": "to_take"
+        },
+        {
+          "subjectId": "algebra-y-geometria-analitica-2",
+          "kind": "to_pass"
+        }
+      ]
+    },
+    {
+      "id": "bases-de-datos-19",
+      "code": "19",
+      "name": "Bases de Datos",
+      "normalizedName": "bases de datos",
+      "yearLevel": 3,
+      "term": "anual",
+      "credits": null,
+      "elective": false,
+      "displayOrder": 19,
+      "verified": true,
+      "prerequisites": [
+        {
+          "subjectId": "sintaxis-y-semantica-de-los-lenguajes-13",
+          "kind": "to_take"
+        },
+        {
+          "subjectId": "sintaxis-y-semantica-de-los-lenguajes-13",
+          "kind": "to_pass"
+        },
+        {
+          "subjectId": "analisis-de-sistemas-de-informacion-16",
+          "kind": "to_take"
+        },
+        {
+          "subjectId": "analisis-de-sistemas-de-informacion-16",
+          "kind": "to_pass"
+        },
+        {
+          "subjectId": "logica-y-estructuras-discretas-5",
+          "kind": "to_take"
+        },
+        {
+          "subjectId": "logica-y-estructuras-discretas-5",
+          "kind": "to_pass"
+        },
+        {
+          "subjectId": "algoritmos-y-estructuras-de-datos-6",
+          "kind": "to_take"
+        },
+        {
+          "subjectId": "algoritmos-y-estructuras-de-datos-6",
+          "kind": "to_pass"
+        }
+      ]
+    },
+    {
+      "id": "desarrollo-de-software-20",
+      "code": "20",
+      "name": "Desarrollo de Software",
+      "normalizedName": "desarrollo de software",
+      "yearLevel": 3,
+      "term": "anual",
+      "credits": null,
+      "elective": false,
+      "displayOrder": 20,
+      "verified": true,
+      "prerequisites": [
+        {
+          "subjectId": "paradigmas-de-programacion-14",
+          "kind": "to_take"
+        },
+        {
+          "subjectId": "paradigmas-de-programacion-14",
+          "kind": "to_pass"
+        },
+        {
+          "subjectId": "analisis-de-sistemas-de-informacion-16",
+          "kind": "to_take"
+        },
+        {
+          "subjectId": "analisis-de-sistemas-de-informacion-16",
+          "kind": "to_pass"
+        },
+        {
+          "subjectId": "logica-y-estructuras-discretas-5",
+          "kind": "to_take"
+        },
+        {
+          "subjectId": "logica-y-estructuras-discretas-5",
+          "kind": "to_pass"
+        },
+        {
+          "subjectId": "algoritmos-y-estructuras-de-datos-6",
+          "kind": "to_take"
+        },
+        {
+          "subjectId": "algoritmos-y-estructuras-de-datos-6",
+          "kind": "to_pass"
+        }
+      ]
+    },
+    {
+      "id": "comunicacion-de-datos-21",
+      "code": "21",
+      "name": "Comunicación de Datos",
+      "normalizedName": "comunicacion de datos",
+      "yearLevel": 3,
+      "term": "anual",
+      "credits": null,
+      "elective": false,
+      "displayOrder": 21,
+      "verified": true,
+      "prerequisites": [
+        {
+          "subjectId": "fisica-i-3",
+          "kind": "to_take"
+        },
+        {
+          "subjectId": "fisica-i-3",
+          "kind": "to_pass"
+        },
+        {
+          "subjectId": "arquitectura-de-computadoras-7",
+          "kind": "to_take"
+        },
+        {
+          "subjectId": "arquitectura-de-computadoras-7",
+          "kind": "to_pass"
+        }
+      ]
+    },
+    {
+      "id": "analisis-numerico-22",
+      "code": "22",
+      "name": "Análisis Numérico",
+      "normalizedName": "analisis numerico",
+      "yearLevel": 3,
+      "term": "anual",
+      "credits": null,
+      "elective": false,
+      "displayOrder": 22,
+      "verified": true,
+      "prerequisites": [
+        {
+          "subjectId": "analisis-matematico-ii-9",
+          "kind": "to_take"
+        },
+        {
+          "subjectId": "analisis-matematico-ii-9",
+          "kind": "to_pass"
+        },
+        {
+          "subjectId": "analisis-matematico-i-1",
+          "kind": "to_take"
+        },
+        {
+          "subjectId": "analisis-matematico-i-1",
+          "kind": "to_pass"
+        },
+        {
+          "subjectId": "algebra-y-geometria-analitica-2",
+          "kind": "to_take"
+        },
+        {
+          "subjectId": "algebra-y-geometria-analitica-2",
+          "kind": "to_pass"
+        }
+      ]
+    },
+    {
+      "id": "diseno-de-sistemas-de-informacion-23",
+      "code": "23",
+      "name": "Diseño de Sistemas de Información",
+      "normalizedName": "diseno de sistemas de informacion",
+      "yearLevel": 3,
+      "term": "anual",
+      "credits": null,
+      "elective": false,
+      "displayOrder": 23,
+      "verified": true,
+      "prerequisites": [
+        {
+          "subjectId": "paradigmas-de-programacion-14",
+          "kind": "to_take"
+        },
+        {
+          "subjectId": "paradigmas-de-programacion-14",
+          "kind": "to_pass"
+        },
+        {
+          "subjectId": "analisis-de-sistemas-de-informacion-16",
+          "kind": "to_take"
+        },
+        {
+          "subjectId": "analisis-de-sistemas-de-informacion-16",
+          "kind": "to_pass"
+        },
+        {
+          "subjectId": "ingles-i-4",
+          "kind": "to_take"
+        },
+        {
+          "subjectId": "ingles-i-4",
+          "kind": "to_pass"
+        },
+        {
+          "subjectId": "algoritmos-y-estructuras-de-datos-6",
+          "kind": "to_take"
+        },
+        {
+          "subjectId": "algoritmos-y-estructuras-de-datos-6",
+          "kind": "to_pass"
+        },
+        {
+          "subjectId": "sistemas-y-procesos-de-negocio-8",
+          "kind": "to_take"
+        },
+        {
+          "subjectId": "sistemas-y-procesos-de-negocio-8",
+          "kind": "to_pass"
+        }
+      ]
+    },
+    {
+      "id": "electivas-3-nivel-24",
+      "code": null,
+      "name": "Electivas 3º nivel",
+      "normalizedName": "electivas 3º nivel",
+      "yearLevel": 3,
+      "term": "anual",
+      "credits": null,
+      "elective": true,
+      "displayOrder": 24,
+      "verified": false,
+      "prerequisites": []
+    },
+    {
+      "id": "legislacion-25",
+      "code": "24",
+      "name": "Legislación",
+      "normalizedName": "legislacion",
+      "yearLevel": 4,
+      "term": "anual",
+      "credits": null,
+      "elective": false,
+      "displayOrder": 25,
+      "verified": true,
+      "prerequisites": [
+        {
+          "subjectId": "ingenieria-y-sociedad-11",
+          "kind": "to_take"
+        },
+        {
+          "subjectId": "ingenieria-y-sociedad-11",
+          "kind": "to_pass"
+        }
+      ]
+    },
+    {
+      "id": "ingenieria-y-calidad-de-software-26",
+      "code": "25",
+      "name": "Ingeniería y Calidad de Software",
+      "normalizedName": "ingenieria y calidad de software",
+      "yearLevel": 4,
+      "term": "2c",
+      "credits": null,
+      "elective": false,
+      "displayOrder": 26,
+      "verified": true,
+      "prerequisites": [
+        {
+          "subjectId": "bases-de-datos-19",
+          "kind": "to_take"
+        },
+        {
+          "subjectId": "bases-de-datos-19",
+          "kind": "to_pass"
+        },
+        {
+          "subjectId": "desarrollo-de-software-20",
+          "kind": "to_take"
+        },
+        {
+          "subjectId": "desarrollo-de-software-20",
+          "kind": "to_pass"
+        },
+        {
+          "subjectId": "diseno-de-sistemas-de-informacion-23",
+          "kind": "to_take"
+        },
+        {
+          "subjectId": "diseno-de-sistemas-de-informacion-23",
+          "kind": "to_pass"
+        },
+        {
+          "subjectId": "sintaxis-y-semantica-de-los-lenguajes-13",
+          "kind": "to_take"
+        },
+        {
+          "subjectId": "sintaxis-y-semantica-de-los-lenguajes-13",
+          "kind": "to_pass"
+        },
+        {
+          "subjectId": "paradigmas-de-programacion-14",
+          "kind": "to_take"
+        },
+        {
+          "subjectId": "paradigmas-de-programacion-14",
+          "kind": "to_pass"
+        }
+      ]
+    },
+    {
+      "id": "redes-de-datos-27",
+      "code": "26",
+      "name": "Redes de Datos",
+      "normalizedName": "redes de datos",
+      "yearLevel": 4,
+      "term": "anual",
+      "credits": null,
+      "elective": false,
+      "displayOrder": 27,
+      "verified": true,
+      "prerequisites": [
+        {
+          "subjectId": "sistemas-operativos-15",
+          "kind": "to_take"
+        },
+        {
+          "subjectId": "sistemas-operativos-15",
+          "kind": "to_pass"
+        },
+        {
+          "subjectId": "comunicacion-de-datos-21",
+          "kind": "to_take"
+        },
+        {
+          "subjectId": "comunicacion-de-datos-21",
+          "kind": "to_pass"
+        }
+      ]
+    },
+    {
+      "id": "investigacion-operativa-28",
+      "code": "27",
+      "name": "Investigación Operativa",
+      "normalizedName": "investigacion operativa",
+      "yearLevel": 4,
+      "term": "anual",
+      "credits": null,
+      "elective": false,
+      "displayOrder": 28,
+      "verified": true,
+      "prerequisites": [
+        {
+          "subjectId": "probabilidad-y-estadistica-17",
+          "kind": "to_take"
+        },
+        {
+          "subjectId": "probabilidad-y-estadistica-17",
+          "kind": "to_pass"
+        },
+        {
+          "subjectId": "analisis-numerico-22",
+          "kind": "to_take"
+        },
+        {
+          "subjectId": "analisis-numerico-22",
+          "kind": "to_pass"
+        }
+      ]
+    },
+    {
+      "id": "simulacion-29",
+      "code": "28",
+      "name": "Simulación",
+      "normalizedName": "simulacion",
+      "yearLevel": 4,
+      "term": "anual",
+      "credits": null,
+      "elective": false,
+      "displayOrder": 29,
+      "verified": true,
+      "prerequisites": [
+        {
+          "subjectId": "probabilidad-y-estadistica-17",
+          "kind": "to_take"
+        },
+        {
+          "subjectId": "probabilidad-y-estadistica-17",
+          "kind": "to_pass"
+        },
+        {
+          "subjectId": "analisis-matematico-ii-9",
+          "kind": "to_take"
+        },
+        {
+          "subjectId": "analisis-matematico-ii-9",
+          "kind": "to_pass"
+        }
+      ]
+    },
+    {
+      "id": "tecnologias-para-la-automatizacion-30",
+      "code": "29",
+      "name": "Tecnologías para la automatización",
+      "normalizedName": "tecnologias para la automatizacion",
+      "yearLevel": 4,
+      "term": "1c",
+      "credits": null,
+      "elective": false,
+      "displayOrder": 30,
+      "verified": true,
+      "prerequisites": [
+        {
+          "subjectId": "fisica-ii-10",
+          "kind": "to_take"
+        },
+        {
+          "subjectId": "fisica-ii-10",
+          "kind": "to_pass"
+        },
+        {
+          "subjectId": "analisis-numerico-22",
+          "kind": "to_take"
+        },
+        {
+          "subjectId": "analisis-numerico-22",
+          "kind": "to_pass"
+        },
+        {
+          "subjectId": "analisis-matematico-ii-9",
+          "kind": "to_take"
+        },
+        {
+          "subjectId": "analisis-matematico-ii-9",
+          "kind": "to_pass"
+        }
+      ]
+    },
+    {
+      "id": "administracion-de-sistemas-de-informacion-31",
+      "code": "30",
+      "name": "Administración de Sistemas de Información",
+      "normalizedName": "administracion de sistemas de informacion",
+      "yearLevel": 4,
+      "term": "anual",
+      "credits": null,
+      "elective": false,
+      "displayOrder": 31,
+      "verified": true,
+      "prerequisites": [
+        {
+          "subjectId": "economia-18",
+          "kind": "to_take"
+        },
+        {
+          "subjectId": "economia-18",
+          "kind": "to_pass"
+        },
+        {
+          "subjectId": "diseno-de-sistemas-de-informacion-23",
+          "kind": "to_take"
+        },
+        {
+          "subjectId": "diseno-de-sistemas-de-informacion-23",
+          "kind": "to_pass"
+        },
+        {
+          "subjectId": "analisis-de-sistemas-de-informacion-16",
+          "kind": "to_take"
+        },
+        {
+          "subjectId": "analisis-de-sistemas-de-informacion-16",
+          "kind": "to_pass"
+        }
+      ]
+    },
+    {
+      "id": "electivas-4-nivel-32",
+      "code": null,
+      "name": "Electivas 4º nivel",
+      "normalizedName": "electivas 4º nivel",
+      "yearLevel": 4,
+      "term": "anual",
+      "credits": null,
+      "elective": true,
+      "displayOrder": 32,
+      "verified": false,
+      "prerequisites": []
+    },
+    {
+      "id": "inteligencia-artificial-33",
+      "code": "31",
+      "name": "Inteligencia Artificial",
+      "normalizedName": "inteligencia artificial",
+      "yearLevel": 5,
+      "term": "anual",
+      "credits": null,
+      "elective": false,
+      "displayOrder": 33,
+      "verified": true,
+      "prerequisites": [
+        {
+          "subjectId": "simulacion-29",
+          "kind": "to_take"
+        },
+        {
+          "subjectId": "simulacion-29",
+          "kind": "to_pass"
+        },
+        {
+          "subjectId": "probabilidad-y-estadistica-17",
+          "kind": "to_take"
+        },
+        {
+          "subjectId": "probabilidad-y-estadistica-17",
+          "kind": "to_pass"
+        },
+        {
+          "subjectId": "analisis-numerico-22",
+          "kind": "to_take"
+        },
+        {
+          "subjectId": "analisis-numerico-22",
+          "kind": "to_pass"
+        }
+      ]
+    },
+    {
+      "id": "ciencia-de-datos-34",
+      "code": "32",
+      "name": "Ciencia de Datos",
+      "normalizedName": "ciencia de datos",
+      "yearLevel": 5,
+      "term": "1c",
+      "credits": null,
+      "elective": false,
+      "displayOrder": 34,
+      "verified": true,
+      "prerequisites": [
+        {
+          "subjectId": "simulacion-29",
+          "kind": "to_take"
+        },
+        {
+          "subjectId": "simulacion-29",
+          "kind": "to_pass"
+        },
+        {
+          "subjectId": "probabilidad-y-estadistica-17",
+          "kind": "to_take"
+        },
+        {
+          "subjectId": "probabilidad-y-estadistica-17",
+          "kind": "to_pass"
+        },
+        {
+          "subjectId": "bases-de-datos-19",
+          "kind": "to_take"
+        },
+        {
+          "subjectId": "bases-de-datos-19",
+          "kind": "to_pass"
+        }
+      ]
+    },
+    {
+      "id": "sistemas-de-gestion-35",
+      "code": "33",
+      "name": "Sistemas de Gestión",
+      "normalizedName": "sistemas de gestion",
+      "yearLevel": 5,
+      "term": "anual",
+      "credits": null,
+      "elective": false,
+      "displayOrder": 35,
+      "verified": true,
+      "prerequisites": [
+        {
+          "subjectId": "economia-18",
+          "kind": "to_take"
+        },
+        {
+          "subjectId": "economia-18",
+          "kind": "to_pass"
+        },
+        {
+          "subjectId": "investigacion-operativa-28",
+          "kind": "to_take"
+        },
+        {
+          "subjectId": "investigacion-operativa-28",
+          "kind": "to_pass"
+        },
+        {
+          "subjectId": "diseno-de-sistemas-de-informacion-23",
+          "kind": "to_take"
+        },
+        {
+          "subjectId": "diseno-de-sistemas-de-informacion-23",
+          "kind": "to_pass"
+        }
+      ]
+    },
+    {
+      "id": "gestion-gerencial-36",
+      "code": "34",
+      "name": "Gestión Gerencial",
+      "normalizedName": "gestion gerencial",
+      "yearLevel": 5,
+      "term": "1c",
+      "credits": null,
+      "elective": false,
+      "displayOrder": 36,
+      "verified": true,
+      "prerequisites": [
+        {
+          "subjectId": "legislacion-25",
+          "kind": "to_take"
+        },
+        {
+          "subjectId": "legislacion-25",
+          "kind": "to_pass"
+        },
+        {
+          "subjectId": "administracion-de-sistemas-de-informacion-31",
+          "kind": "to_take"
+        },
+        {
+          "subjectId": "administracion-de-sistemas-de-informacion-31",
+          "kind": "to_pass"
+        },
+        {
+          "subjectId": "economia-18",
+          "kind": "to_take"
+        },
+        {
+          "subjectId": "economia-18",
+          "kind": "to_pass"
+        }
+      ]
+    },
+    {
+      "id": "seguridad-en-los-sistemas-de-informacion-37",
+      "code": "35",
+      "name": "Seguridad en los Sistemas de Información",
+      "normalizedName": "seguridad en los sistemas de informacion",
+      "yearLevel": 5,
+      "term": "2c",
+      "credits": null,
+      "elective": false,
+      "displayOrder": 37,
+      "verified": true,
+      "prerequisites": [
+        {
+          "subjectId": "redes-de-datos-27",
+          "kind": "to_take"
+        },
+        {
+          "subjectId": "redes-de-datos-27",
+          "kind": "to_pass"
+        },
+        {
+          "subjectId": "administracion-de-sistemas-de-informacion-31",
+          "kind": "to_take"
+        },
+        {
+          "subjectId": "administracion-de-sistemas-de-informacion-31",
+          "kind": "to_pass"
+        },
+        {
+          "subjectId": "desarrollo-de-software-20",
+          "kind": "to_take"
+        },
+        {
+          "subjectId": "desarrollo-de-software-20",
+          "kind": "to_pass"
+        },
+        {
+          "subjectId": "comunicacion-de-datos-21",
+          "kind": "to_take"
+        },
+        {
+          "subjectId": "comunicacion-de-datos-21",
+          "kind": "to_pass"
+        }
+      ]
+    },
+    {
+      "id": "proyecto-final-38",
+      "code": "36",
+      "name": "Proyecto Final",
+      "normalizedName": "proyecto final",
+      "yearLevel": 5,
+      "term": "anual",
+      "credits": null,
+      "elective": false,
+      "displayOrder": 38,
+      "verified": true,
+      "prerequisites": [
+        {
+          "subjectId": "ingenieria-y-calidad-de-software-26",
+          "kind": "to_take"
+        },
+        {
+          "subjectId": "redes-de-datos-27",
+          "kind": "to_take"
+        },
+        {
+          "subjectId": "administracion-de-sistemas-de-informacion-31",
+          "kind": "to_take"
+        },
+        {
+          "subjectId": "ingles-ii-12",
+          "kind": "to_take"
+        },
+        {
+          "subjectId": "desarrollo-de-software-20",
+          "kind": "to_take"
+        },
+        {
+          "subjectId": "diseno-de-sistemas-de-informacion-23",
+          "kind": "to_take"
+        },
+        {
+          "subjectId": "analisis-matematico-i-1",
+          "kind": "to_pass"
+        },
+        {
+          "subjectId": "algebra-y-geometria-analitica-2",
+          "kind": "to_pass"
+        },
+        {
+          "subjectId": "fisica-i-3",
+          "kind": "to_pass"
+        },
+        {
+          "subjectId": "ingles-i-4",
+          "kind": "to_pass"
+        },
+        {
+          "subjectId": "logica-y-estructuras-discretas-5",
+          "kind": "to_pass"
+        },
+        {
+          "subjectId": "algoritmos-y-estructuras-de-datos-6",
+          "kind": "to_pass"
+        },
+        {
+          "subjectId": "arquitectura-de-computadoras-7",
+          "kind": "to_pass"
+        },
+        {
+          "subjectId": "sistemas-y-procesos-de-negocio-8",
+          "kind": "to_pass"
+        },
+        {
+          "subjectId": "analisis-matematico-ii-9",
+          "kind": "to_pass"
+        },
+        {
+          "subjectId": "fisica-ii-10",
+          "kind": "to_pass"
+        },
+        {
+          "subjectId": "ingenieria-y-sociedad-11",
+          "kind": "to_pass"
+        },
+        {
+          "subjectId": "ingles-ii-12",
+          "kind": "to_pass"
+        },
+        {
+          "subjectId": "sintaxis-y-semantica-de-los-lenguajes-13",
+          "kind": "to_pass"
+        },
+        {
+          "subjectId": "paradigmas-de-programacion-14",
+          "kind": "to_pass"
+        },
+        {
+          "subjectId": "sistemas-operativos-15",
+          "kind": "to_pass"
+        },
+        {
+          "subjectId": "analisis-de-sistemas-de-informacion-16",
+          "kind": "to_pass"
+        },
+        {
+          "subjectId": "probabilidad-y-estadistica-17",
+          "kind": "to_pass"
+        },
+        {
+          "subjectId": "economia-18",
+          "kind": "to_pass"
+        },
+        {
+          "subjectId": "bases-de-datos-19",
+          "kind": "to_pass"
+        },
+        {
+          "subjectId": "desarrollo-de-software-20",
+          "kind": "to_pass"
+        },
+        {
+          "subjectId": "comunicacion-de-datos-21",
+          "kind": "to_pass"
+        },
+        {
+          "subjectId": "analisis-numerico-22",
+          "kind": "to_pass"
+        },
+        {
+          "subjectId": "diseno-de-sistemas-de-informacion-23",
+          "kind": "to_pass"
+        },
+        {
+          "subjectId": "legislacion-25",
+          "kind": "to_pass"
+        },
+        {
+          "subjectId": "ingenieria-y-calidad-de-software-26",
+          "kind": "to_pass"
+        },
+        {
+          "subjectId": "redes-de-datos-27",
+          "kind": "to_pass"
+        },
+        {
+          "subjectId": "investigacion-operativa-28",
+          "kind": "to_pass"
+        },
+        {
+          "subjectId": "simulacion-29",
+          "kind": "to_pass"
+        },
+        {
+          "subjectId": "tecnologias-para-la-automatizacion-30",
+          "kind": "to_pass"
+        },
+        {
+          "subjectId": "administracion-de-sistemas-de-informacion-31",
+          "kind": "to_pass"
+        },
+        {
+          "subjectId": "inteligencia-artificial-33",
+          "kind": "to_pass"
+        },
+        {
+          "subjectId": "ciencia-de-datos-34",
+          "kind": "to_pass"
+        },
+        {
+          "subjectId": "sistemas-de-gestion-35",
+          "kind": "to_pass"
+        },
+        {
+          "subjectId": "gestion-gerencial-36",
+          "kind": "to_pass"
+        },
+        {
+          "subjectId": "seguridad-en-los-sistemas-de-informacion-37",
+          "kind": "to_pass"
+        },
+        {
+          "subjectId": "electivas-3-nivel-24",
+          "kind": "to_pass"
+        },
+        {
+          "subjectId": "electivas-4-nivel-32",
+          "kind": "to_pass"
+        },
+        {
+          "subjectId": "electivas-5-nivel-39",
+          "kind": "to_pass"
+        }
+      ]
+    },
+    {
+      "id": "electivas-5-nivel-39",
+      "code": null,
+      "name": "Electivas 5º nivel",
+      "normalizedName": "electivas 5º nivel",
+      "yearLevel": 5,
+      "term": "anual",
+      "credits": null,
+      "elective": true,
+      "displayOrder": 39,
+      "verified": false,
+      "prerequisites": []
+    },
+    {
+      "id": "practica-profesional-supervisada-40",
+      "code": null,
+      "name": "Práctica Profesional Supervisada",
+      "normalizedName": "practica profesional supervisada",
+      "yearLevel": 5,
+      "term": "anual",
+      "credits": null,
+      "elective": false,
+      "displayOrder": 40,
+      "verified": false,
+      "prerequisites": [
+        {
+          "subjectId": "ingenieria-y-calidad-de-software-26",
+          "kind": "to_take"
+        },
+        {
+          "subjectId": "redes-de-datos-27",
+          "kind": "to_take"
+        },
+        {
+          "subjectId": "administracion-de-sistemas-de-informacion-31",
+          "kind": "to_take"
+        },
+        {
+          "subjectId": "ingles-ii-12",
+          "kind": "to_take"
+        },
+        {
+          "subjectId": "desarrollo-de-software-20",
+          "kind": "to_take"
+        },
+        {
+          "subjectId": "diseno-de-sistemas-de-informacion-23",
+          "kind": "to_take"
+        }
+      ]
+    }
+  ]
+}

@@ -28,7 +28,8 @@
     "tester": "node scripts/tester.mjs",
     "verify:frontend": "node scripts/verify-frontend.mjs",
     "verify:frontend:xvfb": "xvfb-run -n 99 -s \"-screen 0 1600x1200x24 -nolisten tcp\" env CAMPUS_HEADED=1 node scripts/verify-frontend.mjs",
-    "dev:tailnet": "node scripts/dev-tailnet.mjs"
+    "dev:tailnet": "node scripts/dev-tailnet.mjs",
+    "catalog:generate": "node scripts/generate-catalog.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.58.0",

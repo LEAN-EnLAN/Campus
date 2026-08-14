@@ -4,6 +4,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 
 import { AuthProvider } from '@/features/auth/auth-context'
+import { BackendProvider } from '@/lib/backends/context'
 import '@/styles/globals.css'
 
 import { routeTree } from '../routeTree.gen'
@@ -37,7 +38,9 @@ createRoot(rootElement).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <RouterProvider router={router} />
+        <BackendProvider>
+          <RouterProvider router={router} />
+        </BackendProvider>
       </AuthProvider>
     </QueryClientProvider>
   </StrictMode>,

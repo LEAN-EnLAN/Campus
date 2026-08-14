@@ -3,174 +3,73 @@ import { useMemo } from 'react'
 
 import { computeSubjectViews, groupByYear } from '@/domain/availability'
 import { computeProgress } from '@/domain/progress'
-import type {
-  AcademicContext,
-  Curriculum,
-  CurriculumSubject,
-  PrerequisiteEdge,
-  StoredSubjectStatus,
-  SubjectView,
-  UserSubjectState,
-} from '@/domain/types'
-import {
-  toAcademicContext,
-  toAcademicUnit,
-  toCurriculum,
-  toCurriculumSubject,
-  toInstitution,
-  toPrerequisiteEdge,
-  toProgram,
-  toUserSubjectState,
-  type AcademicContextRow,
-  type AcademicUnitRow,
-  type CurriculumRow,
-  type CurriculumSubjectRow,
-  type InstitutionRow,
-  type PrerequisiteRow,
-  type ProgramRow,
-  type UserSubjectStateRow,
-} from '@/lib/db/mappers'
+import type { AcademicContext, Curriculum, SubjectView, UserSubjectState } from '@/domain/types'
+import { useBackend } from '@/lib/backends/context'
+import type { SaveContextInput, SetSubjectStatusInput } from '@/lib/backends/types'
 import { queryKeys } from '@/lib/query-keys'
-import { supabase } from '@/lib/supabase'
+
+export type { SaveContextInput, SetSubjectStatusInput }
 
 /** Academic reference data does not change during a session. */
 const REFERENCE = { staleTime: Number.POSITIVE_INFINITY, gcTime: Number.POSITIVE_INFINITY }
 
-function fail(context: string, message: string): never {
-  throw new Error(`${context}: ${message}`)
-}
-
 // --- Onboarding cascade ------------------------------------------------------
 
 export function useInstitutions() {
+  const backend = useBackend()
   return useQuery({
     queryKey: queryKeys.institutions,
     ...REFERENCE,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('institutions')
-        .select('id, slug, name, short_name, country')
-        .order('name')
-      if (error) fail('No pudimos cargar las universidades', error.message)
-      return (data as InstitutionRow[]).map(toInstitution)
-    },
+    queryFn: () => backend.catalog.institutions(),
   })
 }
 
 export function useAcademicUnits(institutionId: string | null) {
+  const backend = useBackend()
   return useQuery({
     queryKey: queryKeys.academicUnits(institutionId),
     enabled: institutionId !== null,
     ...REFERENCE,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('academic_units')
-        .select('id, institution_id, parent_id, kind, name, slug')
-        .eq('institution_id', institutionId as string)
-        .order('name')
-      if (error) fail('No pudimos cargar las facultades', error.message)
-      return (data as AcademicUnitRow[]).map(toAcademicUnit)
-    },
+    queryFn: () => backend.catalog.academicUnits(institutionId as string),
   })
 }
 
 export function usePrograms(academicUnitId: string | null) {
+  const backend = useBackend()
   return useQuery({
     queryKey: queryKeys.programs(academicUnitId),
     enabled: academicUnitId !== null,
     ...REFERENCE,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('programs')
-        .select('id, academic_unit_id, name, degree_type, duration_hint')
-        .eq('academic_unit_id', academicUnitId as string)
-        .order('name')
-      if (error) fail('No pudimos cargar las carreras', error.message)
-      return (data as ProgramRow[]).map(toProgram)
-    },
+    queryFn: () => backend.catalog.programs(academicUnitId as string),
   })
 }
 
 export function useCurricula(programId: string | null) {
+  const backend = useBackend()
   return useQuery({
     queryKey: queryKeys.curricula(programId),
     enabled: programId !== null,
     ...REFERENCE,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('curricula')
-        .select('id, program_id, name, version, source_url, source_kind, source_fetched_at')
-        .eq('program_id', programId as string)
-        .order('version', { ascending: false })
-      if (error) fail('No pudimos cargar los planes', error.message)
-      return (data as CurriculumRow[]).map(toCurriculum)
-    },
+    queryFn: () => backend.catalog.curricula(programId as string),
   })
 }
 
 // --- The student's own context ----------------------------------------------
 
 export function useAcademicContext() {
+  const backend = useBackend()
   return useQuery({
     queryKey: queryKeys.academicContext,
-    queryFn: async (): Promise<AcademicContext | null> => {
-      const { data, error } = await supabase
-        .from('user_academic_contexts')
-        .select(
-          'id, institution_id, academic_unit_id, program_id, curriculum_id, unmapped_label, is_active',
-        )
-        .eq('is_active', true)
-        .maybeSingle()
-      if (error) fail('No pudimos cargar tu contexto académico', error.message)
-      return data ? toAcademicContext(data as AcademicContextRow) : null
-    },
+    queryFn: () => backend.academic.context(),
   })
-}
-
-export interface SaveContextInput {
-  institutionId: string | null
-  academicUnitId: string | null
-  programId: string | null
-  curriculumId: string | null
-  unmappedLabel: string | null
 }
 
 export function useSaveAcademicContext() {
   const queryClient = useQueryClient()
+  const backend = useBackend()
 
   return useMutation({
-    mutationFn: async (input: SaveContextInput) => {
-      const { data: userData } = await supabase.auth.getUser()
-      const userId = userData.user?.id
-      if (!userId) fail('Sesión', 'no hay una sesión activa')
-
-      // One active context per user is a unique index; deactivate before inserting.
-      const { error: deactivateError } = await supabase
-        .from('user_academic_contexts')
-        .update({ is_active: false })
-        .eq('user_id', userId)
-        .eq('is_active', true)
-      if (deactivateError) fail('No pudimos guardar tu carrera', deactivateError.message)
-
-      const { data, error } = await supabase
-        .from('user_academic_contexts')
-        .insert({
-          user_id: userId,
-          institution_id: input.institutionId,
-          academic_unit_id: input.academicUnitId,
-          program_id: input.programId,
-          curriculum_id: input.curriculumId,
-          unmapped_label: input.unmappedLabel,
-          is_active: true,
-        })
-        .select(
-          'id, institution_id, academic_unit_id, program_id, curriculum_id, unmapped_label, is_active',
-        )
-        .single()
-      if (error) fail('No pudimos guardar tu carrera', error.message)
-
-      return toAcademicContext(data as AcademicContextRow)
-    },
+    mutationFn: (input: SaveContextInput) => backend.academic.saveContext(input),
     onSuccess: (context) => {
       // Write the result straight into the cache. Invalidating alone leaves the
       // previous value (null) readable during the refetch, and anything routing on
@@ -184,138 +83,30 @@ export function useSaveAcademicContext() {
 
 // --- Curriculum + student state → resolved plan ------------------------------
 
-interface CurriculumBundle {
-  curriculum: Curriculum | null
-  /** The carrera this plan belongs to — what the student calls their degree. */
-  programName: string | null
-  subjects: CurriculumSubject[]
-  prerequisites: PrerequisiteEdge[]
-}
-
 export function useCurriculumBundle(curriculumId: string | null) {
+  const backend = useBackend()
   return useQuery({
     queryKey: queryKeys.curriculum(curriculumId),
     enabled: curriculumId !== null,
     ...REFERENCE,
-    queryFn: async (): Promise<CurriculumBundle> => {
-      const id = curriculumId as string
-
-      const [curriculumResult, subjectsResult] = await Promise.all([
-        supabase
-          .from('curricula')
-          .select(
-            'id, program_id, name, version, source_url, source_kind, source_fetched_at, programs (name)',
-          )
-          .eq('id', id)
-          .single(),
-        supabase
-          .from('curriculum_subjects')
-          .select(
-            'id, curriculum_id, subject_id, year_level, term, credits, elective, display_order, subjects (code, name, normalized_name)',
-          )
-          .eq('curriculum_id', id)
-          .order('year_level')
-          .order('display_order'),
-      ])
-
-      if (curriculumResult.error)
-        fail('No pudimos cargar el plan', curriculumResult.error.message)
-      if (subjectsResult.error)
-        fail('No pudimos cargar las materias', subjectsResult.error.message)
-
-      const subjects = (subjectsResult.data as unknown as CurriculumSubjectRow[]).map(
-        toCurriculumSubject,
-      )
-
-      // Edges are scoped to this curriculum's subjects, so a plan version can never
-      // pull correlativas from another version.
-      const ids = subjects.map((s) => s.id)
-      let prerequisites: PrerequisiteEdge[] = []
-      if (ids.length > 0) {
-        const { data, error } = await supabase
-          .from('prerequisites')
-          .select('curriculum_subject_id, required_curriculum_subject_id, kind')
-          .in('curriculum_subject_id', ids)
-        if (error) fail('No pudimos cargar las correlativas', error.message)
-        prerequisites = (data as PrerequisiteRow[]).map(toPrerequisiteEdge)
-      }
-
-      // PostgREST embeds can arrive as an object or a single-element array
-      // depending on how the relationship is inferred; accept both.
-      const curriculumRow = curriculumResult.data as unknown as CurriculumRow & {
-        programs: { name: string } | { name: string }[] | null
-      }
-      const embedded = curriculumRow.programs
-      const programName = Array.isArray(embedded)
-        ? (embedded[0]?.name ?? null)
-        : (embedded?.name ?? null)
-
-      return {
-        curriculum: toCurriculum(curriculumRow),
-        programName,
-        subjects,
-        prerequisites,
-      }
-    },
+    queryFn: () => backend.catalog.curriculumBundle(curriculumId as string),
   })
 }
 
 export function useSubjectStates() {
+  const backend = useBackend()
   return useQuery({
     queryKey: queryKeys.subjectStates,
-    queryFn: async (): Promise<UserSubjectState[]> => {
-      const { data, error } = await supabase
-        .from('user_subject_states')
-        .select('curriculum_subject_id, status, grade, started_at, completed_at, notes')
-      if (error) fail('No pudimos cargar tu progreso', error.message)
-      return (data as UserSubjectStateRow[]).map(toUserSubjectState)
-    },
+    queryFn: (): Promise<UserSubjectState[]> => backend.academic.subjectStates(),
   })
-}
-
-export interface SetSubjectStatusInput {
-  curriculumSubjectId: string
-  /** `null` clears the stored status, returning the subject to derived state. */
-  status: StoredSubjectStatus | null
-  grade?: number | null
 }
 
 export function useSetSubjectStatus() {
   const queryClient = useQueryClient()
+  const backend = useBackend()
 
   return useMutation({
-    mutationFn: async ({ curriculumSubjectId, status, grade }: SetSubjectStatusInput) => {
-      const { data: userData } = await supabase.auth.getUser()
-      const userId = userData.user?.id
-      if (!userId) fail('Sesión', 'no hay una sesión activa')
-
-      if (status === null) {
-        const { error } = await supabase
-          .from('user_subject_states')
-          .delete()
-          .eq('user_id', userId)
-          .eq('curriculum_subject_id', curriculumSubjectId)
-        if (error) fail('No pudimos actualizar la materia', error.message)
-        return
-      }
-
-      const completedAt =
-        status === 'passed' || status === 'equivalent'
-          ? new Date().toISOString().slice(0, 10)
-          : null
-
-      const { error } = await supabase.from('user_subject_states').upsert(
-        {
-          user_id: userId,
-          curriculum_subject_id: curriculumSubjectId,
-          status,
-          grade: grade ?? null,
-          completed_at: completedAt,
-        },
-        { onConflict: 'user_id,curriculum_subject_id' },
-      )
-      if (error) fail('No pudimos actualizar la materia', error.message)
-    },
+    mutationFn: (input: SetSubjectStatusInput) => backend.academic.setSubjectStatus(input),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.subjectStates })
     },
@@ -332,8 +123,8 @@ export interface AcademicPlan {
    * How many correlativa edges this plan actually declares.
    *
    * Zero is meaningful, not empty: UNR FCEIA publishes the plan but not the
-   * correlatividades, so screens must say "no las tenemos" rather than let silence
-   * read as "nada te bloquea".
+   * correlatividades, so screens must say "no las tenemos" rather than let
+   * silence read as "nada te bloquea".
    */
   prerequisiteCount: number
   views: SubjectView[]
@@ -349,7 +140,7 @@ export interface AcademicPlan {
   contextSettled: boolean
   /**
    * The context fetch itself failed. Distinct from `!hasContext`: a network error
-   * must never be read as 'this student has no carrera'.
+   * must never be read as "this student has no carrera".
    */
   contextError: Error | null
 }
@@ -358,8 +149,8 @@ export interface AcademicPlan {
  * Resolve the student's plan.
  *
  * The derivation itself lives in `src/domain` — this hook only fetches and hands
- * the pieces over. That is CAP-PLAN-002: availability is never recomputed inside a
- * component.
+ * the pieces over. That is CAP-PLAN-002: availability is never recomputed inside
+ * a component, and it does not care which backend produced the data.
  */
 export function useAcademicPlan(): AcademicPlan {
   const contextQuery = useAcademicContext()

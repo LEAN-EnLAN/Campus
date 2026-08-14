@@ -68,33 +68,48 @@ pnpm db:start && pnpm tester seed
 pnpm dev:tailnet
 ```
 
-Imprime las URLs y arranca Vite bindeado **a la IP de Tailscale**, no a `0.0.0.0`: sólo
-tu tailnet lo alcanza, la LAN no.
-
 ```
-app        http://100.102.107.60:5173
-           http://casa.tail61165e.ts.net:5173
-tester     http://100.102.107.60:5173/dev
+app      https://casa.tail61165e.ts.net:5173
+app      https://100.102.107.60:5173
+tester   https://casa.tail61165e.ts.net:5173/dev
 ```
 
-**Por qué hace falta un script y no alcanza `vite --host`:** `VITE_SUPABASE_URL` se
-hornea en el cliente. Si servís la app en el tailnet con la URL apuntando a
-`127.0.0.1:54321`, el celular le pide la base **a sí mismo** y todas las pantallas
-fallan. El script reescribe la URL de Supabase a la misma dirección de tailnet desde la
-que se sirve la app, sin tocar tu `.env`.
+La primera vez el browser te avisa que el certificado es autofirmado. Aceptás una vez por
+dispositivo y listo.
 
-Verificado bloqueando en el browser toda request a loopback: 0 requests a
-`127.0.0.1`, 0 errores de consola, 40 materias traídas de Postgres.
+### Por qué HTTPS y no HTTP
 
-**Esto es sólo tailnet.** No usa `tailscale funnel`, que publicaría el dev server en la
-internet pública. Si querés HTTPS con el nombre de MagicDNS, `tailscale serve` lo hace,
-pero acordate de exponer Supabase por HTTPS también o el browser bloquea el contenido
-mixto.
+Un dev server en HTTP plano **se ve caído** desde cualquier browser que tenga HTTPS-First
+activado: Chrome sube `http://host:5173` a `https://`, el dev server no habla TLS, y te
+devuelve `ERR_SSL_PROTOCOL_ERROR` en todas las URLs — aunque el servidor esté contestando
+200 perfecto. Por eso el dev server sirve TLS con un cert autofirmado que cubre la IP de
+tailnet y el nombre de MagicDNS.
 
-**Una cosa a tener en cuenta:** el Kong de Supabase bindea `0.0.0.0:54321` por default
-del CLI — eso no lo puse yo, pero significa que la API de la base es alcanzable desde tu
-LAN, no sólo desde el tailnet. Con RLS puesta y sólo datos de prueba adentro el riesgo es
-bajo, pero conviene saberlo.
+Para un cert de verdad, sin aviso, hace falta root **una sola vez**:
+
+```bash
+sudo tailscale set --operator=$USER            # y después no necesitás sudo nunca más
+tailscale serve --bg --https=8443 https://127.0.0.1:5173
+```
+
+Ojo: ya tenés un `serve` en `/` → `127.0.0.1:7001`, así que usá un puerto aparte como
+8443 y no `tailscale serve reset`, que te lo borraría.
+
+### Supabase va por el mismo origen
+
+`VITE_SUPABASE_URL` se hornea en el cliente. Servir la app en el tailnet apuntando a
+`127.0.0.1:54321` hace que el celular le pida la base **a sí mismo** y falle todo. Acá
+Supabase se proxea por el mismo origen en `/supabase-api`, lo que resuelve tres cosas de
+una: sin contenido mixto, sin CORS, y **la API de la base no necesita estar expuesta a la
+red en absoluto** — el browser sólo le habla a Vite.
+
+Verificado end to end sobre `https://casa.tail61165e.ts.net:5173` con toda request a
+loopback abortada en el browser: 33 materias de UNR traídas de Postgres, aviso de
+correlativas faltantes visible, 0 requests a `127.0.0.1`, 0 contenido mixto, 0 respuestas
+4xx, 0 errores de consola.
+
+**Sólo tailnet.** No usa `tailscale funnel`, que publicaría el dev server en la internet
+pública.
 
 ## Barrido automático de todo el frontend
 

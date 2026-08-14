@@ -1,21 +1,39 @@
 #!/usr/bin/env node
 /**
- * `pnpm dev:tailnet` — dev server reachable from your other Tailscale devices.
+ * `pnpm dev:tailnet` — dev server reachable over HTTPS from your Tailscale devices.
  *
- * The problem this solves: `VITE_SUPABASE_URL` is baked into the client at load
- * time. Serving the app on the tailnet while it still points at `127.0.0.1:54321`
- * means a phone asks *itself* for the database and every screen fails. So the
- * Supabase URL has to be rewritten to the same tailnet address the app is served
- * from.
+ * Three problems this solves, in order of how much time each one costs you:
  *
- * Binds to the Tailscale IP specifically, not `0.0.0.0`: only the tailnet reaches
- * it, not the whole LAN.
+ * 1. **HTTPS is not optional.** Browsers with HTTPS-First upgrade
+ *    `http://host:5173` to HTTPS and then fail the handshake against a plain-HTTP
+ *    dev server — `ERR_SSL_PROTOCOL_ERROR`, on every URL, which looks like the
+ *    server is down when it is answering 200 perfectly well. So the dev server
+ *    serves TLS with a self-signed cert covering both the tailnet IP and the
+ *    MagicDNS name. You accept the warning once per device.
  *
- * This is tailnet-only. It does NOT use `tailscale funnel`, which would publish
- * the dev server to the public internet.
+ *    `tailscale serve` would give a properly trusted cert with no warning, but it
+ *    needs root. The command is printed at the end if you want it.
+ *
+ * 2. **`VITE_SUPABASE_URL` is baked into the client.** Serving the app on the
+ *    tailnet while it points at `127.0.0.1:54321` makes a phone ask *itself* for
+ *    the database. Here Supabase is proxied through this same origin at
+ *    `/supabase-api`, so there is no second URL to get wrong, no mixed content,
+ *    no CORS — and the database API never has to be reachable from the network.
+ *
+ * 3. **HMR breaks behind TLS** unless it is told to use `wss`.
+ *
+ * Tailnet only. This never touches `tailscale funnel`, which would publish the
+ * dev server to the public internet.
  */
 import { execFileSync, spawn } from 'node:child_process'
+import { existsSync, mkdirSync, statSync } from 'node:fs'
+import { join } from 'node:path'
 import process from 'node:process'
+
+const CERT_DIR = '.certs'
+const CERT = join(CERT_DIR, 'tailnet-cert.pem')
+const KEY = join(CERT_DIR, 'tailnet-key.pem')
+const PORT = 5173
 
 function sh(command, args) {
   return execFileSync(command, args, {
@@ -24,72 +42,126 @@ function sh(command, args) {
   }).trim()
 }
 
-function tailnetIp() {
-  try {
-    // `tailscale ip -4` prints a version-skew warning to stderr on this box; the
-    // address is on stdout, so take the first line that looks like a CGNAT address.
-    const out = sh('tailscale', ['ip', '-4'])
-    const ip = out.split('\n').find((line) => /^100\.\d+\.\d+\.\d+$/.test(line.trim()))
-    if (!ip) throw new Error(`could not parse an address from:\n${out}`)
-    return ip.trim()
-  } catch (error) {
-    console.error(
-      '\n[dev:tailnet] Tailscale did not give me an address.\n' +
-        'Is it up? Try `tailscale status`.\n\n' +
-        (error instanceof Error ? error.message : String(error)),
-    )
-    process.exit(1)
-  }
+function fail(lines) {
+  console.error(`\n[dev:tailnet] ${lines.join('\n')}\n`)
+  process.exit(1)
 }
 
-function dnsName() {
+function tailnet() {
+  let ip = null
+  let dns = null
   try {
+    // `tailscale ip -4` also warns about version skew on stderr; the address is on
+    // stdout, so pick the line that looks like a CGNAT address.
+    ip =
+      sh('tailscale', ['ip', '-4'])
+        .split('\n')
+        .map((l) => l.trim())
+        .find((l) => /^100\.\d+\.\d+\.\d+$/.test(l)) ?? null
     const json = JSON.parse(sh('tailscale', ['status', '--json']))
-    return (json.Self?.DNSName ?? '').replace(/\.$/, '') || null
-  } catch {
-    return null
+    dns = (json.Self?.DNSName ?? '').replace(/\.$/, '') || null
+  } catch (error) {
+    fail(['Tailscale did not answer. Is it up? Try `tailscale status`.', String(error)])
   }
+  if (!ip) fail(['Tailscale is running but gave me no IPv4 address.'])
+  return { ip, dns }
 }
 
 function supabaseStatus() {
   try {
     return JSON.parse(sh('./node_modules/.bin/supabase', ['status', '-o', 'json']))
   } catch {
-    console.error(
-      '\n[dev:tailnet] The local Supabase stack is not running.\n' +
-        'Start it with `pnpm db:start` — without it the app has no database to talk to.\n',
-    )
-    process.exit(1)
+    fail([
+      'The local Supabase stack is not running.',
+      'Start it with `pnpm db:start` — without it the app has no database to talk to.',
+    ])
   }
 }
 
-const ip = tailnetIp()
-const dns = dnsName()
+/**
+ * A self-signed cert valid for the tailnet IP and the MagicDNS name.
+ *
+ * Regenerated when it is missing or older than 300 days. Not committed: it is a
+ * machine-local development credential.
+ */
+function ensureCert({ ip, dns }) {
+  const fresh =
+    existsSync(CERT) &&
+    existsSync(KEY) &&
+    (Date.now() - statSync(CERT).mtimeMs) / 86_400_000 < 300
+
+  if (fresh) return
+
+  mkdirSync(CERT_DIR, { recursive: true })
+  const names = [dns ? `DNS:${dns}` : null, 'DNS:localhost', `IP:${ip}`, 'IP:127.0.0.1'].filter(
+    Boolean,
+  )
+
+  try {
+    sh('openssl', [
+      'req',
+      '-x509',
+      '-newkey',
+      'rsa:2048',
+      '-sha256',
+      '-days',
+      '365',
+      '-nodes',
+      '-keyout',
+      KEY,
+      '-out',
+      CERT,
+      '-subj',
+      `/CN=${dns ?? ip}`,
+      '-addext',
+      `subjectAltName=${names.join(',')}`,
+    ])
+    console.log(`  cert generado para ${names.join(', ')}`)
+  } catch (error) {
+    fail(['Could not generate a TLS certificate with openssl.', String(error)])
+  }
+}
+
+const { ip, dns } = tailnet()
 const status = supabaseStatus()
+ensureCert({ ip, dns })
 
-const apiPort = new URL(status.API_URL).port || '54321'
-const supabaseUrl = `http://${ip}:${apiPort}`
+const host = dns ?? ip
+// Same origin as the app: supabase-js appends /auth/v1, /rest/v1 and friends to
+// this, and the Vite proxy strips the prefix before forwarding to Kong.
+const supabaseUrl = `https://${host}:${PORT}/supabase-api`
 
 console.log('')
-console.log('  Campus · dev server en el tailnet')
-console.log('  ─────────────────────────────────')
-console.log(`  app        http://${ip}:5173`)
-if (dns) console.log(`             http://${dns}:5173`)
-console.log(`  supabase   ${supabaseUrl}`)
-console.log(`  tester     http://${ip}:5173/dev`)
+console.log('  Campus · dev server en el tailnet (HTTPS)')
+console.log('  ─────────────────────────────────────────')
+if (dns) console.log(`  app        https://${dns}:${PORT}`)
+console.log(`  app        https://${ip}:${PORT}`)
+console.log(`  tester     https://${host}:${PORT}/dev`)
 console.log('')
-console.log('  Sólo alcanzable desde tu tailnet. No usa Funnel: nada público.')
+console.log(`  supabase   proxeado por el mismo origen → ${status.API_URL}`)
+console.log('')
+console.log('  El cert es autofirmado: la primera vez el browser te avisa.')
+console.log('  Aceptás una vez por dispositivo y listo.')
+console.log('')
+console.log('  Para un cert de verdad, sin avisos (necesita root, una sola vez):')
+console.log(`    sudo tailscale serve --bg --https=8443 https://127.0.0.1:${PORT}`)
+console.log('')
+console.log('  Sólo tailnet. No usa Funnel: nada público.')
 console.log('')
 
 const child = spawn(
   './node_modules/.bin/vite',
-  ['--host', ip, '--port', '5173', '--strictPort'],
+  ['--host', ip, '--port', String(PORT), '--strictPort'],
   {
     stdio: 'inherit',
     env: {
       ...process.env,
-      // Vite picks VITE_-prefixed vars up from the environment and they win over
-      // .env, so the committed local-only file stays untouched.
+      CAMPUS_TLS_CERT: CERT,
+      CAMPUS_TLS_KEY: KEY,
+      CAMPUS_SUPABASE_TARGET: status.API_URL,
+      CAMPUS_HMR_HOST: host,
+      // Vite reads VITE_-prefixed vars from the environment and they win over
+      // .env, so the local file stays untouched.
       VITE_SUPABASE_URL: supabaseUrl,
       VITE_SUPABASE_ANON_KEY: status.ANON_KEY,
       VITE_CAMPUS_TESTER: process.env.VITE_CAMPUS_TESTER ?? '1',
@@ -98,7 +170,4 @@ const child = spawn(
 )
 
 child.on('exit', (code, signal) => process.exit(signal ? 1 : (code ?? 0)))
-child.on('error', (error) => {
-  console.error(`[dev:tailnet] could not start vite: ${error.message}`)
-  process.exit(1)
-})
+child.on('error', (error) => fail([`could not start vite: ${error.message}`]))

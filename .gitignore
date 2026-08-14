@@ -9,3 +9,6 @@ coverage
 playwright-report
 test-results
 evidence/**/*.png
+evidence/**/*.png
+docs/research/evidence/*.png
+docs/research/screenshots/*.png

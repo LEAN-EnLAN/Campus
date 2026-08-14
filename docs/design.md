@@ -39,6 +39,7 @@ juvenile school aesthetic
 # 1. Inspiration map
 
 ## Craft
+
 - https://www.craft.do/
 - https://craft-support.mintlify.app/en/plan-and-do/calendar
 - https://www.craft.do/blog/introducing-tasks
@@ -46,18 +47,21 @@ juvenile school aesthetic
 Borrow: whitespace, document-first feeling, embedded tasks, calendar + daily notes, low chrome.
 
 ## Tana
+
 - https://outliner.tana.inc/daily-notes
 - https://tana.inc/
 
 Borrow: today as entry point, capture first, structured objects in an informal page, contextual right rail.
 
 ## Things
+
 - https://culturedcode.com/things/
 - https://culturedcode.com/things/features/
 
 Borrow: Today first, clear now/upcoming/later, minimal controls, micro-interactions, strong hierarchy.
 
 ## Anytype
+
 - https://anytype.io/
 - https://doc.anytype.io/anytype/create/objects
 - https://doc.anytype.io/anytype/features/graph
@@ -65,11 +69,13 @@ Borrow: Today first, clear now/upcoming/later, minimal controls, micro-interacti
 Borrow: object + relation mental model. Do not build graph view in POC.
 
 ## Supernotes
+
 - https://supernotes.app/
 
 Borrow: academic typography, compact note cards, metadata without clutter.
 
 ## Pattern libraries
+
 - https://mobbin.com/explore/web/screens/goal-task
 - https://mobbin.com/explore/mobile/flows/onboarding
 - https://pageflows.com/
@@ -98,9 +104,11 @@ Suggested tokens:
 # 3. Typography
 
 UI/utility:
+
 - Inter Variable or Instrument Sans
 
 Editorial:
+
 - Newsreader or Source Serif 4
 
 Use serif selectively for page title/date/important moments.
@@ -130,6 +138,7 @@ Shadows: subtle, prefer border + surface contrast.
 # 6. Navigation
 
 Desktop:
+
 - Today
 - Plan
 - Courses
@@ -139,6 +148,7 @@ Desktop:
 - Settings
 
 Mobile bottom nav:
+
 - Today
 - Plan
 - Calendar
@@ -199,6 +209,7 @@ Plan 2023
 ```
 
 State semantics:
+
 - ✓ passed
 - ● in progress
 - ○ available
@@ -210,6 +221,7 @@ Color is never the only carrier.
 # 10. Subject detail
 
 Show:
+
 - status
 - next deadlines
 - notes
@@ -226,6 +238,7 @@ Agenda/week first. Monthly grid secondary.
 Goal: 60–120 seconds max.
 
 Steps:
+
 1. Universidad
 2. Facultad/Regional
 3. Carrera
@@ -239,6 +252,7 @@ No avatar/bio/interests before value.
 No mascot. Direct academic language.
 
 Example:
+
 > No tenés nada para hoy. Buen momento para adelantar algo, o para no hacer nada.
 
 # 14. Motion

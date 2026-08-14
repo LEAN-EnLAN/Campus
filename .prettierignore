@@ -1,0 +1,9 @@
+dist
+node_modules
+pnpm-lock.yaml
+evidence
+supabase/.temp
+src/routeTree.gen.ts
+src/lib/db/database.types.ts
+docs/research/curricula
+supabase/seed.sql

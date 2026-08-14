@@ -1,0 +1,80 @@
+{
+  "candidate": "cand_c900a3be5f66",
+  "generatedAt": "2026-08-14T05:35:49.606Z",
+  "total": 10,
+  "passed": 9,
+  "failed": 1,
+  "consoleErrors": [],
+  "steps": [
+    {
+      "step": 1,
+      "name": "Crear cuenta",
+      "passed": true,
+      "detail": "journey-199167-1786685748035@campus.test",
+      "ms": 985
+    },
+    {
+      "step": 2,
+      "name": "Elegir universidad",
+      "passed": true,
+      "detail": "UTN",
+      "ms": 54
+    },
+    {
+      "step": 3,
+      "name": "Elegir facultad",
+      "passed": true,
+      "detail": "FRRo",
+      "ms": 25
+    },
+    {
+      "step": 4,
+      "name": "Elegir carrera",
+      "passed": true,
+      "detail": "Ingeniería en Sistemas de Información",
+      "ms": 25
+    },
+    {
+      "step": 5,
+      "name": "Elegir plan de estudios",
+      "passed": true,
+      "detail": "Plan 2023",
+      "ms": 25
+    },
+    {
+      "step": 6,
+      "name": "Confirmar y entrar a Hoy",
+      "passed": true,
+      "detail": "¿Qué tenés para hoy?",
+      "ms": 75
+    },
+    {
+      "step": 7,
+      "name": "Ver el plan real con materias oficiales",
+      "passed": true,
+      "detail": "40 materias, primera: Análisis Matemático I",
+      "ms": 66
+    },
+    {
+      "step": 8,
+      "name": "Ver una materia bloqueada por correlativas",
+      "passed": true,
+      "detail": "Análisis Matemático II — Bloqueada",
+      "ms": 4
+    },
+    {
+      "step": 9,
+      "name": "Abrir Análisis Matemático I y marcarla Cursando",
+      "passed": true,
+      "detail": "habilita: Análisis Matemático II",
+      "ms": 132
+    },
+    {
+      "step": 10,
+      "name": "Agregar una entrega para hoy",
+      "passed": false,
+      "detail": "locator.fill: Error: strict mode violation: getByLabel('Fecha') resolved to 2 elements:\n    1) <section aria-labelledby=\"fechas\" class=\"flex flex-col gap-1\">…</section> aka getByRole('region', { name: 'Fechas' })\n    2) <input value=\"\" id=\"_r_e_\" type=\"date\" aria-invalid=\"false\" class=\"w-full rounded-md border border-rule bg-paper-elevated px-3 text-sm text-ink placeholder:text-ink-faint transition-colors duration-150 hover:border-ink-faint focus:border-accent aria-[invalid=true]:border-danger disabled:cursor-not-allowed disabled:opacity-55 h-10\"/> aka getByRole('textbox', { name: 'Fecha' })\n\nCall log:\n  - waiting for getByLabel('Fecha')\n",
+      "ms": 101
+    }
+  ]
+}

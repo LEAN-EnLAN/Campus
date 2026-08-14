@@ -1,0 +1,1239 @@
+{
+  "institution": {
+    "slug": "utn",
+    "name": "Universidad Tecnológica Nacional",
+    "short_name": "UTN",
+    "country": "AR"
+  },
+  "academic_unit": {
+    "slug": "utn-frro",
+    "kind": "regional_faculty",
+    "name": "Facultad Regional Rosario"
+  },
+  "program": {
+    "slug": "isi",
+    "name": "Ingeniería en Sistemas de Información",
+    "degree_type": "grado"
+  },
+  "curriculum": {
+    "name": "Diseño Curricular de Ingeniería en Sistemas de Información - Plan 2023 (Ordenanza CSU N° 1877/2022); correlatividades por Ordenanza CSU N° 1878/2022",
+    "version": "Plan 2023",
+    "source_url": "https://www.frro.utn.edu.ar/26/ingenieria-en-sistemas-de-informacion-utn#utn-887",
+    "source_kind": "pdf",
+    "retrieved_at": "2026-08-14"
+  },
+  "subjects": [
+    {
+      "code": "1",
+      "name": "Análisis Matemático I",
+      "year_level": 1,
+      "term": "anual",
+      "credits": null,
+      "elective": false,
+      "display_order": 1,
+      "prerequisites": [],
+      "verified": true
+    },
+    {
+      "code": "2",
+      "name": "Álgebra y Geometría Analítica",
+      "year_level": 1,
+      "term": "anual",
+      "credits": null,
+      "elective": false,
+      "display_order": 2,
+      "prerequisites": [],
+      "verified": true
+    },
+    {
+      "code": "3",
+      "name": "Física I",
+      "year_level": 1,
+      "term": "anual",
+      "credits": null,
+      "elective": false,
+      "display_order": 3,
+      "prerequisites": [],
+      "verified": true
+    },
+    {
+      "code": "4",
+      "name": "Inglés I",
+      "year_level": 1,
+      "term": "anual",
+      "credits": null,
+      "elective": false,
+      "display_order": 4,
+      "prerequisites": [],
+      "verified": true
+    },
+    {
+      "code": "5",
+      "name": "Lógica y Estructuras Discretas",
+      "year_level": 1,
+      "term": "anual",
+      "credits": null,
+      "elective": false,
+      "display_order": 5,
+      "prerequisites": [],
+      "verified": true
+    },
+    {
+      "code": "6",
+      "name": "Algoritmos y Estructuras de Datos",
+      "year_level": 1,
+      "term": "anual",
+      "credits": null,
+      "elective": false,
+      "display_order": 6,
+      "prerequisites": [],
+      "verified": true
+    },
+    {
+      "code": "7",
+      "name": "Arquitectura de Computadoras",
+      "year_level": 1,
+      "term": "anual",
+      "credits": null,
+      "elective": false,
+      "display_order": 7,
+      "prerequisites": [],
+      "verified": true
+    },
+    {
+      "code": "8",
+      "name": "Sistemas y Procesos de Negocio",
+      "year_level": 1,
+      "term": "anual",
+      "credits": null,
+      "elective": false,
+      "display_order": 8,
+      "prerequisites": [],
+      "verified": true
+    },
+    {
+      "code": "9",
+      "name": "Análisis Matemático II",
+      "year_level": 2,
+      "term": "anual",
+      "credits": null,
+      "elective": false,
+      "display_order": 9,
+      "prerequisites": [
+        {
+          "subject_name": "Análisis Matemático I",
+          "kind": "to_take"
+        },
+        {
+          "subject_name": "Análisis Matemático I",
+          "kind": "to_pass"
+        },
+        {
+          "subject_name": "Álgebra y Geometría Analítica",
+          "kind": "to_take"
+        },
+        {
+          "subject_name": "Álgebra y Geometría Analítica",
+          "kind": "to_pass"
+        }
+      ],
+      "verified": true
+    },
+    {
+      "code": "10",
+      "name": "Física II",
+      "year_level": 2,
+      "term": "anual",
+      "credits": null,
+      "elective": false,
+      "display_order": 10,
+      "prerequisites": [
+        {
+          "subject_name": "Análisis Matemático I",
+          "kind": "to_take"
+        },
+        {
+          "subject_name": "Análisis Matemático I",
+          "kind": "to_pass"
+        },
+        {
+          "subject_name": "Física I",
+          "kind": "to_take"
+        },
+        {
+          "subject_name": "Física I",
+          "kind": "to_pass"
+        }
+      ],
+      "verified": true
+    },
+    {
+      "code": "11",
+      "name": "Ingeniería y Sociedad",
+      "year_level": 2,
+      "term": "1c",
+      "credits": null,
+      "elective": false,
+      "display_order": 11,
+      "prerequisites": [],
+      "verified": true
+    },
+    {
+      "code": "12",
+      "name": "Inglés II",
+      "year_level": 2,
+      "term": "anual",
+      "credits": null,
+      "elective": false,
+      "display_order": 12,
+      "prerequisites": [
+        {
+          "subject_name": "Inglés I",
+          "kind": "to_take"
+        },
+        {
+          "subject_name": "Inglés I",
+          "kind": "to_pass"
+        }
+      ],
+      "verified": true
+    },
+    {
+      "code": "13",
+      "name": "Sintaxis y Semántica de los Lenguajes",
+      "year_level": 2,
+      "term": "1c",
+      "credits": null,
+      "elective": false,
+      "display_order": 13,
+      "prerequisites": [
+        {
+          "subject_name": "Lógica y Estructuras Discretas",
+          "kind": "to_take"
+        },
+        {
+          "subject_name": "Lógica y Estructuras Discretas",
+          "kind": "to_pass"
+        },
+        {
+          "subject_name": "Algoritmos y Estructuras de Datos",
+          "kind": "to_take"
+        },
+        {
+          "subject_name": "Algoritmos y Estructuras de Datos",
+          "kind": "to_pass"
+        }
+      ],
+      "verified": true
+    },
+    {
+      "code": "14",
+      "name": "Paradigmas de Programación",
+      "year_level": 2,
+      "term": "2c",
+      "credits": null,
+      "elective": false,
+      "display_order": 14,
+      "prerequisites": [
+        {
+          "subject_name": "Lógica y Estructuras Discretas",
+          "kind": "to_take"
+        },
+        {
+          "subject_name": "Lógica y Estructuras Discretas",
+          "kind": "to_pass"
+        },
+        {
+          "subject_name": "Algoritmos y Estructuras de Datos",
+          "kind": "to_take"
+        },
+        {
+          "subject_name": "Algoritmos y Estructuras de Datos",
+          "kind": "to_pass"
+        }
+      ],
+      "verified": true
+    },
+    {
+      "code": "15",
+      "name": "Sistemas Operativos",
+      "year_level": 2,
+      "term": "2c",
+      "credits": null,
+      "elective": false,
+      "display_order": 15,
+      "prerequisites": [
+        {
+          "subject_name": "Arquitectura de Computadoras",
+          "kind": "to_take"
+        },
+        {
+          "subject_name": "Arquitectura de Computadoras",
+          "kind": "to_pass"
+        }
+      ],
+      "verified": true
+    },
+    {
+      "code": "16",
+      "name": "Análisis de Sistemas de Información",
+      "year_level": 2,
+      "term": "anual",
+      "credits": null,
+      "elective": false,
+      "display_order": 16,
+      "prerequisites": [
+        {
+          "subject_name": "Algoritmos y Estructuras de Datos",
+          "kind": "to_take"
+        },
+        {
+          "subject_name": "Algoritmos y Estructuras de Datos",
+          "kind": "to_pass"
+        },
+        {
+          "subject_name": "Sistemas y Procesos de Negocio",
+          "kind": "to_take"
+        },
+        {
+          "subject_name": "Sistemas y Procesos de Negocio",
+          "kind": "to_pass"
+        }
+      ],
+      "verified": true
+    },
+    {
+      "code": "17",
+      "name": "Probabilidad y Estadística",
+      "year_level": 3,
+      "term": "anual",
+      "credits": null,
+      "elective": false,
+      "display_order": 17,
+      "prerequisites": [
+        {
+          "subject_name": "Análisis Matemático I",
+          "kind": "to_take"
+        },
+        {
+          "subject_name": "Análisis Matemático I",
+          "kind": "to_pass"
+        },
+        {
+          "subject_name": "Álgebra y Geometría Analítica",
+          "kind": "to_take"
+        },
+        {
+          "subject_name": "Álgebra y Geometría Analítica",
+          "kind": "to_pass"
+        }
+      ],
+      "verified": true
+    },
+    {
+      "code": "18",
+      "name": "Economía",
+      "year_level": 3,
+      "term": "anual",
+      "credits": null,
+      "elective": false,
+      "display_order": 18,
+      "prerequisites": [
+        {
+          "subject_name": "Análisis Matemático I",
+          "kind": "to_take"
+        },
+        {
+          "subject_name": "Análisis Matemático I",
+          "kind": "to_pass"
+        },
+        {
+          "subject_name": "Álgebra y Geometría Analítica",
+          "kind": "to_take"
+        },
+        {
+          "subject_name": "Álgebra y Geometría Analítica",
+          "kind": "to_pass"
+        }
+      ],
+      "verified": true
+    },
+    {
+      "code": "19",
+      "name": "Bases de Datos",
+      "year_level": 3,
+      "term": "anual",
+      "credits": null,
+      "elective": false,
+      "display_order": 19,
+      "prerequisites": [
+        {
+          "subject_name": "Sintaxis y Semántica de los Lenguajes",
+          "kind": "to_take"
+        },
+        {
+          "subject_name": "Sintaxis y Semántica de los Lenguajes",
+          "kind": "to_pass"
+        },
+        {
+          "subject_name": "Análisis de Sistemas de Información",
+          "kind": "to_take"
+        },
+        {
+          "subject_name": "Análisis de Sistemas de Información",
+          "kind": "to_pass"
+        },
+        {
+          "subject_name": "Lógica y Estructuras Discretas",
+          "kind": "to_take"
+        },
+        {
+          "subject_name": "Lógica y Estructuras Discretas",
+          "kind": "to_pass"
+        },
+        {
+          "subject_name": "Algoritmos y Estructuras de Datos",
+          "kind": "to_take"
+        },
+        {
+          "subject_name": "Algoritmos y Estructuras de Datos",
+          "kind": "to_pass"
+        }
+      ],
+      "verified": true
+    },
+    {
+      "code": "20",
+      "name": "Desarrollo de Software",
+      "year_level": 3,
+      "term": "anual",
+      "credits": null,
+      "elective": false,
+      "display_order": 20,
+      "prerequisites": [
+        {
+          "subject_name": "Paradigmas de Programación",
+          "kind": "to_take"
+        },
+        {
+          "subject_name": "Paradigmas de Programación",
+          "kind": "to_pass"
+        },
+        {
+          "subject_name": "Análisis de Sistemas de Información",
+          "kind": "to_take"
+        },
+        {
+          "subject_name": "Análisis de Sistemas de Información",
+          "kind": "to_pass"
+        },
+        {
+          "subject_name": "Lógica y Estructuras Discretas",
+          "kind": "to_take"
+        },
+        {
+          "subject_name": "Lógica y Estructuras Discretas",
+          "kind": "to_pass"
+        },
+        {
+          "subject_name": "Algoritmos y Estructuras de Datos",
+          "kind": "to_take"
+        },
+        {
+          "subject_name": "Algoritmos y Estructuras de Datos",
+          "kind": "to_pass"
+        }
+      ],
+      "verified": true
+    },
+    {
+      "code": "21",
+      "name": "Comunicación de Datos",
+      "year_level": 3,
+      "term": "anual",
+      "credits": null,
+      "elective": false,
+      "display_order": 21,
+      "prerequisites": [
+        {
+          "subject_name": "Física I",
+          "kind": "to_take"
+        },
+        {
+          "subject_name": "Física I",
+          "kind": "to_pass"
+        },
+        {
+          "subject_name": "Arquitectura de Computadoras",
+          "kind": "to_take"
+        },
+        {
+          "subject_name": "Arquitectura de Computadoras",
+          "kind": "to_pass"
+        }
+      ],
+      "verified": true
+    },
+    {
+      "code": "22",
+      "name": "Análisis Numérico",
+      "year_level": 3,
+      "term": "anual",
+      "credits": null,
+      "elective": false,
+      "display_order": 22,
+      "prerequisites": [
+        {
+          "subject_name": "Análisis Matemático II",
+          "kind": "to_take"
+        },
+        {
+          "subject_name": "Análisis Matemático II",
+          "kind": "to_pass"
+        },
+        {
+          "subject_name": "Análisis Matemático I",
+          "kind": "to_take"
+        },
+        {
+          "subject_name": "Análisis Matemático I",
+          "kind": "to_pass"
+        },
+        {
+          "subject_name": "Álgebra y Geometría Analítica",
+          "kind": "to_take"
+        },
+        {
+          "subject_name": "Álgebra y Geometría Analítica",
+          "kind": "to_pass"
+        }
+      ],
+      "verified": true
+    },
+    {
+      "code": "23",
+      "name": "Diseño de Sistemas de Información",
+      "year_level": 3,
+      "term": "anual",
+      "credits": null,
+      "elective": false,
+      "display_order": 23,
+      "prerequisites": [
+        {
+          "subject_name": "Paradigmas de Programación",
+          "kind": "to_take"
+        },
+        {
+          "subject_name": "Paradigmas de Programación",
+          "kind": "to_pass"
+        },
+        {
+          "subject_name": "Análisis de Sistemas de Información",
+          "kind": "to_take"
+        },
+        {
+          "subject_name": "Análisis de Sistemas de Información",
+          "kind": "to_pass"
+        },
+        {
+          "subject_name": "Inglés I",
+          "kind": "to_take"
+        },
+        {
+          "subject_name": "Inglés I",
+          "kind": "to_pass"
+        },
+        {
+          "subject_name": "Algoritmos y Estructuras de Datos",
+          "kind": "to_take"
+        },
+        {
+          "subject_name": "Algoritmos y Estructuras de Datos",
+          "kind": "to_pass"
+        },
+        {
+          "subject_name": "Sistemas y Procesos de Negocio",
+          "kind": "to_take"
+        },
+        {
+          "subject_name": "Sistemas y Procesos de Negocio",
+          "kind": "to_pass"
+        }
+      ],
+      "verified": true
+    },
+    {
+      "code": null,
+      "name": "Electivas 3º nivel",
+      "year_level": 3,
+      "term": "anual",
+      "credits": null,
+      "elective": true,
+      "display_order": 24,
+      "prerequisites": [],
+      "verified": false
+    },
+    {
+      "code": "24",
+      "name": "Legislación",
+      "year_level": 4,
+      "term": "anual",
+      "credits": null,
+      "elective": false,
+      "display_order": 25,
+      "prerequisites": [
+        {
+          "subject_name": "Ingeniería y Sociedad",
+          "kind": "to_take"
+        },
+        {
+          "subject_name": "Ingeniería y Sociedad",
+          "kind": "to_pass"
+        }
+      ],
+      "verified": true
+    },
+    {
+      "code": "25",
+      "name": "Ingeniería y Calidad de Software",
+      "year_level": 4,
+      "term": "2c",
+      "credits": null,
+      "elective": false,
+      "display_order": 26,
+      "prerequisites": [
+        {
+          "subject_name": "Bases de Datos",
+          "kind": "to_take"
+        },
+        {
+          "subject_name": "Bases de Datos",
+          "kind": "to_pass"
+        },
+        {
+          "subject_name": "Desarrollo de Software",
+          "kind": "to_take"
+        },
+        {
+          "subject_name": "Desarrollo de Software",
+          "kind": "to_pass"
+        },
+        {
+          "subject_name": "Diseño de Sistemas de Información",
+          "kind": "to_take"
+        },
+        {
+          "subject_name": "Diseño de Sistemas de Información",
+          "kind": "to_pass"
+        },
+        {
+          "subject_name": "Sintaxis y Semántica de los Lenguajes",
+          "kind": "to_take"
+        },
+        {
+          "subject_name": "Sintaxis y Semántica de los Lenguajes",
+          "kind": "to_pass"
+        },
+        {
+          "subject_name": "Paradigmas de Programación",
+          "kind": "to_take"
+        },
+        {
+          "subject_name": "Paradigmas de Programación",
+          "kind": "to_pass"
+        }
+      ],
+      "verified": true
+    },
+    {
+      "code": "26",
+      "name": "Redes de Datos",
+      "year_level": 4,
+      "term": "anual",
+      "credits": null,
+      "elective": false,
+      "display_order": 27,
+      "prerequisites": [
+        {
+          "subject_name": "Sistemas Operativos",
+          "kind": "to_take"
+        },
+        {
+          "subject_name": "Sistemas Operativos",
+          "kind": "to_pass"
+        },
+        {
+          "subject_name": "Comunicación de Datos",
+          "kind": "to_take"
+        },
+        {
+          "subject_name": "Comunicación de Datos",
+          "kind": "to_pass"
+        }
+      ],
+      "verified": true
+    },
+    {
+      "code": "27",
+      "name": "Investigación Operativa",
+      "year_level": 4,
+      "term": "anual",
+      "credits": null,
+      "elective": false,
+      "display_order": 28,
+      "prerequisites": [
+        {
+          "subject_name": "Probabilidad y Estadística",
+          "kind": "to_take"
+        },
+        {
+          "subject_name": "Probabilidad y Estadística",
+          "kind": "to_pass"
+        },
+        {
+          "subject_name": "Análisis Numérico",
+          "kind": "to_take"
+        },
+        {
+          "subject_name": "Análisis Numérico",
+          "kind": "to_pass"
+        }
+      ],
+      "verified": true
+    },
+    {
+      "code": "28",
+      "name": "Simulación",
+      "year_level": 4,
+      "term": "anual",
+      "credits": null,
+      "elective": false,
+      "display_order": 29,
+      "prerequisites": [
+        {
+          "subject_name": "Probabilidad y Estadística",
+          "kind": "to_take"
+        },
+        {
+          "subject_name": "Probabilidad y Estadística",
+          "kind": "to_pass"
+        },
+        {
+          "subject_name": "Análisis Matemático II",
+          "kind": "to_take"
+        },
+        {
+          "subject_name": "Análisis Matemático II",
+          "kind": "to_pass"
+        }
+      ],
+      "verified": true
+    },
+    {
+      "code": "29",
+      "name": "Tecnologías para la automatización",
+      "year_level": 4,
+      "term": "1c",
+      "credits": null,
+      "elective": false,
+      "display_order": 30,
+      "prerequisites": [
+        {
+          "subject_name": "Física II",
+          "kind": "to_take"
+        },
+        {
+          "subject_name": "Física II",
+          "kind": "to_pass"
+        },
+        {
+          "subject_name": "Análisis Numérico",
+          "kind": "to_take"
+        },
+        {
+          "subject_name": "Análisis Numérico",
+          "kind": "to_pass"
+        },
+        {
+          "subject_name": "Análisis Matemático II",
+          "kind": "to_take"
+        },
+        {
+          "subject_name": "Análisis Matemático II",
+          "kind": "to_pass"
+        }
+      ],
+      "verified": true
+    },
+    {
+      "code": "30",
+      "name": "Administración de Sistemas de Información",
+      "year_level": 4,
+      "term": "anual",
+      "credits": null,
+      "elective": false,
+      "display_order": 31,
+      "prerequisites": [
+        {
+          "subject_name": "Economía",
+          "kind": "to_take"
+        },
+        {
+          "subject_name": "Economía",
+          "kind": "to_pass"
+        },
+        {
+          "subject_name": "Diseño de Sistemas de Información",
+          "kind": "to_take"
+        },
+        {
+          "subject_name": "Diseño de Sistemas de Información",
+          "kind": "to_pass"
+        },
+        {
+          "subject_name": "Análisis de Sistemas de Información",
+          "kind": "to_take"
+        },
+        {
+          "subject_name": "Análisis de Sistemas de Información",
+          "kind": "to_pass"
+        }
+      ],
+      "verified": true
+    },
+    {
+      "code": null,
+      "name": "Electivas 4º nivel",
+      "year_level": 4,
+      "term": "anual",
+      "credits": null,
+      "elective": true,
+      "display_order": 32,
+      "prerequisites": [],
+      "verified": false
+    },
+    {
+      "code": "31",
+      "name": "Inteligencia Artificial",
+      "year_level": 5,
+      "term": "anual",
+      "credits": null,
+      "elective": false,
+      "display_order": 33,
+      "prerequisites": [
+        {
+          "subject_name": "Simulación",
+          "kind": "to_take"
+        },
+        {
+          "subject_name": "Simulación",
+          "kind": "to_pass"
+        },
+        {
+          "subject_name": "Probabilidad y Estadística",
+          "kind": "to_take"
+        },
+        {
+          "subject_name": "Probabilidad y Estadística",
+          "kind": "to_pass"
+        },
+        {
+          "subject_name": "Análisis Numérico",
+          "kind": "to_take"
+        },
+        {
+          "subject_name": "Análisis Numérico",
+          "kind": "to_pass"
+        }
+      ],
+      "verified": true
+    },
+    {
+      "code": "32",
+      "name": "Ciencia de Datos",
+      "year_level": 5,
+      "term": "1c",
+      "credits": null,
+      "elective": false,
+      "display_order": 34,
+      "prerequisites": [
+        {
+          "subject_name": "Simulación",
+          "kind": "to_take"
+        },
+        {
+          "subject_name": "Simulación",
+          "kind": "to_pass"
+        },
+        {
+          "subject_name": "Probabilidad y Estadística",
+          "kind": "to_take"
+        },
+        {
+          "subject_name": "Probabilidad y Estadística",
+          "kind": "to_pass"
+        },
+        {
+          "subject_name": "Bases de Datos",
+          "kind": "to_take"
+        },
+        {
+          "subject_name": "Bases de Datos",
+          "kind": "to_pass"
+        }
+      ],
+      "verified": true
+    },
+    {
+      "code": "33",
+      "name": "Sistemas de Gestión",
+      "year_level": 5,
+      "term": "anual",
+      "credits": null,
+      "elective": false,
+      "display_order": 35,
+      "prerequisites": [
+        {
+          "subject_name": "Economía",
+          "kind": "to_take"
+        },
+        {
+          "subject_name": "Economía",
+          "kind": "to_pass"
+        },
+        {
+          "subject_name": "Investigación Operativa",
+          "kind": "to_take"
+        },
+        {
+          "subject_name": "Investigación Operativa",
+          "kind": "to_pass"
+        },
+        {
+          "subject_name": "Diseño de Sistemas de Información",
+          "kind": "to_take"
+        },
+        {
+          "subject_name": "Diseño de Sistemas de Información",
+          "kind": "to_pass"
+        }
+      ],
+      "verified": true
+    },
+    {
+      "code": "34",
+      "name": "Gestión Gerencial",
+      "year_level": 5,
+      "term": "1c",
+      "credits": null,
+      "elective": false,
+      "display_order": 36,
+      "prerequisites": [
+        {
+          "subject_name": "Legislación",
+          "kind": "to_take"
+        },
+        {
+          "subject_name": "Legislación",
+          "kind": "to_pass"
+        },
+        {
+          "subject_name": "Administración de Sistemas de Información",
+          "kind": "to_take"
+        },
+        {
+          "subject_name": "Administración de Sistemas de Información",
+          "kind": "to_pass"
+        },
+        {
+          "subject_name": "Economía",
+          "kind": "to_take"
+        },
+        {
+          "subject_name": "Economía",
+          "kind": "to_pass"
+        }
+      ],
+      "verified": true
+    },
+    {
+      "code": "35",
+      "name": "Seguridad en los Sistemas de Información",
+      "year_level": 5,
+      "term": "2c",
+      "credits": null,
+      "elective": false,
+      "display_order": 37,
+      "prerequisites": [
+        {
+          "subject_name": "Redes de Datos",
+          "kind": "to_take"
+        },
+        {
+          "subject_name": "Redes de Datos",
+          "kind": "to_pass"
+        },
+        {
+          "subject_name": "Administración de Sistemas de Información",
+          "kind": "to_take"
+        },
+        {
+          "subject_name": "Administración de Sistemas de Información",
+          "kind": "to_pass"
+        },
+        {
+          "subject_name": "Desarrollo de Software",
+          "kind": "to_take"
+        },
+        {
+          "subject_name": "Desarrollo de Software",
+          "kind": "to_pass"
+        },
+        {
+          "subject_name": "Comunicación de Datos",
+          "kind": "to_take"
+        },
+        {
+          "subject_name": "Comunicación de Datos",
+          "kind": "to_pass"
+        }
+      ],
+      "verified": true
+    },
+    {
+      "code": "36",
+      "name": "Proyecto Final",
+      "year_level": 5,
+      "term": "anual",
+      "credits": null,
+      "elective": false,
+      "display_order": 38,
+      "prerequisites": [
+        {
+          "subject_name": "Ingeniería y Calidad de Software",
+          "kind": "to_take"
+        },
+        {
+          "subject_name": "Redes de Datos",
+          "kind": "to_take"
+        },
+        {
+          "subject_name": "Administración de Sistemas de Información",
+          "kind": "to_take"
+        },
+        {
+          "subject_name": "Inglés II",
+          "kind": "to_take"
+        },
+        {
+          "subject_name": "Desarrollo de Software",
+          "kind": "to_take"
+        },
+        {
+          "subject_name": "Diseño de Sistemas de Información",
+          "kind": "to_take"
+        },
+        {
+          "subject_name": "Análisis Matemático I",
+          "kind": "to_pass"
+        },
+        {
+          "subject_name": "Álgebra y Geometría Analítica",
+          "kind": "to_pass"
+        },
+        {
+          "subject_name": "Física I",
+          "kind": "to_pass"
+        },
+        {
+          "subject_name": "Inglés I",
+          "kind": "to_pass"
+        },
+        {
+          "subject_name": "Lógica y Estructuras Discretas",
+          "kind": "to_pass"
+        },
+        {
+          "subject_name": "Algoritmos y Estructuras de Datos",
+          "kind": "to_pass"
+        },
+        {
+          "subject_name": "Arquitectura de Computadoras",
+          "kind": "to_pass"
+        },
+        {
+          "subject_name": "Sistemas y Procesos de Negocio",
+          "kind": "to_pass"
+        },
+        {
+          "subject_name": "Análisis Matemático II",
+          "kind": "to_pass"
+        },
+        {
+          "subject_name": "Física II",
+          "kind": "to_pass"
+        },
+        {
+          "subject_name": "Ingeniería y Sociedad",
+          "kind": "to_pass"
+        },
+        {
+          "subject_name": "Inglés II",
+          "kind": "to_pass"
+        },
+        {
+          "subject_name": "Sintaxis y Semántica de los Lenguajes",
+          "kind": "to_pass"
+        },
+        {
+          "subject_name": "Paradigmas de Programación",
+          "kind": "to_pass"
+        },
+        {
+          "subject_name": "Sistemas Operativos",
+          "kind": "to_pass"
+        },
+        {
+          "subject_name": "Análisis de Sistemas de Información",
+          "kind": "to_pass"
+        },
+        {
+          "subject_name": "Probabilidad y Estadística",
+          "kind": "to_pass"
+        },
+        {
+          "subject_name": "Economía",
+          "kind": "to_pass"
+        },
+        {
+          "subject_name": "Bases de Datos",
+          "kind": "to_pass"
+        },
+        {
+          "subject_name": "Desarrollo de Software",
+          "kind": "to_pass"
+        },
+        {
+          "subject_name": "Comunicación de Datos",
+          "kind": "to_pass"
+        },
+        {
+          "subject_name": "Análisis Numérico",
+          "kind": "to_pass"
+        },
+        {
+          "subject_name": "Diseño de Sistemas de Información",
+          "kind": "to_pass"
+        },
+        {
+          "subject_name": "Legislación",
+          "kind": "to_pass"
+        },
+        {
+          "subject_name": "Ingeniería y Calidad de Software",
+          "kind": "to_pass"
+        },
+        {
+          "subject_name": "Redes de Datos",
+          "kind": "to_pass"
+        },
+        {
+          "subject_name": "Investigación Operativa",
+          "kind": "to_pass"
+        },
+        {
+          "subject_name": "Simulación",
+          "kind": "to_pass"
+        },
+        {
+          "subject_name": "Tecnologías para la automatización",
+          "kind": "to_pass"
+        },
+        {
+          "subject_name": "Administración de Sistemas de Información",
+          "kind": "to_pass"
+        },
+        {
+          "subject_name": "Inteligencia Artificial",
+          "kind": "to_pass"
+        },
+        {
+          "subject_name": "Ciencia de Datos",
+          "kind": "to_pass"
+        },
+        {
+          "subject_name": "Sistemas de Gestión",
+          "kind": "to_pass"
+        },
+        {
+          "subject_name": "Gestión Gerencial",
+          "kind": "to_pass"
+        },
+        {
+          "subject_name": "Seguridad en los Sistemas de Información",
+          "kind": "to_pass"
+        },
+        {
+          "subject_name": "Electivas 3º nivel",
+          "kind": "to_pass"
+        },
+        {
+          "subject_name": "Electivas 4º nivel",
+          "kind": "to_pass"
+        },
+        {
+          "subject_name": "Electivas 5º nivel",
+          "kind": "to_pass"
+        }
+      ],
+      "verified": true
+    },
+    {
+      "code": null,
+      "name": "Electivas 5º nivel",
+      "year_level": 5,
+      "term": "anual",
+      "credits": null,
+      "elective": true,
+      "display_order": 39,
+      "prerequisites": [],
+      "verified": false
+    },
+    {
+      "code": null,
+      "name": "Práctica Profesional Supervisada",
+      "year_level": 5,
+      "term": "anual",
+      "credits": null,
+      "elective": false,
+      "display_order": 40,
+      "prerequisites": [
+        {
+          "subject_name": "Ingeniería y Calidad de Software",
+          "kind": "to_take"
+        },
+        {
+          "subject_name": "Redes de Datos",
+          "kind": "to_take"
+        },
+        {
+          "subject_name": "Administración de Sistemas de Información",
+          "kind": "to_take"
+        },
+        {
+          "subject_name": "Inglés II",
+          "kind": "to_take"
+        },
+        {
+          "subject_name": "Desarrollo de Software",
+          "kind": "to_take"
+        },
+        {
+          "subject_name": "Diseño de Sistemas de Información",
+          "kind": "to_take"
+        }
+      ],
+      "verified": false
+    }
+  ]
+}

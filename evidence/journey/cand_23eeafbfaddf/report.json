@@ -1,0 +1,73 @@
+{
+  "candidate": "cand_23eeafbfaddf",
+  "generatedAt": "2026-08-14T05:35:31.569Z",
+  "total": 9,
+  "passed": 8,
+  "failed": 1,
+  "consoleErrors": [],
+  "steps": [
+    {
+      "step": 1,
+      "name": "Crear cuenta",
+      "passed": true,
+      "detail": "journey-196865-1786685714940@campus.test",
+      "ms": 1167
+    },
+    {
+      "step": 2,
+      "name": "Elegir universidad",
+      "passed": true,
+      "detail": "UTN",
+      "ms": 51
+    },
+    {
+      "step": 3,
+      "name": "Elegir facultad",
+      "passed": true,
+      "detail": "FRRo",
+      "ms": 24
+    },
+    {
+      "step": 4,
+      "name": "Elegir carrera",
+      "passed": true,
+      "detail": "Ingeniería en Sistemas de Información",
+      "ms": 26
+    },
+    {
+      "step": 5,
+      "name": "Elegir plan de estudios",
+      "passed": true,
+      "detail": "Plan 2023",
+      "ms": 24
+    },
+    {
+      "step": 6,
+      "name": "Confirmar y entrar a Hoy",
+      "passed": true,
+      "detail": "¿Qué tenés para hoy?",
+      "ms": 71
+    },
+    {
+      "step": 7,
+      "name": "Ver el plan real con materias oficiales",
+      "passed": true,
+      "detail": "40 materias, primera: ○",
+      "ms": 69
+    },
+    {
+      "step": 8,
+      "name": "Ver una materia bloqueada por correlativas",
+      "passed": true,
+      "detail": "Análisis Matemático II — Bloqueada",
+      "ms": 5
+    },
+    {
+      "step": 9,
+      "name": "Abrir Análisis Matemático I y marcarla Cursando",
+      "passed": false,
+      "detail": "locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n  - waiting for getByText('Cursando', { exact: true }).first() to be visible\n    34 × locator resolved to hidden <option value=\"in_progress\">Cursando</option>\n",
+      "ms": 15116
+    }
+  ]
+}

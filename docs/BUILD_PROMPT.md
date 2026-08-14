@@ -37,6 +37,7 @@ Do not replace them with your own product vision.
 Create a new real Git repository for the project under the normal registered projects root, named `campus-poc`.
 
 Before meaningful work:
+
 - run `claude-dev-infra` fast doctor;
 - resolve authoritative project identity;
 - create repo;
@@ -66,21 +67,27 @@ campus-academic-data
 ```
 
 ## campus-product
+
 PRD index, core loop, POC scope, non-goals, requirement IDs, Argentine academic terminology.
 
 ## campus-design-system
+
 Editorial/notebook doctrine, tokens, typography, responsive rules, component reuse, empty-state tone, visual references. Warn against generic SaaS, gradient-heavy UI, glassmorphism and stock shadcn.
 
 ## campus-frontend
+
 Rules for React, TypeScript, Vite, TanStack Router/Query, shadcn/ui and Tailwind. Composition first; project components first; shadcn search second; domain logic outside UI.
 
 ## campus-supabase
+
 Local Supabase, migrations only, generated DB types, Auth, RLS, seed conventions, test DB policy, never expose service-role.
 
 ## campus-quality
+
 developer-harness integration, quality tiers, browser matrix, a11y policy, candidate/receipt requirements, claimed ≠ verified.
 
 ## campus-academic-data
+
 Provenance hierarchy, institution/unit/program/curriculum concepts, no invented data, official-source-first, plan versioning.
 
 Verify all six skills are discoverable. Record evidence. Only then continue.
@@ -88,6 +95,7 @@ Verify all six skills are discoverable. Record evidence. Only then continue.
 # 2. Establish stack
 
 Use:
+
 - React
 - TypeScript strict
 - Vite
@@ -107,6 +115,7 @@ Do not introduce Next.js or a separate Node backend without a concrete need.
 Use Gentle-AI SDD. Create change `campus-poc-foundation`.
 
 Consume `docs/PRD.md` and produce durable:
+
 - proposal
 - spec
 - design delta if necessary
@@ -117,6 +126,7 @@ Preserve PRD requirement IDs. Every task declares which requirement(s) it implem
 # 4. Establish quality commands before feature development
 
 Provide real commands equivalent to:
+
 - format
 - format:check
 - lint
@@ -139,6 +149,7 @@ Own primarily:
 `supabase/**`, `src/domain/**`, `src/lib/db/**`, `tests/domain/**`
 
 Goals:
+
 - local Supabase
 - schema for institutions, academic_units, programs, curricula, subjects, curriculum_subjects, prerequisites, profiles, user_academic_contexts, user_subject_states, academic_items, resources
 - RLS with A/B isolation tests
@@ -152,6 +163,7 @@ Own:
 `src/routes/**`, `src/components/**`, `src/styles/**`, `src/features/**`, `docs/research/**`, `registry/**`
 
 First, do a short visual research pass and inspect:
+
 - https://www.craft.do/
 - https://craft-support.mintlify.app/en/plan-and-do/calendar
 - https://www.craft.do/blog/introducing-tasks
@@ -172,6 +184,7 @@ For every reusable primitive:
 `search local → search shadcn registry → inspect → reuse/compose → create only if needed`
 
 Build:
+
 - /onboarding
 - /today
 - /plan
@@ -194,6 +207,7 @@ Implement real `verify-ui` using:
 `t3-code preview → local app`, `camofox → fallback`, `agent-capture → durable evidence`
 
 Viewport matrix:
+
 - 360×800
 - 390×844
 - 768×1024
@@ -211,6 +225,7 @@ Ensure UI/a11y evidence is candidate-bound and invalidates on drift.
 Official sources only.
 
 Start from:
+
 - https://utn.edu.ar/
 - https://www.frro.utn.edu.ar/
 - https://unr.edu.ar/carreras-de-grado/
@@ -222,6 +237,7 @@ UTN → Facultad Regional Rosario → Ingeniería en Sistemas de Información �
 Add a second institution/unit/program path sufficient to prove the model is not UTN-specific.
 
 If official plan is PDF:
+
 - inspect actual PDF;
 - capture source URL;
 - record retrieval date;
@@ -256,6 +272,7 @@ UI language: Spanish (Argentina).
 Tone: clear, warm, short, not infantilizing, not corporate, no forced slang.
 
 Good:
+
 - ¿Qué tenés para hoy?
 - Próximamente
 - Tu plan
@@ -267,6 +284,7 @@ Avoid productivity/AI hype.
 # 12. Integration convergence
 
 When parallel tracks have real artifacts:
+
 1. stop new feature work;
 2. integrate backend/UI;
 3. deterministic checks;
@@ -279,6 +297,7 @@ When parallel tracks have real artifacts:
 # 13. Design polish pass
 
 After core behavior passes, run a dedicated design reviewer using:
+
 - campus-design-system
 - impeccable
 - web-design-guidelines
@@ -292,6 +311,7 @@ Apply one bounded correction pass.
 # 14. Deterministic completion checks
 
 Required classes:
+
 - format
 - lint
 - typecheck
@@ -322,6 +342,7 @@ Do not invoke Judgment Day or ultrareview automatically.
 # 16. Required receipt properties
 
 Receipt references:
+
 - candidate identity
 - PRD requirements
 - SDD task IDs
@@ -355,6 +376,7 @@ Never let an LLM guess academic facts.
 # 19. Stop conditions
 
 Do not fake completion when:
+
 - Supabase cannot run
 - RLS cannot be tested
 - browser cannot render app
@@ -368,6 +390,7 @@ Continue independent safe work.
 # 20. Final output contract
 
 Return:
+
 - Mission status
 - Repository path/branch/commit/tree
 - Skills created + discoverability evidence

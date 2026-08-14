@@ -1,0 +1,190 @@
+@import 'tailwindcss';
+
+/* ---------------------------------------------------------------------------
+ * Campus design tokens — see .claude/skills/campus-design-system/SKILL.md
+ *
+ * Warm editorial light theme. One accent. Paper, never pure white.
+ * Never hardcode a hex value in a component; always go through a token.
+ * ------------------------------------------------------------------------- */
+
+@theme {
+  /* Surfaces & ink */
+  --color-paper: #f7f5ef;
+  --color-paper-elevated: #fffefa;
+  --color-paper-sunken: #f1eee6;
+  --color-ink: #181816;
+  --color-ink-muted: #6a6862;
+  --color-ink-faint: #8a877f;
+  --color-rule: #dedbd2;
+  --color-rule-soft: #ebe8df;
+
+  /* Accent — exactly one */
+  --color-accent: #3157d5;
+  --color-accent-soft: #e7ecfb;
+  --color-accent-ink: #23409e;
+
+  /* Academic status */
+  --color-success: #36745b;
+  --color-success-soft: #e4efe9;
+  --color-warning: #9b6427;
+  --color-warning-soft: #f6ecdf;
+  --color-danger: #a3423d;
+  --color-danger-soft: #f6e5e3;
+
+  /* Typography */
+  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-serif: 'Newsreader', ui-serif, Georgia, 'Times New Roman', serif;
+
+  --text-2xs: 0.6875rem;
+  --text-2xs--line-height: 1.4;
+  --text-xs: 0.75rem;
+  --text-xs--line-height: 1.45;
+  --text-sm: 0.8125rem;
+  --text-sm--line-height: 1.5;
+  --text-base: 0.9375rem;
+  --text-base--line-height: 1.55;
+  --text-lg: 1.0625rem;
+  --text-lg--line-height: 1.5;
+  --text-xl: 1.375rem;
+  --text-xl--line-height: 1.3;
+  --text-2xl: 1.75rem;
+  --text-2xl--line-height: 1.2;
+  --text-3xl: 2.25rem;
+  --text-3xl--line-height: 1.15;
+
+  /* Geometry */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+
+  /* Motion — controls 120–180ms, panels 180–240ms */
+  --ease-out-quiet: cubic-bezier(0.22, 0.8, 0.3, 1);
+
+  /* Layout rails */
+  --spacing-nav: 13.75rem; /* 220px */
+  --spacing-rail: 16.25rem; /* 260px */
+  --spacing-measure: 52rem; /* ~832px main notebook surface */
+}
+
+@layer base {
+  * {
+    border-color: var(--color-rule);
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    scrollbar-gutter: stable;
+  }
+
+  body {
+    background-color: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: var(--text-base);
+    line-height: 1.55;
+    font-feature-settings:
+      'cv05' 1,
+      'ss01' 1;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    min-height: 100dvh;
+  }
+
+  /* Anything that sits in a column reads as a column. */
+  time,
+  [data-numeric] {
+    font-variant-numeric: tabular-nums;
+  }
+
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  /* Focus is never removed, only restyled. */
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+    border-radius: 3px;
+  }
+
+  ::selection {
+    background: var(--color-accent-soft);
+    color: var(--color-accent-ink);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@layer components {
+  /* Skip link — visible only when focused. */
+  .skip-link {
+    position: absolute;
+    left: 0.75rem;
+    top: -3rem;
+    z-index: 100;
+    border-radius: var(--radius-md);
+    background: var(--color-paper-elevated);
+    padding: 0.5rem 0.875rem;
+    font-size: var(--text-sm);
+    font-weight: 500;
+    box-shadow: 0 1px 2px rgb(24 24 22 / 0.12);
+    transition: top 140ms var(--ease-out-quiet);
+  }
+  .skip-link:focus {
+    top: 0.75rem;
+  }
+}
+
+/* Quiet, paper-appropriate scrollbars. */
+@supports selector(::-webkit-scrollbar) {
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-rule);
+    border: 3px solid transparent;
+    background-clip: content-box;
+    border-radius: 99px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-ink-faint);
+    background-clip: content-box;
+  }
+}

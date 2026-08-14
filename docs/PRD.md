@@ -88,31 +88,40 @@ Institution
 ## Incluido
 
 ### A. Onboarding académico
+
 Seleccionar universidad, unidad académica, carrera y plan. Si el plan no existe, permitir modo manual y registrar la falta.
 
 ### B. Home / Today
+
 Fecha, próximas obligaciones, materias activas, progreso semanal, quick capture e indicadores académicos.
 
 ### C. Plan de carrera
+
 Vista visual por año/nivel con estados:
 `pending`, `available`, `in_progress`, `regularized`, `passed`, `failed`, `equivalent`.
 
 ### D. Materias activas
+
 Nombre, estado, período, próximas fechas, notas rápidas, recursos y progreso personal opcional.
 
 ### E. Tareas y eventos académicos
+
 Tipos: parcial, final, trabajo práctico, entrega, inscripción, clase/evento, tarea libre.
 
 ### F. Calendar / Upcoming
+
 Vista semanal / agenda y próximas fechas.
 
 ### G. Quick capture
+
 Nueva tarea, parcial, entrega, nota o recurso.
 
 ### H. Recursos mínimos
+
 Link, nota corta y archivo opcional si Storage está correctamente configurado.
 
 ### I. Búsqueda/comando
+
 Buscar materias, tareas y recursos.
 
 # 6. Core loop
@@ -145,42 +154,55 @@ abrir
 # 8. Functional requirements
 
 ## CAP-ONBOARD-001
+
 Seleccionar institución, unidad académica, carrera y plan. Persistido, reanudable, editable y no hardcodeado.
 
 ## CAP-ONBOARD-002
+
 Continuar aunque el plan no esté disponible mediante contexto académico manual/unmapped.
 
 ## CAP-TODAY-001
+
 Today prioriza hoy sobre mañana sin ocultar lo próximo.
 
 ## CAP-CAPTURE-001
+
 Crear una obligación académica desde cualquier pantalla.
 
 ## CAP-PLAN-001
+
 Visualizar el plan agrupado por nivel/año.
 
 ## CAP-PLAN-002
+
 Marcar una materia como `passed` recalcula disponibilidad de dependientes en dominio, no en React.
 
 ## CAP-PLAN-003
+
 Soportar múltiples versiones de un plan.
 
 ## CAP-COURSE-001
+
 Vista unificada de materia con status, next deadline, tasks, resources y notes.
 
 ## CAP-CALENDAR-001
+
 Obligaciones creadas desde cualquier módulo aparecen en la vista temporal.
 
 ## CAP-RESOURCE-001
+
 Asociar un recurso a una materia.
 
 ## CAP-SEARCH-001
+
 Encontrar materia/tarea/recurso por texto parcial.
 
 ## CAP-RESPONSIVE-001
+
 Workflows primarios en 360, 390, 768, 1024 y 1440 px sin overflow accidental.
 
 ## CAP-A11Y-001
+
 Cero violaciones críticas/serias según quality profile.
 
 # 9. Domain model
@@ -203,37 +225,47 @@ Resource
 ```
 
 ## Institution
+
 `id`, `slug`, `name`, `short_name`, `country`, `metadata`
 
 ## AcademicUnit
+
 `id`, `institution_id`, `parent_id?`, `kind`, `name`, `slug`
 
 ## Program
+
 `id`, `academic_unit_id`, `name`, `degree_type`, `duration_hint?`
 
 ## Curriculum
+
 `id`, `program_id`, `name`, `version`, `valid_from?`, `valid_to?`, `source_url?`, `source_fetched_at?`
 
 ## Subject
+
 `id`, `code?`, `name`, `normalized_name`
 
 ## CurriculumSubject
+
 `curriculum_id`, `subject_id`, `year_level`, `term`, `credits?`, `elective`, `display_order`
 
 ## Prerequisite
+
 `subject_id`, `required_subject_id`, `kind`
 
 Kinds: `to_take`, `to_pass`, `recommended`
 
 ## UserSubjectState
+
 `user_id`, `curriculum_subject_id`, `status`, `grade?`, `started_at?`, `completed_at?`, `notes?`
 
 ## AcademicItem
+
 `id`, `user_id`, `curriculum_subject_id?`, `kind`, `title`, `starts_at?`, `due_at?`, `status`, `notes?`
 
 Kinds: `task`, `assignment`, `midterm`, `final`, `registration`, `class`, `custom`
 
 ## Resource
+
 `id`, `user_id`, `curriculum_subject_id?`, `kind`, `title`, `url?`, `storage_path?`, `body?`
 
 # 10. Data provenance
@@ -246,6 +278,7 @@ Jerarquía:
 # 11. Technical architecture
 
 Frontend:
+
 - React
 - TypeScript strict
 - Vite
@@ -256,6 +289,7 @@ Frontend:
 - Lucide icons
 
 Backend/data:
+
 - Supabase
 - PostgreSQL
 - Supabase Auth
@@ -265,6 +299,7 @@ Backend/data:
 - generated DB types
 
 Local:
+
 - Docker
 - Supabase local stack
 
@@ -309,12 +344,14 @@ campus-poc/
 Demostrar al menos un recorrido académico real completo desde fuente oficial y una segunda institución/unidad para demostrar desacople del modelo.
 
 Preferencia:
+
 - UTN FRRo — Ingeniería en Sistemas de Información
 - UNR FCEIA — una carrera oficialmente documentada
 
 # 15. Quality requirements
 
 Requeridos:
+
 - format
 - lint
 - typecheck
@@ -329,6 +366,7 @@ Cada candidate final pasa por developer-harness evidence + receipt authorization
 # 16. Explicit non-goals
 
 No implementar:
+
 - social feed
 - chat
 - reviews
@@ -348,6 +386,7 @@ No implementar:
 # 17. POC release definition
 
 Campus POC está completo cuando una persona puede:
+
 1. crear cuenta;
 2. seleccionar contexto académico;
 3. ver un plan real;

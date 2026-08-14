@@ -1,0 +1,517 @@
+{
+  "candidate": "cand_a17ecad20c80",
+  "generatedAt": "2026-08-14T05:30:38.029Z",
+  "engine": "axe-core via @axe-core/playwright",
+  "tags": [
+    "wcag2a",
+    "wcag2aa",
+    "wcag21a",
+    "wcag21aa"
+  ],
+  "policy": "critical>0 or serious>0 blocks",
+  "totals": {
+    "critical": 0,
+    "serious": 18,
+    "moderate": 0,
+    "minor": 0
+  },
+  "blocking": 18,
+  "scans": [
+    {
+      "route": "/today",
+      "viewport": "390x844",
+      "counts": {
+        "critical": 0,
+        "serious": 2,
+        "moderate": 0,
+        "minor": 0
+      },
+      "violations": [
+        {
+          "id": "aria-progressbar-name",
+          "impact": "serious",
+          "help": "ARIA progressbar nodes must have an accessible name",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/aria-progressbar-name?application=playwright",
+          "nodes": [
+            {
+              "target": ".h-1\\.5",
+              "summary": "Fix any of the following:   aria-label attribute does not exist or is empty   aria-labelledby attribute does not exist, references elements that do not exist or references elements that are empty"
+            }
+          ]
+        },
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
+          "nodes": [
+            {
+              "target": "p",
+              "summary": "Fix any of the following:   Element has insufficient color contrast of 4.47 (foreground color: #73716b, background color: #f7f5ef, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 4.5:1"
+            },
+            {
+              "target": "#hoy",
+              "summary": "Fix any of the following:   Element has insufficient color contrast of 4.47 (foreground color: #73716b, background color: #f7f5ef, font size: 8.3pt (11px), font weight: normal). Expected contrast ratio of 4.5:1"
+            },
+            {
+              "target": "section[aria-labelledby=\"hoy\"] > div:nth-child(2) > .group.items-start.border-rule-soft > .w-11.mt-0\\.5[data-numeric=\"true\"]",
+              "summary": "Fix any of the following:   Element has insufficient color contrast of 4.47 (foreground color: #73716b, background color: #f7f5ef, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 4.5:1"
+            },
+            {
+              "target": "section[aria-labelledby=\"hoy\"] > div:nth-child(2) > .group.items-start.border-rule-soft > .min-w-0.flex-1 > .gap-x-2.flex-wrap.mt-0\\.5 > span:nth-child(1)",
+              "summary": "Fix any of the following:   Element has insufficient color contrast of 4.47 (foreground color: #73716b, background color: #f7f5ef, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 4.5:1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "route": "/plan",
+      "viewport": "390x844",
+      "counts": {
+        "critical": 0,
+        "serious": 3,
+        "moderate": 0,
+        "minor": 0
+      },
+      "violations": [
+        {
+          "id": "aria-progressbar-name",
+          "impact": "serious",
+          "help": "ARIA progressbar nodes must have an accessible name",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/aria-progressbar-name?application=playwright",
+          "nodes": [
+            {
+              "target": ".h-1\\.5",
+              "summary": "Fix any of the following:   aria-label attribute does not exist or is empty   aria-labelledby attribute does not exist, references elements that do not exist or references elements that are empty"
+            }
+          ]
+        },
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
+          "nodes": [
+            {
+              "target": ".mb-1",
+              "summary": "Fix any of the following:   Element has insufficient color contrast of 4.47 (foreground color: #73716b, background color: #f7f5ef, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 4.5:1"
+            },
+            {
+              "target": ".text-ink[data-numeric=\"true\"] > .text-ink-muted:nth-child(2)",
+              "summary": "Fix any of the following:   Element has insufficient color contrast of 4.47 (foreground color: #73716b, background color: #f7f5ef, font size: 9.8pt (13px), font weight: normal). Expected contrast ratio of 4.5:1"
+            },
+            {
+              "target": ".text-ink[data-numeric=\"true\"] > .text-ink-muted:nth-child(3)",
+              "summary": "Fix any of the following:   Element has insufficient color contrast of 4.47 (foreground color: #73716b, background color: #f7f5ef, font size: 9.8pt (13px), font weight: normal). Expected contrast ratio of 4.5:1"
+            },
+            {
+              "target": ".text-xs.text-ink-muted[data-numeric=\"true\"]",
+              "summary": "Fix any of the following:   Element has insufficient color contrast of 4.47 (foreground color: #73716b, background color: #f7f5ef, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 4.5:1"
+            }
+          ]
+        },
+        {
+          "id": "link-in-text-block",
+          "impact": "serious",
+          "help": "Links must be distinguishable without relying on color",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/link-in-text-block?application=playwright",
+          "nodes": [
+            {
+              "target": ".underline-offset-4",
+              "summary": "Fix any of the following:   The link has insufficient color contrast of 1.24:1 with the surrounding text. (Minimum contrast is 3:1, link text: #3157d5, surrounding text: #73716b)   The link has no styling (such as underline) to distinguish it from the surrounding text"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "route": "/courses",
+      "viewport": "390x844",
+      "counts": {
+        "critical": 0,
+        "serious": 1,
+        "moderate": 0,
+        "minor": 0
+      },
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
+          "nodes": [
+            {
+              "target": ".mb-1",
+              "summary": "Fix any of the following:   Element has insufficient color contrast of 4.47 (foreground color: #73716b, background color: #f7f5ef, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 4.5:1"
+            },
+            {
+              "target": ".mt-1\\.5",
+              "summary": "Fix any of the following:   Element has insufficient color contrast of 4.47 (foreground color: #73716b, background color: #f7f5ef, font size: 9.8pt (13px), font weight: normal). Expected contrast ratio of 4.5:1"
+            },
+            {
+              "target": "#listado",
+              "summary": "Fix any of the following:   Element has insufficient color contrast of 4.47 (foreground color: #73716b, background color: #f7f5ef, font size: 8.3pt (11px), font weight: normal). Expected contrast ratio of 4.5:1"
+            },
+            {
+              "target": ".mt-0\\.5 > span:nth-child(1)",
+              "summary": "Fix any of the following:   Element has insufficient color contrast of 4.47 (foreground color: #73716b, background color: #f7f5ef, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 4.5:1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "route": "/calendar",
+      "viewport": "390x844",
+      "counts": {
+        "critical": 0,
+        "serious": 1,
+        "moderate": 0,
+        "minor": 0
+      },
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
+          "nodes": [
+            {
+              "target": "p",
+              "summary": "Fix any of the following:   Element has insufficient color contrast of 4.47 (foreground color: #73716b, background color: #f7f5ef, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 4.5:1"
+            },
+            {
+              "target": ".items-baseline > .text-xs",
+              "summary": "Fix any of the following:   Element has insufficient color contrast of 4.47 (foreground color: #73716b, background color: #f7f5ef, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 4.5:1"
+            },
+            {
+              "target": ".w-11",
+              "summary": "Fix any of the following:   Element has insufficient color contrast of 4.47 (foreground color: #73716b, background color: #f7f5ef, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 4.5:1"
+            },
+            {
+              "target": ".gap-x-2 > span:nth-child(1)",
+              "summary": "Fix any of the following:   Element has insufficient color contrast of 4.47 (foreground color: #73716b, background color: #f7f5ef, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 4.5:1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "route": "/library",
+      "viewport": "390x844",
+      "counts": {
+        "critical": 0,
+        "serious": 1,
+        "moderate": 0,
+        "minor": 0
+      },
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
+          "nodes": [
+            {
+              "target": "p",
+              "summary": "Fix any of the following:   Element has insufficient color contrast of 4.47 (foreground color: #73716b, background color: #f7f5ef, font size: 9.8pt (13px), font weight: normal). Expected contrast ratio of 4.5:1"
+            },
+            {
+              "target": "h2 > .underline-offset-4.hover\\:underline",
+              "summary": "Fix any of the following:   Element has insufficient color contrast of 4.47 (foreground color: #73716b, background color: #f7f5ef, font size: 8.3pt (11px), font weight: normal). Expected contrast ratio of 4.5:1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "route": "/settings",
+      "viewport": "390x844",
+      "counts": {
+        "critical": 0,
+        "serious": 1,
+        "moderate": 0,
+        "minor": 0
+      },
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
+          "nodes": [
+            {
+              "target": "#cuenta",
+              "summary": "Fix any of the following:   Element has insufficient color contrast of 4.47 (foreground color: #73716b, background color: #f7f5ef, font size: 8.3pt (11px), font weight: normal). Expected contrast ratio of 4.5:1"
+            },
+            {
+              "target": "section[aria-labelledby=\"cuenta\"] > dl > .border-rule-soft.gap-4.border-b > dt",
+              "summary": "Fix any of the following:   Element has insufficient color contrast of 4.47 (foreground color: #73716b, background color: #f7f5ef, font size: 9.8pt (13px), font weight: normal). Expected contrast ratio of 4.5:1"
+            },
+            {
+              "target": "#carrera",
+              "summary": "Fix any of the following:   Element has insufficient color contrast of 4.47 (foreground color: #73716b, background color: #f7f5ef, font size: 8.3pt (11px), font weight: normal). Expected contrast ratio of 4.5:1"
+            },
+            {
+              "target": "section[aria-labelledby=\"carrera\"] > dl > .border-rule-soft.gap-4.border-b:nth-child(1) > dt",
+              "summary": "Fix any of the following:   Element has insufficient color contrast of 4.47 (foreground color: #73716b, background color: #f7f5ef, font size: 9.8pt (13px), font weight: normal). Expected contrast ratio of 4.5:1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "route": "/today",
+      "viewport": "1280x800",
+      "counts": {
+        "critical": 0,
+        "serious": 2,
+        "moderate": 0,
+        "minor": 0
+      },
+      "violations": [
+        {
+          "id": "aria-progressbar-name",
+          "impact": "serious",
+          "help": "ARIA progressbar nodes must have an accessible name",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/aria-progressbar-name?application=playwright",
+          "nodes": [
+            {
+              "target": ".h-1\\.5",
+              "summary": "Fix any of the following:   aria-label attribute does not exist or is empty   aria-labelledby attribute does not exist, references elements that do not exist or references elements that are empty"
+            }
+          ]
+        },
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
+          "nodes": [
+            {
+              "target": ".relative.gap-2\\.5[href$=\"plan\"]",
+              "summary": "Fix any of the following:   Element has insufficient color contrast of 4.47 (foreground color: #73716b, background color: #f7f5ef, font size: 9.8pt (13px), font weight: normal). Expected contrast ratio of 4.5:1"
+            },
+            {
+              "target": ".relative.gap-2\\.5[href$=\"courses\"]",
+              "summary": "Fix any of the following:   Element has insufficient color contrast of 4.47 (foreground color: #73716b, background color: #f7f5ef, font size: 9.8pt (13px), font weight: normal). Expected contrast ratio of 4.5:1"
+            },
+            {
+              "target": ".relative.gap-2\\.5[href$=\"calendar\"]",
+              "summary": "Fix any of the following:   Element has insufficient color contrast of 4.47 (foreground color: #73716b, background color: #f7f5ef, font size: 9.8pt (13px), font weight: normal). Expected contrast ratio of 4.5:1"
+            },
+            {
+              "target": "a[href$=\"library\"]",
+              "summary": "Fix any of the following:   Element has insufficient color contrast of 4.47 (foreground color: #73716b, background color: #f7f5ef, font size: 9.8pt (13px), font weight: normal). Expected contrast ratio of 4.5:1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "route": "/plan",
+      "viewport": "1280x800",
+      "counts": {
+        "critical": 0,
+        "serious": 3,
+        "moderate": 0,
+        "minor": 0
+      },
+      "violations": [
+        {
+          "id": "aria-progressbar-name",
+          "impact": "serious",
+          "help": "ARIA progressbar nodes must have an accessible name",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/aria-progressbar-name?application=playwright",
+          "nodes": [
+            {
+              "target": ".h-1\\.5",
+              "summary": "Fix any of the following:   aria-label attribute does not exist or is empty   aria-labelledby attribute does not exist, references elements that do not exist or references elements that are empty"
+            }
+          ]
+        },
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
+          "nodes": [
+            {
+              "target": ".gap-2\\.5.py-2[href$=\"today\"]",
+              "summary": "Fix any of the following:   Element has insufficient color contrast of 4.47 (foreground color: #73716b, background color: #f7f5ef, font size: 9.8pt (13px), font weight: normal). Expected contrast ratio of 4.5:1"
+            },
+            {
+              "target": ".gap-2\\.5.py-2[href$=\"courses\"]",
+              "summary": "Fix any of the following:   Element has insufficient color contrast of 4.47 (foreground color: #73716b, background color: #f7f5ef, font size: 9.8pt (13px), font weight: normal). Expected contrast ratio of 4.5:1"
+            },
+            {
+              "target": ".gap-2\\.5.py-2[href$=\"calendar\"]",
+              "summary": "Fix any of the following:   Element has insufficient color contrast of 4.47 (foreground color: #73716b, background color: #f7f5ef, font size: 9.8pt (13px), font weight: normal). Expected contrast ratio of 4.5:1"
+            },
+            {
+              "target": "a[href$=\"library\"]",
+              "summary": "Fix any of the following:   Element has insufficient color contrast of 4.47 (foreground color: #73716b, background color: #f7f5ef, font size: 9.8pt (13px), font weight: normal). Expected contrast ratio of 4.5:1"
+            }
+          ]
+        },
+        {
+          "id": "link-in-text-block",
+          "impact": "serious",
+          "help": "Links must be distinguishable without relying on color",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/link-in-text-block?application=playwright",
+          "nodes": [
+            {
+              "target": ".underline-offset-4",
+              "summary": "Fix any of the following:   The link has insufficient color contrast of 1.24:1 with the surrounding text. (Minimum contrast is 3:1, link text: #3157d5, surrounding text: #73716b)   The link has no styling (such as underline) to distinguish it from the surrounding text"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "route": "/courses",
+      "viewport": "1280x800",
+      "counts": {
+        "critical": 0,
+        "serious": 1,
+        "moderate": 0,
+        "minor": 0
+      },
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
+          "nodes": [
+            {
+              "target": ".gap-2\\.5.py-2[href$=\"today\"]",
+              "summary": "Fix any of the following:   Element has insufficient color contrast of 4.47 (foreground color: #73716b, background color: #f7f5ef, font size: 9.8pt (13px), font weight: normal). Expected contrast ratio of 4.5:1"
+            },
+            {
+              "target": ".gap-2\\.5.py-2[href$=\"plan\"]",
+              "summary": "Fix any of the following:   Element has insufficient color contrast of 4.47 (foreground color: #73716b, background color: #f7f5ef, font size: 9.8pt (13px), font weight: normal). Expected contrast ratio of 4.5:1"
+            },
+            {
+              "target": ".gap-2\\.5.py-2[href$=\"calendar\"]",
+              "summary": "Fix any of the following:   Element has insufficient color contrast of 4.47 (foreground color: #73716b, background color: #f7f5ef, font size: 9.8pt (13px), font weight: normal). Expected contrast ratio of 4.5:1"
+            },
+            {
+              "target": "a[href$=\"library\"]",
+              "summary": "Fix any of the following:   Element has insufficient color contrast of 4.47 (foreground color: #73716b, background color: #f7f5ef, font size: 9.8pt (13px), font weight: normal). Expected contrast ratio of 4.5:1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "route": "/calendar",
+      "viewport": "1280x800",
+      "counts": {
+        "critical": 0,
+        "serious": 1,
+        "moderate": 0,
+        "minor": 0
+      },
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
+          "nodes": [
+            {
+              "target": ".relative.gap-2\\.5[href$=\"today\"]",
+              "summary": "Fix any of the following:   Element has insufficient color contrast of 4.47 (foreground color: #73716b, background color: #f7f5ef, font size: 9.8pt (13px), font weight: normal). Expected contrast ratio of 4.5:1"
+            },
+            {
+              "target": ".relative.gap-2\\.5[href$=\"plan\"]",
+              "summary": "Fix any of the following:   Element has insufficient color contrast of 4.47 (foreground color: #73716b, background color: #f7f5ef, font size: 9.8pt (13px), font weight: normal). Expected contrast ratio of 4.5:1"
+            },
+            {
+              "target": ".relative.gap-2\\.5[href$=\"courses\"]",
+              "summary": "Fix any of the following:   Element has insufficient color contrast of 4.47 (foreground color: #73716b, background color: #f7f5ef, font size: 9.8pt (13px), font weight: normal). Expected contrast ratio of 4.5:1"
+            },
+            {
+              "target": "a[href$=\"library\"]",
+              "summary": "Fix any of the following:   Element has insufficient color contrast of 4.47 (foreground color: #73716b, background color: #f7f5ef, font size: 9.8pt (13px), font weight: normal). Expected contrast ratio of 4.5:1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "route": "/library",
+      "viewport": "1280x800",
+      "counts": {
+        "critical": 0,
+        "serious": 1,
+        "moderate": 0,
+        "minor": 0
+      },
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
+          "nodes": [
+            {
+              "target": ".relative.gap-2\\.5[href$=\"today\"]",
+              "summary": "Fix any of the following:   Element has insufficient color contrast of 4.47 (foreground color: #73716b, background color: #f7f5ef, font size: 9.8pt (13px), font weight: normal). Expected contrast ratio of 4.5:1"
+            },
+            {
+              "target": ".relative.gap-2\\.5[href$=\"plan\"]",
+              "summary": "Fix any of the following:   Element has insufficient color contrast of 4.47 (foreground color: #73716b, background color: #f7f5ef, font size: 9.8pt (13px), font weight: normal). Expected contrast ratio of 4.5:1"
+            },
+            {
+              "target": ".relative.gap-2\\.5[href$=\"courses\"]",
+              "summary": "Fix any of the following:   Element has insufficient color contrast of 4.47 (foreground color: #73716b, background color: #f7f5ef, font size: 9.8pt (13px), font weight: normal). Expected contrast ratio of 4.5:1"
+            },
+            {
+              "target": ".relative.gap-2\\.5[href$=\"calendar\"]",
+              "summary": "Fix any of the following:   Element has insufficient color contrast of 4.47 (foreground color: #73716b, background color: #f7f5ef, font size: 9.8pt (13px), font weight: normal). Expected contrast ratio of 4.5:1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "route": "/settings",
+      "viewport": "1280x800",
+      "counts": {
+        "critical": 0,
+        "serious": 1,
+        "moderate": 0,
+        "minor": 0
+      },
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
+          "nodes": [
+            {
+              "target": ".relative.gap-2\\.5[href$=\"today\"]",
+              "summary": "Fix any of the following:   Element has insufficient color contrast of 4.47 (foreground color: #73716b, background color: #f7f5ef, font size: 9.8pt (13px), font weight: normal). Expected contrast ratio of 4.5:1"
+            },
+            {
+              "target": ".relative.gap-2\\.5[href$=\"plan\"]",
+              "summary": "Fix any of the following:   Element has insufficient color contrast of 4.47 (foreground color: #73716b, background color: #f7f5ef, font size: 9.8pt (13px), font weight: normal). Expected contrast ratio of 4.5:1"
+            },
+            {
+              "target": ".relative.gap-2\\.5[href$=\"courses\"]",
+              "summary": "Fix any of the following:   Element has insufficient color contrast of 4.47 (foreground color: #73716b, background color: #f7f5ef, font size: 9.8pt (13px), font weight: normal). Expected contrast ratio of 4.5:1"
+            },
+            {
+              "target": ".relative.gap-2\\.5[href$=\"calendar\"]",
+              "summary": "Fix any of the following:   Element has insufficient color contrast of 4.47 (foreground color: #73716b, background color: #f7f5ef, font size: 9.8pt (13px), font weight: normal). Expected contrast ratio of 4.5:1"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

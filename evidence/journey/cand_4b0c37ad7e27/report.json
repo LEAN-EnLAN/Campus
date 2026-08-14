@@ -1,0 +1,59 @@
+{
+  "candidate": "cand_4b0c37ad7e27",
+  "generatedAt": "2026-08-14T05:34:34.433Z",
+  "total": 7,
+  "passed": 6,
+  "failed": 1,
+  "consoleErrors": [],
+  "steps": [
+    {
+      "step": 1,
+      "name": "Crear cuenta",
+      "passed": true,
+      "detail": "journey-191933-1786685643100@campus.test",
+      "ms": 1021
+    },
+    {
+      "step": 2,
+      "name": "Elegir universidad",
+      "passed": true,
+      "detail": "UTN",
+      "ms": 57
+    },
+    {
+      "step": 3,
+      "name": "Elegir facultad",
+      "passed": true,
+      "detail": "FRRo",
+      "ms": 25
+    },
+    {
+      "step": 4,
+      "name": "Elegir carrera",
+      "passed": true,
+      "detail": "Ingeniería en Sistemas de Información",
+      "ms": 24
+    },
+    {
+      "step": 5,
+      "name": "Elegir plan de estudios",
+      "passed": true,
+      "detail": "Plan 2023",
+      "ms": 24
+    },
+    {
+      "step": 6,
+      "name": "Confirmar y entrar a Hoy",
+      "passed": true,
+      "detail": "Contanos dónde estudiás.",
+      "ms": 76
+    },
+    {
+      "step": 7,
+      "name": "Ver el plan real con materias oficiales",
+      "passed": false,
+      "detail": "locator.click: Timeout 30000ms exceeded.\nCall log:\n  - waiting for getByRole('link', { name: 'Plan', exact: true }).first()\n",
+      "ms": 30029
+    }
+  ]
+}

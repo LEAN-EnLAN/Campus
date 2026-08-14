@@ -1,0 +1,129 @@
+{
+  "candidate": "cand_d9d0c852b96e",
+  "generatedAt": "2026-08-14T05:38:14.887Z",
+  "total": 17,
+  "passed": 16,
+  "failed": 1,
+  "consoleErrors": [],
+  "steps": [
+    {
+      "step": 1,
+      "name": "Crear cuenta",
+      "passed": true,
+      "detail": "journey-209599-1786685892140@campus.test",
+      "ms": 1037
+    },
+    {
+      "step": 2,
+      "name": "Elegir universidad",
+      "passed": true,
+      "detail": "UTN",
+      "ms": 58
+    },
+    {
+      "step": 3,
+      "name": "Elegir facultad",
+      "passed": true,
+      "detail": "FRRo",
+      "ms": 25
+    },
+    {
+      "step": 4,
+      "name": "Elegir carrera",
+      "passed": true,
+      "detail": "Ingeniería en Sistemas de Información",
+      "ms": 24
+    },
+    {
+      "step": 5,
+      "name": "Elegir plan de estudios",
+      "passed": true,
+      "detail": "Plan 2023",
+      "ms": 25
+    },
+    {
+      "step": 6,
+      "name": "Confirmar y entrar a Hoy",
+      "passed": true,
+      "detail": "¿Qué tenés para hoy?",
+      "ms": 77
+    },
+    {
+      "step": 7,
+      "name": "Ver el plan real con materias oficiales",
+      "passed": true,
+      "detail": "40 materias, primera: Análisis Matemático I",
+      "ms": 64
+    },
+    {
+      "step": 8,
+      "name": "Ver una materia bloqueada por correlativas",
+      "passed": true,
+      "detail": "Análisis Matemático II — Bloqueada",
+      "ms": 4
+    },
+    {
+      "step": 9,
+      "name": "Abrir Análisis Matemático I y marcarla Cursando",
+      "passed": true,
+      "detail": "habilita: Análisis Matemático II",
+      "ms": 131
+    },
+    {
+      "step": 10,
+      "name": "Agregar una entrega para hoy",
+      "passed": true,
+      "detail": "2026-08-14",
+      "ms": 157
+    },
+    {
+      "step": 11,
+      "name": "La entrega aparece en la materia",
+      "passed": true,
+      "detail": "visible en el detalle de la materia",
+      "ms": 2
+    },
+    {
+      "step": 12,
+      "name": "La misma entrega aparece en Hoy",
+      "passed": true,
+      "detail": "Tenés una cosa para hoy.",
+      "ms": 49
+    },
+    {
+      "step": 13,
+      "name": "La entrega también aparece en el calendario",
+      "passed": true,
+      "detail": "visible en la semana",
+      "ms": 43
+    },
+    {
+      "step": 14,
+      "name": "Todo sobrevive un reload completo",
+      "passed": true,
+      "detail": "datos persistidos en Postgres, no en estado de React",
+      "ms": 564
+    },
+    {
+      "step": 15,
+      "name": "Contar materias disponibles antes de aprobar",
+      "passed": true,
+      "detail": "11 disponibles",
+      "ms": 60
+    },
+    {
+      "step": 16,
+      "name": "Aprobar Análisis Matemático I",
+      "passed": true,
+      "detail": "aprobada",
+      "ms": 242
+    },
+    {
+      "step": 17,
+      "name": "Con una sola correlativa, la dependiente sigue bloqueada",
+      "passed": false,
+      "detail": "debería seguir bloqueada por Álgebra: Análisis Matemático II",
+      "ms": 103
+    }
+  ]
+}

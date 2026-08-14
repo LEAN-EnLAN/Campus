@@ -1,0 +1,94 @@
+{
+  "candidate": "cand_144609530739",
+  "generatedAt": "2026-08-14T05:36:06.078Z",
+  "total": 12,
+  "passed": 11,
+  "failed": 1,
+  "consoleErrors": [],
+  "steps": [
+    {
+      "step": 1,
+      "name": "Crear cuenta",
+      "passed": true,
+      "detail": "journey-200547-1786685764362@campus.test",
+      "ms": 987
+    },
+    {
+      "step": 2,
+      "name": "Elegir universidad",
+      "passed": true,
+      "detail": "UTN",
+      "ms": 58
+    },
+    {
+      "step": 3,
+      "name": "Elegir facultad",
+      "passed": true,
+      "detail": "FRRo",
+      "ms": 24
+    },
+    {
+      "step": 4,
+      "name": "Elegir carrera",
+      "passed": true,
+      "detail": "Ingeniería en Sistemas de Información",
+      "ms": 25
+    },
+    {
+      "step": 5,
+      "name": "Elegir plan de estudios",
+      "passed": true,
+      "detail": "Plan 2023",
+      "ms": 25
+    },
+    {
+      "step": 6,
+      "name": "Confirmar y entrar a Hoy",
+      "passed": true,
+      "detail": "¿Qué tenés para hoy?",
+      "ms": 71
+    },
+    {
+      "step": 7,
+      "name": "Ver el plan real con materias oficiales",
+      "passed": true,
+      "detail": "40 materias, primera: Análisis Matemático I",
+      "ms": 67
+    },
+    {
+      "step": 8,
+      "name": "Ver una materia bloqueada por correlativas",
+      "passed": true,
+      "detail": "Análisis Matemático II — Bloqueada",
+      "ms": 5
+    },
+    {
+      "step": 9,
+      "name": "Abrir Análisis Matemático I y marcarla Cursando",
+      "passed": true,
+      "detail": "habilita: Análisis Matemático II",
+      "ms": 134
+    },
+    {
+      "step": 10,
+      "name": "Agregar una entrega para hoy",
+      "passed": true,
+      "detail": "2026-08-14",
+      "ms": 156
+    },
+    {
+      "step": 11,
+      "name": "La entrega aparece en la materia",
+      "passed": true,
+      "detail": "visible en el detalle de la materia",
+      "ms": 2
+    },
+    {
+      "step": 12,
+      "name": "La misma entrega aparece en Hoy",
+      "passed": false,
+      "detail": "locator.waitFor: Error: strict mode violation: locator('section[aria-labelledby=\"hoy\"]').getByText('TP 1 · integrales') resolved to 2 elements:\n    1) <span class=\"sr-only\">Marcar TP 1 · integrales como hecho</span> aka getByRole('button', { name: 'Marcar TP 1 · integrales como' })\n    2) <span class=\"block text-sm text-ink\">TP 1 · integrales</span> aka getByText('TP 1 · integrales', { exact: true })\n\nCall log:\n  - waiting for locator('section[aria-labelledby=\"hoy\"]').getByText('TP 1 · integrales') to be visible\n",
+      "ms": 87
+    }
+  ]
+}

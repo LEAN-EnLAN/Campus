@@ -110,8 +110,11 @@ function CoursesScreen() {
             onClick={() => setFilter(f.value)}
           >
             {f.label}
-            {/* opacity-70 composited white-on-accent to 3.84:1. 90% clears AA. */}
-            <span className="text-xs opacity-90" data-numeric>
+            {/* No opacity at all. opacity-70 composited to 3.84:1 and failed; 90%
+                measured ~5.3:1 yet still tripped axe at 390px, which means it was
+                sitting close enough to the threshold to be decided by rounding.
+                A value that passes at four viewports out of five is not passing. */}
+            <span className="text-xs" data-numeric>
               {counts.get(f.value) ?? 0}
             </span>
           </Button>

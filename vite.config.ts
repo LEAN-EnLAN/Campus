@@ -14,6 +14,12 @@ export default defineConfig({
   resolve: {
     alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
   },
-  server: { port: 5173, strictPort: true },
+  server: {
+    port: 5173,
+    strictPort: true,
+    // Vite rejects Host headers it does not recognise. Allow MagicDNS names so the
+    // dev server is reachable as `casa.tail<id>.ts.net`, not only by tailnet IP.
+    allowedHosts: ['.ts.net'],
+  },
   preview: { port: 4173, strictPort: true },
 })

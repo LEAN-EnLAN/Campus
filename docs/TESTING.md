@@ -61,6 +61,41 @@ Están en el plan, con la marca puesta, en vez de con un año inventado.
 
 Ver `docs/research/academic-sources.md` para el detalle completo.
 
+## Probarlo desde el celular (Tailscale)
+
+```bash
+pnpm db:start && pnpm tester seed
+pnpm dev:tailnet
+```
+
+Imprime las URLs y arranca Vite bindeado **a la IP de Tailscale**, no a `0.0.0.0`: sólo
+tu tailnet lo alcanza, la LAN no.
+
+```
+app        http://100.102.107.60:5173
+           http://casa.tail61165e.ts.net:5173
+tester     http://100.102.107.60:5173/dev
+```
+
+**Por qué hace falta un script y no alcanza `vite --host`:** `VITE_SUPABASE_URL` se
+hornea en el cliente. Si servís la app en el tailnet con la URL apuntando a
+`127.0.0.1:54321`, el celular le pide la base **a sí mismo** y todas las pantallas
+fallan. El script reescribe la URL de Supabase a la misma dirección de tailnet desde la
+que se sirve la app, sin tocar tu `.env`.
+
+Verificado bloqueando en el browser toda request a loopback: 0 requests a
+`127.0.0.1`, 0 errores de consola, 40 materias traídas de Postgres.
+
+**Esto es sólo tailnet.** No usa `tailscale funnel`, que publicaría el dev server en la
+internet pública. Si querés HTTPS con el nombre de MagicDNS, `tailscale serve` lo hace,
+pero acordate de exponer Supabase por HTTPS también o el browser bloquea el contenido
+mixto.
+
+**Una cosa a tener en cuenta:** el Kong de Supabase bindea `0.0.0.0:54321` por default
+del CLI — eso no lo puse yo, pero significa que la API de la base es alcanzable desde tu
+LAN, no sólo desde el tailnet. Con RLS puesta y sólo datos de prueba adentro el riesgo es
+bajo, pero conviene saberlo.
+
 ## Barrido automático de todo el frontend
 
 ```bash
@@ -104,11 +139,12 @@ rm src/routes/dev.tsx
 rm -rf src/features/dev
 rm scripts/tester.mjs
 rm scripts/verify-frontend.mjs
+rm scripts/dev-tailnet.mjs
 rm docs/TESTING.md
 ```
 
-Y en `package.json`, borrar tres scripts: `tester`, `verify:frontend`,
-`verify:frontend:xvfb`. En `.env`, borrar `VITE_CAMPUS_TESTER`.
+Y en `package.json`, borrar cuatro scripts: `tester`, `verify:frontend`,
+`verify:frontend:xvfb`, `dev:tailnet`. En `.env`, borrar `VITE_CAMPUS_TESTER`.
 
 Para limpiar las cuentas de la base, **corré `pnpm tester purge` antes** de borrar el
 script.

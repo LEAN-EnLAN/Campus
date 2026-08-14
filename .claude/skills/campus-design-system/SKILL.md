@@ -172,3 +172,27 @@ Empty states: no mascot, direct academic language.
 Not:
 
 > "I have another productivity system to maintain."
+
+## From screens to a workspace
+
+`AcademicShell` evolves; it is not replaced by a second unrelated shell.
+
+```text
+desktop   left sidebar · workspace (tabs, split panes) · context sidebar
+tablet    main surface + drawers
+mobile    single surface + bottom nav + sheets
+```
+
+**Do not render miniature desktop panes at 390px.** Mobile is not a compressed desktop
+(P-08) — that principle now has teeth, because panes are the thing most likely to break it.
+
+shadcn is behaviour and accessibility primitives, never the final design language. Reach for
+it when it materially reduces complexity; do not replace a working, accessible hand-built
+component just to standardise. `QuickCapture` and `SearchPalette` carry deliberate
+accessibility fixes — decide KEEP / REFACTOR / REPLACE with a stated reason, and prove no
+regression through the sweep.
+
+The thesis holds: academic field notebook + quiet operations desk. It gains interaction
+density, workspace depth and tactility — not clutter. The target feeling adds:
+
+> "Esta carpeta es mi facultad."

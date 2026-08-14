@@ -120,3 +120,22 @@ pretending to be a curriculum.
 - [ ] seed generated from verified JSON, not typed by hand
 - [ ] subject names carry correct Spanish accents
 - [ ] `term` ∈ {anual, 1c, 2c}, `year_level` matches the institution's labelling
+
+## Portable catalog for LOCAL mode
+
+The curated official seed must be reachable **without Postgres**.
+
+A portable bundle (`resources/academic-catalog/`) is **generated** from the same verified
+JSON in `docs/research/curricula/` that produces `supabase/seed.sql`. One source of truth,
+two emitted artefacts.
+
+**Never maintain two hand-edited catalogs.** They will diverge, and a divergence here means
+one of them is lying about a real curriculum.
+
+The bundle preserves, per curriculum: `sourceUrl`, `sourceKind`, `retrievedAt`, per-subject
+`verified` state, and — critically — the distinction that **unknown prerequisites ≠ no
+prerequisites**. UNR FCEIA has no published correlatividades; that must survive into LOCAL
+mode as _unknown_, not as an empty list that reads as "nothing blocks you".
+
+When a student picks a curriculum in LOCAL mode, the selected slice is written into the vault
+under `.campus/academic/`, so the vault stays self-describing.

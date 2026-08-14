@@ -133,3 +133,21 @@ measured reason. Lists are short (a curriculum is ~40 subjects) — no virtualis
 `any` · inline hex colours · `dangerouslySetInnerHTML` · direct `fetch` to Supabase REST
 (use the client) · business logic in `.tsx` · `useEffect` for data fetching (that's Query's job) ·
 localStorage as the source of truth for academic data · `console.log` in committed code.
+
+## The backend boundary
+
+Hooks no longer talk to Supabase. They talk to `CampusBackend`.
+
+```text
+components → TanStack Query hooks → CampusBackend → { LocalBackend | SupabaseBackend }
+```
+
+- **No component or hook imports `@supabase/supabase-js`.** Only `src/lib/backends/supabase/**` does.
+- No `if (mode === 'local')` in a component. If a screen has to branch on the runtime, the
+  boundary is in the wrong place.
+- `src/lib/db/**` stays the Supabase row↔domain mapper and becomes an implementation detail
+  of the Supabase adapter.
+- `src/domain/**` stays pure and backend-agnostic. Unchanged.
+
+Keep the interface **small** — one method per use case that already exists. No generic
+repository ceremony. Details in `campus-local-first`.

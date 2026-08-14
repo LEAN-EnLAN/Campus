@@ -146,3 +146,20 @@ blocked class passed.
 
 Never `git push`, merge, or commit unless the user asked. Conventional commits only,
 no AI attribution.
+
+## New verification surfaces
+
+The existing evidence set stays exactly as it is. Local-first adds classes that need their
+own executed evidence, never a claim:
+
+| Class                | What it must prove                                                                                                       |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| filesystem security  | traversal, absolute escape, symlink escape, rename escape, attachment escape, malformed names — see `campus-vault`       |
+| code-runner security | timeout, terminate, output caps, network/filesystem/spawn denial — see `campus-code-runner`                              |
+| index rebuild        | `rm .campus/index.sqlite` → rebuild → zero data loss                                                                     |
+| external change      | edit/rename/move/delete from outside Campus → correct reaction, no silent overwrite                                      |
+| performance          | cold open, initial index, incremental index, search p50/p95, 5k-note memory — numbers from generated vaults, not guesses |
+| packaging            | `CONFIGURED` / `BUILT` / `RUNTIME_VERIFIED` / `INSTALLER_VERIFIED` reported separately, per platform                     |
+
+`verify:frontend` and `verify:frontend:xvfb` are **extended, not replaced**. The Xvfb
+protection stays: headless by default, pinned `:99` when headed, never hunt for `:0`.

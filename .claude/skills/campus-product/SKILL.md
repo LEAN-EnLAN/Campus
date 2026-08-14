@@ -109,3 +109,19 @@ do all of it comfortably on phone and desktop.
 ```text
 PRD → design.md → SDD spec/design → project skills → existing convention → agent preference
 ```
+
+## Local-first evolution
+
+Campus is evolving from _an academic planner backed by Supabase_ into **a local-first
+academic workspace where a student's own folder, Markdown notes, files, coursework, academic
+structure and executable code understand each other**.
+
+The POC requirements (`CAP-*`) remain valid and must not regress. The new delta lives in
+`openspec/changes/campus-local-first-workspace/` with its own epics and IDs
+(`VAULT-*`, `EDITOR-*`, `CODE-*`, `WORKSPACE-*`, `DESKTOP-*`, …).
+
+Two runtime modes: **LOCAL** (a folder, no account, no network) and **CLOUD** (today's
+Supabase behaviour). See `campus-local-first`.
+
+Campus is not a note app with university metadata bolted on. It is the student's academic
+filesystem becoming intelligent — see `docs/vault-format.md`.

@@ -124,3 +124,16 @@ offer upload.
 
 `src/lib/db/` is the only place that imports `@supabase/supabase-js` types or knows column
 names. It maps DB rows → domain types. Screens import domain types, never `Database['public']...`.
+
+## Supabase is now one adapter
+
+Everything in this skill still applies — to the **CLOUD** runtime mode. Supabase is no longer
+_the_ backend; it is one implementation of `CampusBackend`, behind
+`src/lib/backends/supabase/**`.
+
+Unchanged: migrations-only schema, RLS on every table, `with check` on insert and update,
+the A/B isolation tests, service-role never reaching the client. `pnpm test:db` stays green —
+the cloud path is a compatibility guarantee, not legacy.
+
+Changed: nothing outside the adapter imports the Supabase client, and LOCAL mode must work
+with the whole stack stopped. See `campus-local-first`.

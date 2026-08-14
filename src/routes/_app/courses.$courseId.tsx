@@ -223,7 +223,11 @@ function CourseDetailScreen() {
           </div>
         ) : (
           <p className="text-ink-muted text-sm">
-            No te falta ninguna correlativa para cursar esta materia.
+            {/* Saying "no te falta ninguna" when we never had the graph would be
+                asserting an academic fact we do not have. */}
+            {plan.prerequisiteCount === 0
+              ? 'Esta facultad todavía no publicó las correlatividades de este plan. No sabemos qué te piden para cursarla, y no lo vamos a inventar.'
+              : 'No te falta ninguna correlativa para cursar esta materia.'}
           </p>
         )}
 

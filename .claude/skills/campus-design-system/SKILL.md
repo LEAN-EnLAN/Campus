@@ -40,7 +40,7 @@ Defined in `src/styles/tokens.css` as CSS custom properties, exposed to Tailwind
 --paper: #f7f5ef; /* app background — warm paper, never pure white */
 --paper-elevated: #fffefa; /* raised surfaces */
 --ink: #181816; /* primary text — near-black, never #000 */
---ink-muted: #73716b; /* secondary text, metadata */
+--ink-muted: #6a6862; /* secondary text, metadata — 5.11:1 on paper */ /* secondary text, metadata */
 --rule: #dedbd2; /* borders, separators */
 --rule-soft: #ebe8df; /* hairlines inside a surface */
 --accent: #3157d5; /* single accent — links, focus, active state */
@@ -51,6 +51,19 @@ Defined in `src/styles/tokens.css` as CSS custom properties, exposed to Tailwind
 ```
 
 One accent. If a screen seems to need a second accent colour, it needs better hierarchy instead.
+
+### There are exactly TWO text colours
+
+`--ink` and `--ink-muted`. There is no third tier, and trying to invent one is a
+recurring mistake: any value light enough to read as "fainter" than `--ink-muted` on
+`--paper` fails 4.5:1, and any value that passes collapses back into `--ink-muted`.
+
+`--ink-faint` is **not a text colour**. Use it only for decorative glyphs, chevrons,
+separators and input placeholders. If you are about to put it on something a person reads,
+use `--ink-muted`.
+
+Same trap with opacity: `opacity-70` on white over `--accent` composites to 3.84:1 and
+fails. Dimming text is a contrast decision, not a styling one — check it.
 
 ## Typography
 

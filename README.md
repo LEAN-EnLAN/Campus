@@ -64,6 +64,19 @@ Creá una cuenta con cualquier email (el stack local no manda mails), elegí UTN
 Ingeniería en Sistemas de Información → Plan 2023, y ya tenés 40 materias con sus
 correlativas.
 
+## Probarlo a mano
+
+Hay seis cuentas de prueba sembradas que cubren todos los estados, **incluidos los que
+están bloqueados** porque la facultad no publicó el dato:
+
+```bash
+pnpm tester seed    # crea las cuentas
+pnpm dev            # y abrí http://localhost:5173/dev
+```
+
+Detalle en [`docs/TESTING.md`](docs/TESTING.md). Es andamiaje temporal y se saca entero
+con cinco `rm` — está documentado ahí mismo.
+
 ## Verificación
 
 Ningún comando acá miente: todos corren de verdad y devuelven un exit code real.
@@ -79,6 +92,8 @@ pnpm build            # build de producción
 pnpm build && pnpm verify:journey   # el recorrido completo en un browser real
 pnpm build && pnpm verify:ui        # 6 rutas × 5 viewports
 pnpm build && pnpm verify:a11y      # axe-core, bloquea en critical/serious
+
+pnpm build && pnpm verify:frontend:xvfb   # 39 superficies × 5 viewports, con axe en cada una
 ```
 
 Los tres `verify:*` necesitan `pnpm build` antes y el stack local arriba. La evidencia queda

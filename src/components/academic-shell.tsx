@@ -93,7 +93,7 @@ export function AcademicShell({
             >
               <Search aria-hidden="true" />
               Buscar
-              <kbd className="border-rule text-2xs text-ink-faint ml-auto rounded border px-1">
+              <kbd className="border-rule text-2xs text-ink-muted ml-auto rounded border px-1">
                 /
               </kbd>
             </Button>

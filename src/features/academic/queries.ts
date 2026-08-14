@@ -328,6 +328,14 @@ export interface AcademicPlan {
   context: AcademicContext | null
   curriculum: Curriculum | null
   programName: string | null
+  /**
+   * How many correlativa edges this plan actually declares.
+   *
+   * Zero is meaningful, not empty: UNR FCEIA publishes the plan but not the
+   * correlatividades, so screens must say "no las tenemos" rather than let silence
+   * read as "nada te bloquea".
+   */
+  prerequisiteCount: number
   views: SubjectView[]
   byYear: ReturnType<typeof groupByYear>
   progress: ReturnType<typeof computeProgress>
@@ -377,6 +385,7 @@ export function useAcademicPlan(): AcademicPlan {
     context,
     curriculum: bundleQuery.data?.curriculum ?? null,
     programName: bundleQuery.data?.programName ?? null,
+    prerequisiteCount: bundleQuery.data?.prerequisites.length ?? 0,
     views,
     byYear,
     progress,

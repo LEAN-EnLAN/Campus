@@ -137,31 +137,32 @@ export function SearchPalette({
           {results.map((result, index) => {
             const Icon = ICON[result.kind]
             return (
+              // The option IS the row. A `role="option"` must not contain a focusable
+              // control — that is axe's `nested-interactive`, and it is right: focus
+              // stays on the input, which owns the selection via
+              // aria-activedescendant. Mouse handlers on a non-focusable element are
+              // correct for this pattern; the keyboard path is the input's.
               <li
                 key={`${result.kind}-${result.id}`}
                 id={`${listId}-option-${index}`}
                 role="option"
                 aria-selected={index === active}
+                onMouseEnter={() => setActive(index)}
+                onClick={() => go(result)}
+                className={cn(
+                  'flex cursor-pointer items-center gap-3 px-4 py-2.5 transition-colors',
+                  index === active ? 'bg-accent-soft' : 'hover:bg-paper-sunken',
+                )}
               >
-                <button
-                  type="button"
-                  onMouseEnter={() => setActive(index)}
-                  onClick={() => go(result)}
-                  className={cn(
-                    'flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors',
-                    index === active ? 'bg-accent-soft' : 'hover:bg-paper-sunken',
-                  )}
-                >
-                  <Icon aria-hidden="true" className="text-ink-faint size-4 shrink-0" />
-                  <span className="min-w-0 flex-1">
-                    <span className="text-ink block truncate text-sm">{result.title}</span>
-                    {result.subtitle ? (
-                      <span className="text-ink-muted block truncate text-xs">
-                        {result.subtitle}
-                      </span>
-                    ) : null}
-                  </span>
-                </button>
+                <Icon aria-hidden="true" className="text-ink-faint size-4 shrink-0" />
+                <span className="min-w-0 flex-1">
+                  <span className="text-ink block truncate text-sm">{result.title}</span>
+                  {result.subtitle ? (
+                    <span className="text-ink-muted block truncate text-xs">
+                      {result.subtitle}
+                    </span>
+                  ) : null}
+                </span>
               </li>
             )
           })}

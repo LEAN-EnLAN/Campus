@@ -6,6 +6,24 @@ read, or from the marketing/docs copy of the page.
 
 ## Capture conditions (read this before trusting a pixel measurement)
 
+> **Superseded in part — second pass.** The viewport problem described below was fixed by
+> abandoning camofox for this job and driving **headless Chromium via Playwright** directly
+> (`chromium.launch()` + `newContext({ viewport })`, `deviceScaleFactor: 1`, `isMobile`/`hasTouch`
+> on the two small sizes). Headless Chromium needs no display, so nothing touched the Hyprland
+> compositor, and it honours `viewport` exactly — all 15 new PNGs are byte-exact 1440×900,
+> 768×1024 and 390×844 as reported by `magick identify`. Every desktop observation in sections
+> 1–6 still stands; the "nothing validated at 768 or 390" caveat no longer applies — see
+> **"Responsive behaviour (captured 390 / 768 / 1440)"** at the end of this file.
+>
+> One correction carried by the second pass: the ban list at the bottom says "anytype.io and
+> tana.inc both hijack the wheel". Anytype is re-confirmed (`documentElement.scrollHeight ===
+innerHeight` at all three viewports — 900/1024/844). But **`outliner.tana.inc` does not
+> hijack**: it reports scrollHeight 5766 / 4427 / 3839 against those same viewports and scrolls
+> natively. The hijack claim applies to `tana.inc` (marketing home), which was not re-captured
+> in this pass.
+
+### First pass (camofox / camoufox — kept for the record)
+
 - Captures are **1896×974**, not the requested 1440×900. The camofox browser runs camoufox
   (patched Firefox) with the Playwright context created as `viewport: null`, and
   `POST /tabs/{id}/viewport` fails with a juggler protocol error:
@@ -34,6 +52,25 @@ read, or from the marketing/docs copy of the page.
 | `anytype-grid.png`          | anytype.io objects / templates / widgets                         |
 | `supernotes-home.png`       | supernotes.app hero + Today view                                 |
 | `supernotes-cards.png`      | supernotes.app annotated notecard anatomy                        |
+
+### Second pass (headless Chromium — exact viewports)
+
+Fifteen files, `<product>-<viewport>.png`, all opened and read. None flat: greyscale mean/σ
+ranges from 0.82/0.15 (craft-1440) to 0.36/0.35 (tana-390, a dark theme — dark, not black).
+All five sites returned HTTP 200 at all three sizes. **No site blocked us, no CAPTCHA, no
+consent wall.**
+
+| File                                            | Viewport | Notes                                               |
+| ----------------------------------------------- | -------- | --------------------------------------------------- |
+| `craft-1440.png` / `-768.png` / `-390.png`      | 3        | www.craft.do home                                   |
+| `things-1440.png` / `-768.png` / `-390.png`     | 3        | culturedcode.com/things/features                    |
+| `anytype-1440.png` / `-768.png` / `-390.png`    | 3        | anytype.io — scroll-hijacked, initial viewport only |
+| `supernotes-1440.png` / `-768.png` / `-390.png` | 3        | supernotes.app home                                 |
+| `tana-1440.png` / `-768.png` / `-390.png`       | 3        | outliner.tana.inc/daily-notes                       |
+
+Nothing was scrolled. Every capture is the first viewport as painted, so all measurements below
+are either read off the header/hero band or taken from `getComputedStyle` /
+`getBoundingClientRect` over the whole document, which does not require scrolling.
 
 ---
 
@@ -553,3 +590,252 @@ style), no exclamation marks, no "¡Ups!". Every string in `vos`, never `tú`.
 - **No emoji as a semantic glyph.** Things, Anytype and Supernotes all lean on emoji for object
   type. Lucide monochrome only (design.md §15) — it keeps `Materia` and `Entrega` visually
   siblings and it survives the light/dark and the Windows/Linux font situation.
+
+---
+
+## Responsive behaviour (captured 390 / 768 / 1440)
+
+Second pass, headless Chromium, exact viewports. Every number here was measured with
+`getBoundingClientRect` / `getComputedStyle` in the live page, not eyeballed off a PNG; the PNGs
+are the corroboration. **Nothing has horizontal overflow** — `documentElement.scrollWidth ===
+innerWidth` on all five sites at all three sizes. Whatever else these teams got wrong, none of
+them shipped a sideways-scrolling phone page.
+
+The five products split cleanly into two philosophies, and the split is the single most useful
+thing this pass found:
+
+- **Frozen type, fluid measure** — Things and Tana. Type sizes are _identical_ at 390, 768 and 1440. Only the text column width changes. Nothing is scaled down; things wrap instead.
+- **Fluid type, fluid measure** — Craft, Supernotes, Anytype(partly). The display sizes shrink
+  25–35 % from 1440 to 390.
+
+Both work. The frozen-type products are noticeably more readable at 390 and noticeably less
+impressive at 1440. For a study tool that will be read on a phone in a hallway, frozen type is
+the better bet.
+
+### 1. Craft (`www.craft.do`)
+
+**Navigation.** A floating rounded pill bar, `position: fixed`, 52px tall at every viewport.
+It degrades in two stages, not one:
+
+| Viewport | Header box     | Top-level links                                           | CTA         |
+| -------- | -------------- | --------------------------------------------------------- | ----------- |
+| 1440     | 920×52 @ x=260 | 6 — Product, Imagine, Community, Pricing, Learn, Download | 133×36 pill |
+| 768      | 672×52 @ x=48  | 4 — **Imagine and Learn silently dropped**                | 133×36 pill |
+| 390      | 342×52 @ x=24  | 0 — wordmark + CTA + hamburger only                       | 113×36 pill |
+
+The 768 step is the interesting one: instead of going straight to a burger, Craft _edits the
+menu_ — it keeps a real horizontal nav by deleting the two least important items. Two of six
+links are simply not reachable at 768 without going somewhere else.
+
+**Density.** The desktop nav links are **21–22px tall** — a mouse-only target. Inside the 390
+drawer the same items are re-rendered as **310×46 rows with a 16px radius**, i.e. Craft ships a
+completely separate touch component rather than restyling the desktop one. Side gutter goes
+36 → 51 → 24px (`h1` x-offset), so the phone gutter is _narrower_ than the tablet one.
+
+**Type scale.** `h1` 66 → 58 → **48px**, `line-height: 1.0` at all three (66/66, 58/58, 48/48).
+Body copy is frozen at **16px/24px** everywhere. So Craft shrinks display type by 27 % and never
+touches body type.
+
+**Rows vs cards.** Fixed-track grids that change _count_, not track size:
+`repeat(4, 240px) gap 8px` → `repeat(2, 240px)` → `repeat(1, 240px)`. A 240px card stays a 240px
+card and the grid just gets narrower. Its two-column 440px content grid holds at 768
+(`2 × 280px`) and only collapses at 390 (`1 × 358px`). The 6-up logo strip does the opposite and
+squeezes its tracks — `6 × 160px` → `5 × 105px` → `4 × 65.5px` — which is how you get
+unreadable logos.
+
+**Do NOT copy.** Dropping nav items at 768 with no overflow affordance. Also: at 390 Craft keeps
+several oversized decorative images bleeding off-canvas at negative x (`965×941 @ x=-179`,
+`742×508 @ x=-46`), which is fine for a landing page and pure download weight for an app.
+
+**Also worth stealing.** At 390 the hero product shot is swapped for a **different asset** — a
+phone mockup (`310×642`), not a scaled-down desktop window. That is the correct answer to
+"our screenshot is illegible on mobile".
+
+### 2. Things (`culturedcode.com/things/features/`)
+
+**Navigation.** There is **no hamburger at any viewport, and no `<header>` or `<nav>` element at
+all** (the probe found zero). Three text links — Features, Support, Blog — right-aligned,
+**28px tall with a 6px radius**, at 1440, 768 _and_ 390. Wordmark 100×32. The only concession to
+390 is that the links shrink from 73 → 68px wide (font 16.2 → ~15px) and the wordmark's left
+inset goes 264 → 25 → 10px. A three-item nav simply does not need to collapse.
+
+**Type scale.** Completely frozen: `h1` **36px/36px, weight 700**; `h2` 36px; `h3`
+16.2px/22.68px; lede `p` **20.25px/26.325px**; `body` 18px/25.2px. Identical at all three
+viewports. The `h1` measure goes 440 → 440 → 305px and the headline just re-wraps from 2 lines
+(72px tall) to 3 lines (108px tall).
+
+**Rows vs cards.** The whole page is one grid repeated ~20 times: `2 × 441px, gap 18px` at 1440
+— **and the same `2 × 344px` at 768** — collapsing to `1 × 359px` only at 390. So Things's real
+breakpoint sits somewhere between 768 and 390, not at 768. Content column: 900 → 707 → 359px.
+
+**Density.** Unchanged. The 18px gap and 20.25px lede are the same on a phone as on a desktop;
+Things buys mobile readability with wrapping, not with tightening.
+
+**Do NOT copy.** The feature imagery. `1000×1000` at 1440 → `785×785` at 768 → **`399×399` at
+390**, and those images are screenshots of app windows containing 11px UI text. At 390 the Mac
+window mock and the iPhone mock are side by side inside 359px and both are pure grey mush —
+verified in `things-390.png`. A screenshot of a UI is not a responsive image.
+
+### 3. Anytype (`anytype.io`)
+
+**Navigation.** Header 1440×**80px** at desktop, 390×**60px** at both small sizes. Contents are
+identical at all three — wordmark, a `Download` pill that is **117×36 at every viewport**, and a
+burger — except the centred announcement strip ("Run your company on Anytype · Encrypted,
+Swiss-based, yours", 433×20) which survives at 768 and is dropped at 390.
+
+**Density.** Bad numbers here. The burger is a **32×80 hit area** and at 768/390 its box starts
+at `y = -10`, i.e. clipped above the viewport; effective width 32px, well under 44. The
+`Download` anchor's text link is **66×17**. Body copy 18px/26px at 1440 and 768, dropping to
+16px/24px at 390.
+
+**Rows vs cards — the one genuinely good pattern.** The 4-up ruled band under the hero
+(`4 × 351.5px`, 1px rules, no fill, no radius, no shadow) degrades exactly as hoped:
+**4 columns → 2 columns at 768 → a single stacked column of ruled cells at 390**, each cell
+full-bleed to the 390px edge with the rule as the only separator. At 390 the entire page is down
+to **one** grid container; everything else has become `flex-direction: column` (flex-column count
+goes 6 → 8 while flex-row drops 62 → 52). This validates note R9: a ruled grid is the layout that
+survives 390px without a redesign.
+
+**Do NOT copy — two hard failures, both measured.**
+
+1. **The scroll hijack is total, including on touch.** `documentElement.scrollHeight ===
+innerHeight` at 1440 (900), 768 (1024) _and_ 390 (844). There is no scrollable document; the
+   page is a fixed-height canvas moved by JS. On a phone this means no momentum scroll, no
+   scroll-to-top gesture, no find-in-page.
+2. **A fixed bottom pill that eats the content.** The `WHAT / WHY / WHO` segmented control is
+   `position: fixed, z-index: 10`, **308×56 sitting 32px off the bottom at 1440** — and
+   **236×52 sitting only 10px off the bottom at 390**. At 390 it covers the "Offline & Online"
+   heading and a line of its body copy (visible in `anytype-390.png`), and
+   `elementsFromPoint(195, 784)` returns the pill's own link, not the text — so it intercepts the
+   tap too. A floating overlay tuned for a 900px-tall desktop becomes an occluding blocker on an
+   844px phone.
+
+### 4. Supernotes (`supernotes.app`)
+
+**Navigation.** The most aggressive collapse of the five, and it happens **at 768, not at 390**.
+
+| Viewport | Header contents                                                                                                                                          |
+| -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1440     | Wordmark 137×62 + 7 links (What's New, Features, Pricing, Download, Integrations, Blog, Community), each **40px tall** + `Log in` 83×62 + `Sign up` pill |
+| 768      | Wordmark 240×91 + **one circular hamburger (~56px)**. Zero visible links.                                                                                |
+| 390      | Wordmark 187×65 + **one circular hamburger (~50px)**. Zero visible links.                                                                                |
+
+Everything — including both auth actions — goes behind a single round button. The circle is the
+only nav affordance on the page at 768 and below.
+
+**Type scale.** Genuinely fluid: `h1` **90 → 80 → 60px** (lh 1.0), `h2` 52.8 → 43.2 → 38.4px,
+`h3` 38 → 32 → 32px. The lede holds at 20px/32px across all three. But a 15px/22px caption at
+1440 becomes **13px/22px at 390** — under 16px, which is the size at which iOS Safari zooms on
+focus and the size at which small print stops being read at arm's length.
+
+**Rows vs cards.** Fixed track → full-bleed: `4 × 200px, gap 12px` → `3 × 200px` at 768 →
+**`1 × 351px`** at 390. Note the difference from Craft: the card does not stay 200px, it grows to
+fill the column. The 3-up 367px content grid goes to `1 × 614px` already at 768.
+
+**Density.** Layout direction flips wholesale: flex-column containers 40 at 1440 → 26 at 390
+while flex-row goes 15 → 11, i.e. the page is authored as rows-of-columns that unwind into one
+column. The hero form is the nicest small detail: at 1440 the email field is 442px with the
+`Get Started` button overlapping its lower edge; at 390 the field is full-width (~304px) and the
+button becomes a **full-width pill directly under it**, still inside the same rounded container.
+Split control at desktop, stacked control on phone, same visual object.
+
+### 5. Tana Outliner (`outliner.tana.inc/daily-notes`)
+
+**Navigation.** Header **72px tall at all three viewports**, dark theme.
+
+| Viewport | Header contents                                                                                                                                                                 |
+| -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1440     | Wordmark 134×36 + 5 nav items (Explore ⌄, Learn, Templates, Pricing, Community) each **37px tall, 14px radius** + `New` badge + `Log in` 79×37 and `Sign up` 89×37 (4px radius) |
+| 768      | Wordmark + **one 44×44 hamburger, 8px radius, `aria-label="Open menu"`**, 32px from the right edge. Log in / Sign up **gone from the header entirely**.                         |
+| 390      | Same 44×44 hamburger, 16px from the right edge.                                                                                                                                 |
+
+That 44×44 burger is the only correctly-sized touch target measured anywhere in this pass. Copy
+its dimensions verbatim.
+
+**Type scale.** Frozen, like Things: `h1` **40px/42.5px weight 375**, `h2` 32px/40px, body `p`
+**18px/27px** — identical at 390, 768 and 1440. Only the measure moves: **703 → 576 → 358px**,
+and the gutter with it: **312 → 96 → 16px**. The `h1` re-wraps 1 line → 2 lines → 2 lines and the
+`h2`s go 40 → 80 → 120px tall as they wrap.
+
+**Rows vs cards.** The container keeps a 12-column grid at every size, which at 390 means twelve
+**15.15px tracks** with a 16px gap — harmless but pointless. The real content grid does
+`5 × 166px` → `2 × 264px` → `1 × 358px`. Hero stays **left-aligned at every viewport** — no
+centring on mobile, which keeps the reading ragged-right and the eye travel short.
+
+**Do NOT copy.** Same failure as Things, worse: the product screenshots are `<video>` elements at
+`1011×661` (1440) → `576×377` (768) → **`358×234` (390)**. A full Tana outliner window at 358px
+wide is unreadable — confirmed in `tana-390.png`, where the "Yesterday, Mon, Jun 26" page is a
+grey smear. Also, hiding **both** `Log in` and `Sign up` behind the burger at 768 means a
+returning user on an iPad has no visible way back into the product.
+
+---
+
+## Rules for Campus mobile
+
+Derived from what was actually measured at 390px, not from general advice. Each rule names the
+product it came from.
+
+### M1. Freeze the type scale. Change the measure, never the size.
+
+`h1` 28px/32px, `h2` 20px/28px, body **16px/24px**, meta 13px — the _same values_ at 390, 768 and 1440. Let headings wrap to 2–3 lines instead of shrinking. _(Things and Tana both do exactly
+this: `h1` 36px and 40px respectively, unchanged across all three viewports, with the measure
+going 440→305px and 703→358px. They are the two most readable pages in the set at 390.)_
+Corollary: **no font-size below 14px anywhere on a phone.** Supernotes' 15px caption becoming
+13px at 390 is the one type regression in the whole pass.
+
+### M2. Gutter 16px at 390, 24–32px at 768, centred ≤760px column above that.
+
+Measured phone gutters: Tana **16px**, Supernotes 21px, Craft 24px, Anytype 31px, Things 40–43px.
+16px is the tightest that still reads and it buys **358px of usable measure out of 390** — the
+single biggest lever on how much fits. _(Tana: `h1` x=16, width 358.)_
+
+### M3. One 44×44 menu button, top-right, 16px from the edge. Never edit the nav down.
+
+Copy Tana's exact box: `44×44`, `border-radius: 8px`, `aria-label`, right inset 16px at 390 and
+32px at 768. _(Tana's is the only compliant target measured. Anytype's is a 32px-wide box clipped
+at `y=-10`; Craft's desktop links are 21px tall.)_ And never do Craft's 768 trick of silently
+deleting two nav items — Campus has 5–6 destinations and all of them must stay reachable.
+
+### M4. Auth and the primary action stay visible outside the drawer.
+
+Keep `Hoy` / the primary CTA and the account affordance in the 390 header bar; only secondary
+destinations go behind the button. _(Craft keeps its `Try Craft Free` pill at 113×36 next to the
+burger at 390 — right instinct. Tana and Supernotes both bury Log in / Sign up at 768, which is
+how you lose a returning student on a tablet.)_
+
+### M5. Drawer rows are a separate component: 46–48px tall, full-width, 16px radius.
+
+Do not restyle desktop nav links for touch — re-render them. Target: `min-height: 46px`,
+`width: 100%` inside a 16px gutter (≈358px), 16px radius, 15–16px label. _(Craft's drawer items
+measure exactly `310×46, radius 16px` versus its own 21px-tall desktop links. That is the whole
+lesson in one before/after.)_
+
+### M6. Rows stay rows. Two-column content collapses at 768→390, not at 1440→768.
+
+Campus's Today/Plan/Courses lists must remain **ruled full-bleed rows** at 390 — 1px bottom rule,
+`padding: 12px 0`, no card, no radius, no shadow — and any 2-up layout should survive 768 and
+break only below it. _(Anytype's 4-up ruled band → 2-up at 768 → a single stacked column of ruled
+cells at 390 is the pattern; Things holds `2 × 344px` at 768 and only goes 1-up at 390.)_
+If something must become a card at 390, it grows to the full 358px like Supernotes' `1 × 351px`,
+it does not stay a 240px chip like Craft's.
+
+### M7. No fixed bottom overlay unless it is a real bottom nav with reserved space.
+
+If Campus ever adds a floating bar, the scroll container must carry
+`padding-bottom: <bar height + 24px>`. Anytype's 236×52 pill sits **10px off the bottom** at 390
+and demonstrably covers a heading, a line of copy, _and_ steals the tap
+(`elementsFromPoint` returns the pill). Measure `bottomGap` before shipping any `position: fixed`.
+
+### M8. Never render a desktop screenshot below ~600px. Swap the asset or crop to one row.
+
+At 390 a full app window scaled to 358px is illegible — proven twice (`tana-390.png` at 358×234,
+`things-390.png` at 399×399). Campus should follow Craft, which swaps in a **phone-shaped asset**
+(`310×642`) at 390 instead of scaling the desktop one; the cheap alternative is to crop the
+screenshot to a single row or card at 1:1 pixel scale.
+
+### M9. Native scroll is non-negotiable.
+
+Assert it in the test suite: `document.documentElement.scrollHeight > window.innerHeight` on every
+route at 390×844. _(Anytype fails this at all three viewports — 900/1024/844 — and it is the
+reason its page cannot be read with a thumb.)_ Same test catches the other side of it:
+`scrollWidth === innerWidth`, which all five sites pass and Campus must too.

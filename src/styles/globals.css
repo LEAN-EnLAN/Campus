@@ -14,7 +14,10 @@
   --color-paper-sunken: #f1eee6;
   --color-ink: #181816;
   --color-ink-muted: #6a6862;
-  --color-ink-faint: #8a877f;
+  /* NOT for text. No third text tier fits this palette at AA: anything readable on
+     --paper collapses into --ink-muted. Use this for decorative glyphs, chevrons and
+     placeholders only; body and metadata text uses --color-ink-muted. */
+  --color-ink-faint: #807d75;
   --color-rule: #dedbd2;
   --color-rule-soft: #ebe8df;
 

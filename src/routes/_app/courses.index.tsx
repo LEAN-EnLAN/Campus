@@ -110,7 +110,8 @@ function CoursesScreen() {
             onClick={() => setFilter(f.value)}
           >
             {f.label}
-            <span className="text-xs opacity-70" data-numeric>
+            {/* opacity-70 composited white-on-accent to 3.84:1. 90% clears AA. */}
+            <span className="text-xs opacity-90" data-numeric>
               {counts.get(f.value) ?? 0}
             </span>
           </Button>

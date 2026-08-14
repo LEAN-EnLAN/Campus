@@ -107,7 +107,7 @@ function OnboardingScreen() {
             <span
               className={cn(
                 'flex items-center gap-1.5',
-                index < step ? 'text-success' : index === step ? 'text-ink' : 'text-ink-faint',
+                index < step ? 'text-success' : index === step ? 'text-ink' : 'text-ink-muted',
               )}
             >
               {index < step ? (
@@ -120,7 +120,7 @@ function OnboardingScreen() {
               {label}
             </span>
             {index < STEPS.length - 1 ? (
-              <span aria-hidden="true" className="text-ink-faint">
+              <span aria-hidden="true" className="text-ink-muted">
                 ·
               </span>
             ) : null}

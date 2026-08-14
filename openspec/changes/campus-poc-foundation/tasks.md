@@ -122,6 +122,22 @@ Every task declares the PRD requirement(s) it implements. Requirement IDs come f
       _implements:_ PRD §17 POC release definition
       _evidence:_ 20/20 steps
 
+- [x] **T-29** — Tester tooling: six seeded scenarios (`pnpm tester`) + a flag-gated `/dev`
+      route with one-click login, covering the states blocked by missing academic data
+      _implements:_ testability for CAP-ONBOARD-002, CAP-PLAN-001, CAP-PLAN-003
+      _evidence:_ `docs/TESTING.md`, `pnpm tester list`
+
+- [x] **T-30** — `verify:frontend` — 39 surfaces × 5 viewports with axe-core on every one,
+      scenarios in parallel, headed inside a display pinned to `:99`
+      _implements:_ CAP-RESPONSIVE-001, CAP-A11Y-001 beyond the six main routes
+      _evidence:_ 195/195, a11y 0 at every impact
+
+- [x] **T-31** — Honest degradation when a curriculum declares no correlativas: Plan and the
+      materia detail say the faculty has not published them instead of letting silence read as
+      "nothing blocks you"
+      _implements:_ PRD P-05 applied to absent data
+      _evidence:_ `evidence/frontend/*/plan-unr-sin-correlativas-*.png`
+
 ## Known gaps
 
 - [ ] **T-26** — UNR FCEIA correlativas: not published in the Texto Ordenado 2024

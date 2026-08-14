@@ -3,9 +3,9 @@
 **Date:** 2026-08-14
 **Repository:** `/home/pulpo/Documents/GitHub/campus-poc`
 **Branch:** `main`
-**Commit:** `HEAD` on `main` — _fix: address both claims the refuter overturned_
+**Commit:** `HEAD` on `main` — _feat: tester tooling + full-frontend sweep under a pinned virtual display_
 **Harness candidate:** frozen at HEAD with 0 uncommitted files
-**Verification candidate:** `cand_890c578112cf` (content hash over `src/`, `supabase/migrations/`, `scripts/`, `index.html`, `package.json`, `vite.config.ts`)
+**Verification candidate:** `cand_f508d4cb021b` (content hash over `src/`, `supabase/migrations/`, `scripts/`, `index.html`, `package.json`, `vite.config.ts`)
 
 > This document records what was actually executed. Anything not listed here was not
 > verified, and is stated as such.
@@ -68,7 +68,7 @@ Retrieved 2026-08-14. Full notes, judgment calls and gaps: `docs/research/academ
 
 `pnpm verify:ui` — Playwright + Chromium against the built app and the real database.
 
-**30 / 30 checks passed** · 6 routes × 5 viewports · candidate `cand_890c578112cf`
+**30 / 30 checks passed** · 6 routes × 5 viewports · candidate `cand_f508d4cb021b`
 
 | Viewport | Routes passed |
 | -------- | ------------- |
@@ -80,24 +80,85 @@ Retrieved 2026-08-14. Full notes, judgment calls and gaps: `docs/research/academ
 
 Per combination: HTTP status, non-empty `<main>`, absence of any `role="alert"` error
 surface, runtime console errors, `scrollWidth <= clientWidth`, and a screenshot.
-Report: `evidence/ui/cand_890c578112cf/report.json`.
+Report: `evidence/ui/cand_f508d4cb021b/report.json`.
 
 Tap targets are recorded, not blocking. The done-toggle — the most-tapped control in the app —
 measured 20×20; it now carries a 44×44 hit area via an expanded `::before`, with the visible
 circle still 20px so the row rhythm is unchanged. The elements still flagged are inline text
 links inside prose, where a 44px target would wreck the line rhythm.
 
+## Full-frontend sweep — every state, including the blocked ones
+
+`pnpm verify:frontend:xvfb` — **195 / 195 checks** · candidate `cand_f508d4cb021b`
+**39 surfaces × 5 viewports**, six seeded scenarios running in parallel.
+
+Chromium runs **headed inside a virtual display pinned to `:99`**, so no window ever
+reaches the user's Hyprland session — and the script refuses to run headed on `DISPLAY=:0`,
+because an Xvfb that hunts for a free display can take over a live wlroots session through
+the abstract socket. Headless is the default and needs no display at all; headed exists only
+because it renders fonts and scrollbars the way a real browser does.
+
+Per surface: render, runtime console errors, horizontal overflow, unexpected `role="alert"`
+surfaces, **and a full axe-core scan**. Network failures are classified by origin, so a
+third-party CDN having a bad minute is recorded (`externalErrors`) without blocking, while a
+4xx from our own server or from Supabase blocks.
+
+**a11y across the whole sweep: critical = 0 · serious = 0 · moderate = 0 · minor = 0.**
+
+Surfaces the earlier `verify:ui` never reached, now covered:
+
+| Group                           | Surfaces                                                                              |
+| ------------------------------- | ------------------------------------------------------------------------------------- |
+| Unauthenticated                 | login (signup / signin / rejected credentials), 404, tester route                     |
+| Onboarding                      | step 1, step 2, plan selected, "no encuentro mi carrera"                              |
+| Today                           | empty · populated with overdue · unmapped plan · UNR                                  |
+| Plan                            | UTN with correlativas · **UNR without them** · unmapped · final year · no progress    |
+| Materias                        | each of the four filters · empty · unmapped                                           |
+| Materia                         | blocked by correlativas · cursando · aprobada · UNR                                   |
+| Calendario / Material / Ajustes | empty and populated, plus the note form                                               |
+| Overlays                        | quick capture, quick capture with a validation error, search with and without results |
+
+Six real defects were found on the first sweep and fixed — all of them on surfaces the
+previous evidence had never rendered:
+
+1. `--ink-faint` (#8a877f) is **3.29:1 on paper** and was used for real text on login,
+   onboarding step numbers, the `kbd` and the tester route. The fix is not a colour tweak:
+   this palette has **no room for a third text tier at AA**, because anything readable
+   collapses into `--ink-muted`. The token is now documented as non-text (glyphs, chevrons,
+   placeholders) and every text use moved to `--ink-muted`.
+2. `opacity-70` on the count badge inside the active filter button composited white-on-accent
+   to **3.84:1**. Now `opacity-90`.
+3. `nested-interactive`: the search palette put a `<button>` inside `role="option"`. The
+   option is now the row itself — correct for the combobox pattern, where focus stays on the
+   input and `aria-activedescendant` carries the selection.
+4. `scrollable-region-focusable` on the code blocks in the tester route.
+5. `scripts/tester.mjs` had no CLI guard, so importing `SCENARIOS` from the sweep **re-seeded
+   every account mid-run**, deleting and recreating the users whose sessions were in flight.
+   That was the source of intermittent 404s.
+6. The sweep's own console filter matched on message text, which Chromium does not populate
+   with the URL — so a Google Fonts 404 was indistinguishable from an app bug.
+
+## Honesty fix the sweep exposed
+
+Rendering the UNR plan made a real product defect visible that no automated check would have
+caught: with no correlativa graph, **not one materia showed as blocked and nothing said why**.
+Silence there reads as "nada te bloquea", which is an academic claim Campus does not have the
+data to make. Plan and the materia detail now state explicitly that the faculty has not
+published the correlatividades — see `prerequisiteCount` in `useAcademicPlan`.
+
+That is P-05 applied to the _absence_ of data, not just to its content.
+
 ## Accessibility evidence — CAP-A11Y-001
 
 `pnpm verify:a11y` — axe-core via `@axe-core/playwright`, tags `wcag2a wcag2aa wcag21a wcag21aa`.
 
 **critical = 0 · serious = 0 · moderate = 0 · minor = 0** across 12 scans
-(6 routes × {390×844, 1280×800}) · candidate `cand_890c578112cf`.
+(6 routes × {390×844, 1280×800}) · candidate `cand_f508d4cb021b`.
 
 Three real violations were found on the first run and fixed, not suppressed:
 `--ink-muted` was 4.48:1 on paper (darkened to 5.11:1), the progress bar had no accessible
 name, and prose links were distinguishable by colour alone.
-Report: `evidence/a11y/cand_890c578112cf/report.json`.
+Report: `evidence/a11y/cand_f508d4cb021b/report.json`.
 
 ## End-to-end journey — PRD §17 release definition
 
@@ -114,7 +175,7 @@ crear cuenta → onboarding (UTN → FRRo → Ing. en Sistemas → Plan 2023) �
 ```
 
 The negative assertion is deliberate: satisfying one of two correlativas must **not**
-unlock the dependant. Report: `evidence/journey/cand_890c578112cf/report.json`.
+unlock the dependant. Report: `evidence/journey/cand_f508d4cb021b/report.json`.
 
 ## Review
 

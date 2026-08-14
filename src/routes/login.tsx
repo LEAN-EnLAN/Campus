@@ -120,7 +120,7 @@ function LoginScreen() {
           </button>
         </p>
 
-        <p className="text-ink-faint mt-10 text-xs">
+        <p className="text-ink-muted mt-10 text-xs">
           Campus no te pide las credenciales de tu autogestión universitaria, y nunca lo va a
           hacer.{' '}
           <Link to="/settings" className="text-accent underline underline-offset-4">

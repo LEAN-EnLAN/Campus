@@ -69,9 +69,9 @@ pnpm dev:tailnet
 ```
 
 ```
-app      https://casa.tail61165e.ts.net:5173
-app      https://100.102.107.60:5173
-tester   https://casa.tail61165e.ts.net:5173/dev
+app      https://<tu-host>.<tu-tailnet>.ts.net:5173
+app      https://100.x.y.z:5173
+tester   https://<tu-host>.<tu-tailnet>.ts.net:5173/dev
 ```
 
 La primera vez el browser te avisa que el certificado es autofirmado. Aceptás una vez por
@@ -92,8 +92,8 @@ sudo tailscale set --operator=$USER            # y después no necesitás sudo n
 tailscale serve --bg --https=8443 https://127.0.0.1:5173
 ```
 
-Ojo: ya tenés un `serve` en `/` → `127.0.0.1:7001`, así que usá un puerto aparte como
-8443 y no `tailscale serve reset`, que te lo borraría.
+Si ya tenés algo en `serve` sobre `/`, usá un puerto aparte como 8443 y **no** corras
+`tailscale serve reset`, que te borraría la config existente.
 
 ### Supabase va por el mismo origen
 
@@ -110,6 +110,8 @@ carga la app y después falla en cada query.
 
 Verificado desde las tres direcciones — LAN, IP de tailnet y MagicDNS: 40 materias en cada
 una, con las llamadas a la API saliendo por el mismo origen desde el que se abrió.
+
+`pnpm dev:tailnet` te imprime las direcciones reales de tu máquina al arrancar.
 
 **Sólo tailnet.** No usa `tailscale funnel`, que publicaría el dev server en la internet
 pública.

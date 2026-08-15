@@ -224,12 +224,21 @@ export async function handleVaultRequest(
     await session.repo.writeNote(relative, contents, expected)
     return reply(200, { ok: true, value: null })
   } catch (error) {
-    // The refusal travels verbatim. Softening "path resolves outside the vault"
-    // into a generic I/O error would hide the one message that explains it, and
-    // would let a caller mistake a security refusal for a transient failure.
-    return reply(400, {
+    const message = (error as Error).message
+
+    // A file that is not there yet is the ORDINARY state of a fresh vault, not
+    // a protocol error. Reporting it as 400 made every startup log a client
+    // error for reading a note nobody has written, which trains everyone to
+    // ignore 400s from this endpoint — including the security refusals.
+    const notFound = /: not found$/.test(message)
+
+    // Security refusals travel verbatim. Softening "path resolves outside the
+    // vault" into a generic I/O error would hide the one message that explains
+    // it, and let a caller mistake a refusal for a transient failure.
+    return reply(notFound ? 200 : 400, {
       ok: false,
-      error: (error as Error).message,
+      notFound,
+      error: message,
       conflict: (error as Error).name === 'VaultConflictError',
     })
   }

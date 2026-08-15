@@ -2,6 +2,7 @@ import type { IncomingMessage, ServerResponse } from 'node:http'
 
 import type { Plugin } from 'vite'
 
+import { assertLoopbackBind } from './bind-guard'
 import { handleVaultRequest, mintToken, PREFIX, VaultSessions } from './vault-api'
 
 /**
@@ -22,6 +23,10 @@ export function campusVaultPlugin(): Plugin {
   const sessions = new VaultSessions()
   const token = mintToken()
   let allowedOrigins: string[] = []
+  // The escape hatch is for running the FRONTEND over a network without the
+  // filesystem API — CLOUD mode only. It disables the transport; it never
+  // relaxes the bind rule.
+  const enabled = process.env.CAMPUS_VAULT_API !== 'off'
 
   return {
     name: 'campus-vault-api',
@@ -30,16 +35,25 @@ export function campusVaultPlugin(): Plugin {
     apply: 'serve',
 
     configResolved(config) {
+      if (!enabled) return
+
       const { https, port = 5173, host } = config.server
+
+      // Startup fails here, loudly, rather than mounting a filesystem API on
+      // whatever interface someone happened to ask the frontend to use. The
+      // capability token and Origin allowlist below are defence in depth, and
+      // defence in depth is not permission to expose the service.
+      assertLoopbackBind(host)
+
       const scheme = https ? 'https' : 'http'
-      // Loopback by default. `host` is only honoured when the developer set it
-      // deliberately (the tailnet script does), and it is still an allowlist —
-      // never a wildcard.
-      const hosts = ['localhost', '127.0.0.1', ...(typeof host === 'string' ? [host] : [])]
-      allowedOrigins = hosts.map((h) => `${scheme}://${h}:${port}`)
+      // Only loopback origins, because only a loopback bind reached this line.
+      allowedOrigins = ['localhost', '127.0.0.1', '[::1]'].map(
+        (h) => `${scheme}://${h}:${port}`,
+      )
     },
 
     configureServer(server) {
+      if (!enabled) return
       server.middlewares.use((req: IncomingMessage, res: ServerResponse, next) => {
         if (!req.url?.startsWith(PREFIX)) return next()
 
@@ -66,6 +80,7 @@ export function campusVaultPlugin(): Plugin {
     },
 
     transformIndexHtml() {
+      if (!enabled) return []
       return [
         {
           tag: 'script',

@@ -264,6 +264,24 @@ describe('the wire is VaultAccess, not a filesystem', () => {
   })
 })
 
+describe('absence is a value, not a protocol error', () => {
+  it('reading a note that does not exist is 200 + notFound', async () => {
+    // A fresh vault has none of the four academic files. Reporting that as 400
+    // makes every startup log a client error, which trains everyone to ignore
+    // 400s from this endpoint — including the security refusals.
+    const res = await read('.campus/academic/context.json')
+    expect(res.status).toBe(200)
+    expect(parse(res.body).notFound).toBe(true)
+    expect(parse(res.body).ok).toBe(false)
+  })
+
+  it('but a security refusal is still 400, and not marked notFound', async () => {
+    const res = await read('../outside/secret.txt')
+    expect(res.status).toBe(400)
+    expect(parse(res.body).notFound).toBe(false)
+  })
+})
+
 describe('opening a vault', () => {
   it('returns an opaque id that does not contain the path', async () => {
     const opened = await sessions.open(root)

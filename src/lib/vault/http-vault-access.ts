@@ -41,6 +41,7 @@ async function call(
     value?: unknown
     error?: string
     conflict?: boolean
+    notFound?: boolean
   }
 
   if (!response.ok || body.ok === false) {

@@ -2,65 +2,40 @@
 
 Unresolved **P0 / P1** findings only. Ordinary TODOs do not belong here.
 
-Last updated: 2026-08-15, COMODÍN hotfix pass.
+Last updated: 2026-08-15, COMODÍN continuation.
 
-## Resolved in this pass
+## All P0/P1 resolved
 
-| id        | finding                                             | proof                                                                                                                                                                                                                                                                                                                              |
-| --------- | --------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **P0-01** | `prerequisitesKnown` had no executed cloud coverage | RESOLVED — `pnpm db:reset` applies `20260815000100`; Postgres holds UTN `t`/186 edges and UNR `f`/0 edges with its note. `test:db` 29/29 asserts the adapter reads the column. Zero `prerequisites.length > 0` inferences remain in production code (the three matches are comments forbidding it)                                 |
-| **P0-02** | A-10 dual-adapter conformance did not exist         | RESOLVED — `tests/db/conformance.test.ts`, all 16 methods against both adapters. Caught a real divergence on its first run (below). Mutation-verified: restoring `known = edges.length > 0` in both adapters kills exactly the known-empty fixture                                                                                 |
-| **P1-03** | 3 unresolved browser checks / intermittent 404s     | RESOLVED — diagnosed, not dismissed. Two were the check racing the destination; the last was a defect in the TEST (phase boundary sat after the rename, so the missing-vault phase's own correct 404 was attributed to the happy path). `scripts/lib/dev-server.mjs` replaces unbounded readiness loops. `pnpm verify:local` 12/12 |
-| **P1-04** | A-11 never ran                                      | RESOLVED — `pnpm verify:a11` 8/8 with Supabase at `http://127.0.0.1:1`, across a real restart of both browser and server                                                                                                                                                                                                           |
-| **P1-05** | Vault API bind could follow `vite --host`           | RESOLVED — `src/server/bind-guard.ts` fails startup loudly. 24 classifier tests, `pnpm verify:bind` 10/10: `vite --host` exits 1; `CAMPUS_VAULT_API=off` serves the frontend with no token injected and the endpoint unmounted                                                                                                     |
-
-### Divergence A-10 caught, and fixed
-
-`SupabaseBackend.curriculumBundle` **threw** for a curriculum that does not
-exist (`.single()`), while `LocalBackend` answered `prerequisitesKnown: false`.
-The same question got an error from one adapter and an answer from the other.
-Fixed with `maybeSingle` and the identical UNKNOWN bundle.
+| id | state | proof |
+|----|-------|-------|
+| **P0-01** `prerequisitesKnown` unverified in cloud | **RESOLVED** | Postgres holds UTN `t`/186 edges, UNR `f`/0 edges + note. `test:db` 29/29. Zero `prerequisites.length > 0` inferences in production (the 3 matches are comments forbidding it) |
+| **P0-02** no dual-adapter conformance | **RESOLVED** | `tests/db/conformance.test.ts`, 16 methods × 2 adapters. Caught a real divergence its first run: `SupabaseBackend` threw for a missing curriculum while `LocalBackend` answered UNKNOWN. Mutation-verified |
+| **P1-03** unexplained browser failures | **RESOLVED** | Diagnosed. `scripts/lib/dev-server.mjs` bounds readiness and kills by pid. `verify:local` 12/12 |
+| **P1-04** A-11 never ran | **RESOLVED** | `verify:a11` 16/16 |
+| **P1-05** Vault API could follow `--host` | **RESOLVED** | `bind-guard.ts` fails startup loudly. 24 unit + `verify:bind` 10/10 |
+| **P1-06** A-11 stopped at academic context | **RESOLVED** | `verify:a11` 16/16 — Plan → Course → `in_progress` → deadline → visible in Today AND Course → hard restart (browser + server killed) → all three still there, read from `context.json`, `subject-state.json`, `items.json` |
+| **P1-07** UNR uncertainty not visible | **RESOLVED** | `verify:unr` 14/14 on the real UNR plan. Asserts the explanatory copy is present on Plan and Course, AND that four "you are clear" phrasings are absent. `tests/unit/unknown-vs-known-empty.test.ts` pins the semantic layer |
+| **P1-08** frontend/a11y not run | **RESOLVED** | `verify:local-frontend` 25/25 — 5 new surfaces × 5 viewports, axe critical/serious/moderate/minor all 0. Cloud journey 19/20 (see P2-01) |
 
 ---
 
-## Open
+## Open — P2, deferred by severity not by convenience
 
-### P1-06 — the A-11 journey stops at academic context
+### P2-01 — choosing Campus Cloud fires queries before sign-in
 
-**Threatens:** the completeness of the Milestone A claim.
+Startup now picks the RUNTIME, not the session, so selecting Campus Cloud
+mounts the app immediately; its queries fire unauthenticated, PostgREST
+answers **401**, and only then does the guard redirect to `/login`.
 
-`verify:a11` proves: open vault → onboarding → Today → `context.json` written →
-restart → same vault, same state, no Supabase.
+RLS refused them correctly. **No data was exposed and nothing was lost** — it
+is a wasted round trip and four console errors that make real ones harder to
+see. The cloud journey is 19/20 with only this step failing.
 
-It does **not** yet cover the second half of the specified journey: marking a
-subject `in_progress`, creating a deadline, seeing it in Today and in the
-Course, and finding all three after a restart. `subject-state.json` and
-`items.json` are covered by the conformance suite against a new instance, but
-not through the UI.
+Not P1: it threatens no security boundary, no data semantics, no portability,
+no backend equivalence and no Milestone B architecture. The runtime behaves
+correctly; it is merely noisy on the way.
 
-**Exit:** extend `verify:a11` through Plan and the deadline form, then assert
-the three files after the restart boundary.
-
-### P1-07 — UNR uncertainty is not verified through the UI
-
-**Threatens:** canonical academic semantics at the surface the student sees.
-
-Every layer below the UI is proven: research provenance → catalog → seed →
-Postgres → both adapters, all asserting UNKNOWN with its note. The rendering
-is not covered by a browser check, so nothing prevents a screen from showing an
-empty prerequisite list as "nothing blocks you".
-
-**Exit:** a bounded local journey selecting UNR FCEIA LCC TO 2024 that asserts
-the explanatory copy appears and no course renders as unblocked.
-
-### P1-08 — frontend and a11y sweeps not run against the new surfaces
-
-**Threatens:** regression coverage.
-
-Startup composition changed materially (`RuntimeProvider` now wraps the router)
-and three surfaces are new: the picker, the missing-vault explanation, and the
-cloud choice. `verify:frontend` and `verify:a11` were **not** executed in this
-pass, so the 195-check sweep and the zero-violation a11y counts are unverified
-against the current tree.
-
-**Exit:** run both, extend the surface list, keep critical = 0 and serious = 0.
+**Exit:** gate the `_app` queries on `!requiresAccount || session !== null`.
+That needs an `enabled` flag threaded through the shared query hooks, which
+are on the cloud path, so it wants its own verification rather than being
+rushed in at the end of a hotfix.

@@ -81,7 +81,13 @@ async function main() {
 
     // ---- 1. sign up -------------------------------------------------------
     await step(page, 'Crear cuenta', async () => {
-      await page.goto(`${PREVIEW_URL}/login`, { waitUntil: 'networkidle' })
+      // Startup is now a picker, and CLOUD is an explicit choice rather than
+      // the default. Going straight to /login skipped the runtime, so the
+      // router had no backend and the form never mounted.
+      await page.goto(PREVIEW_URL, { waitUntil: 'domcontentloaded' })
+      const cloud = page.getByRole('button', { name: 'Usar Campus Cloud' })
+      if (await cloud.isVisible().catch(() => false)) await cloud.click()
+      await page.waitForURL(/login/, { timeout: 20_000 }).catch(() => {})
       await page.getByLabel('¿Cómo te llamás?').fill('Camila')
       await page.getByLabel('Email').fill(email)
       await page.getByLabel('Contraseña').fill(password)

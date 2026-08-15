@@ -130,9 +130,14 @@ async function main() {
   }
 
   const items = vaultFile('items.json')
-  if (items) console.log(`\nitems.json schemaVersion=${items.schemaVersion} items=${items.items?.length ?? 0}`)
+  if (items)
+    console.log(
+      `\nitems.json schemaVersion=${items.schemaVersion} items=${items.items?.length ?? 0}`,
+    )
 
-  console.log(`\n${failed === 0 ? 'PASS' : 'FAIL'}  ${results.length - failed}/${results.length}`)
+  console.log(
+    `\n${failed === 0 ? 'PASS' : 'FAIL'}  ${results.length - failed}/${results.length}`,
+  )
   process.exit(failed === 0 ? 0 : 1)
 }
 

@@ -89,18 +89,18 @@ Every task declares `implements:`. Requirement IDs come from `spec.md`.
       plan declaring `known: true` with zero edges tells them apart
 
 - [~] **A-09** — `CampusRuntime` and the vault picker; `/login` preserved
-      _implements:_ LOCAL-004
-      _done:_ `src/lib/runtime/` + `src/app/` — one resolution point, device config,
-      `RuntimeProvider → BackendProvider`, real picker, `main.tsx` wired. 26 unit tests
-      _done:_ A-09.1 browser transport — `VaultAccess` (2 semantic ops, derived from
-      real call sites), `HttpVaultAccess`, framework-agnostic `vault-api.ts`, Vite
-      plugin that only mounts it. ONE filesystem authority, server-side
-      _proven in a real browser:_ picker → open a real folder → LocalBackend active
-      → `/today` → reload reopens the same vault → a moved vault is explained by name
-      with no login redirect and no mkdir. `scripts/verify-local-journey.mjs` 8/11
-      _NOT proven:_ 3 of 11 checks fail — two look like races in the check (a manual
-      probe shows onboarding rendering the portable catalog with Supabase untouched)
-      and two undiagnosed 404s. See `docs/HOTFIX_REGISTER.md` P1-03
+  _implements:_ LOCAL-004
+  _done:_ `src/lib/runtime/` + `src/app/` — one resolution point, device config,
+  `RuntimeProvider → BackendProvider`, real picker, `main.tsx` wired. 26 unit tests
+  _done:_ A-09.1 browser transport — `VaultAccess` (2 semantic ops, derived from
+  real call sites), `HttpVaultAccess`, framework-agnostic `vault-api.ts`, Vite
+  plugin that only mounts it. ONE filesystem authority, server-side
+  _proven in a real browser:_ picker → open a real folder → LocalBackend active
+  → `/today` → reload reopens the same vault → a moved vault is explained by name
+  with no login redirect and no mkdir. `scripts/verify-local-journey.mjs` 8/11
+  _NOT proven:_ 3 of 11 checks fail — two look like races in the check (a manual
+  probe shows onboarding rendering the portable catalog with Supabase untouched)
+  and two undiagnosed 404s. See `docs/HOTFIX_REGISTER.md` P1-03
 
 - [ ] **A-10** — Backend conformance suite run against both adapters
       _implements:_ LOCAL-002, LOCAL-003

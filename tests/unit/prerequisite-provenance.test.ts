@@ -157,10 +157,7 @@ describe('the generators refuse to infer', () => {
       execFileSync('node', ['scripts/generate-catalog.mjs'], { cwd: dir, stdio: 'pipe' })
 
       const out = JSON.parse(
-        readFileSync(
-          join(dir, 'public/academic-catalog/curricula/utn-frro-isi.json'),
-          'utf8',
-        ),
+        readFileSync(join(dir, 'public/academic-catalog/curricula/utn-frro-isi.json'), 'utf8'),
       ) as { prerequisitesKnown: boolean; subjects: { prerequisites: unknown[] }[] }
 
       expect(out.subjects.reduce((n, s) => n + s.prerequisites.length, 0)).toBe(0)

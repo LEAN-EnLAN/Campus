@@ -22,6 +22,42 @@ import process from 'node:process'
 const CURRICULA_DIR = 'docs/research/curricula'
 const OUT_DIR = join('resources', 'academic-catalog')
 
+/**
+ * Read the plan's epistemic flag. DECLARED by research, never inferred here.
+ *
+ * `known` answers "does the source we read publish correlativas at all?", and
+ * it is independent of how many edges we found:
+ *
+ *   known: true,  edges: []   → this plan genuinely has no correlativas
+ *   known: false, edges: []   → we do not know what they are
+ *
+ * Those are different statements about a university, and `edgeCount > 0`
+ * cannot tell them apart — it answers "unknown" for both. That inference used
+ * to live here and is deliberately gone. Do not bring it back: the flag is a
+ * research finding about a document, and a generator cannot re-derive it from
+ * the rows it happens to have parsed.
+ *
+ * Missing means the researcher has not answered the question yet, so this
+ * fails rather than guessing.
+ */
+function readPrerequisiteProvenance(plan, file) {
+  const declared = plan.curriculum?.prerequisites
+  if (declared == null || typeof declared.known !== 'boolean') {
+    throw new Error(
+      `${file}: curriculum.prerequisites.known must be declared as a boolean. ` +
+        'It records whether the official source publishes correlativas, which is a ' +
+        'research finding and is never inferred from the number of edges parsed.',
+    )
+  }
+  if (declared.known === false && !declared.note) {
+    throw new Error(
+      `${file}: curriculum.prerequisites.note is required when known is false — ` +
+        'a student is told why they are unknown, so someone has to write it down.',
+    )
+  }
+  return { known: declared.known, note: declared.known ? null : declared.note }
+}
+
 /** Lowercase, strip diacritics, collapse whitespace. Mirrors src/domain/search.ts. */
 function normalize(text) {
   return text.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\s+/g, ' ').trim()
@@ -128,15 +164,14 @@ for (const file of files) {
     }
   })
 
-  const edgeCount = subjects.reduce((n, s) => n + s.prerequisites.length, 0)
+  const { known: prerequisitesKnown, note: prerequisitesNote } = readPrerequisiteProvenance(
+    plan,
+    file,
+  )
 
-  /**
-   * The epistemic flag. `false` means "we do not know", which is NOT the same as
-   * "this plan has no correlativas" — UNR FCEIA publishes the plan but not the
-   * correlatividades. Rendering unknown as an empty list would tell a student
-   * nothing blocks them, which we cannot support.
-   */
-  const prerequisitesKnown = edgeCount > 0
+  // A count, reported as a count. It is deliberately NOT consulted when deciding
+  // `prerequisitesKnown` — that is the inference this file no longer makes.
+  const edgeCount = subjects.reduce((n, s) => n + s.prerequisites.length, 0)
 
   const curriculum = {
     formatVersion: 1,
@@ -150,9 +185,7 @@ for (const file of files) {
     sourceKind: plan.curriculum.source_kind ?? null,
     retrievedAt: plan.curriculum.retrieved_at ?? null,
     prerequisitesKnown,
-    prerequisitesNote: prerequisitesKnown
-      ? null
-      : 'La facultad todavía no publicó las correlatividades de este plan.',
+    prerequisitesNote,
     subjects,
   }
 

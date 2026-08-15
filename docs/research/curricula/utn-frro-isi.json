@@ -20,7 +20,12 @@
     "version": "Plan 2023",
     "source_url": "https://www.frro.utn.edu.ar/26/ingenieria-en-sistemas-de-informacion-utn#utn-887",
     "source_kind": "pdf",
-    "retrieved_at": "2026-08-14"
+    "retrieved_at": "2026-08-14",
+    "prerequisites": {
+      "known": true,
+      "note": null,
+      "source": "Ordenanza CSU N° 1878/2022 fija el régimen de correlatividades del Plan 2023, complementando la Ordenanza CSU N° 1877/2022 que aprueba el diseño curricular."
+    }
   },
   "subjects": [
     {

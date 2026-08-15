@@ -59,17 +59,39 @@ const institutions = new Map()
 const units = new Map()
 const programs = new Map()
 /**
- * Does this plan's source publish correlativas?
+ * Read the plan's epistemic flag. DECLARED by research, never inferred here.
  *
- * DERIVED, and that is a known weakness recorded in tasks.md: the research JSON
- * does not declare it, so this infers from whether any edge was recorded. It is
- * correct for both plans we have — UNR FCEIA genuinely publishes none — but a
- * plan that truly has no correlativas would be labelled "unpublished", which is
- * a false statement about that university. The fix is a declared field at the
- * research layer, not a cleverer inference here.
+ * `known` answers "does the source we read publish correlativas at all?", and
+ * it is independent of how many edges we found:
+ *
+ *   known: true,  edges: []   → this plan genuinely has no correlativas
+ *   known: false, edges: []   → we do not know what they are
+ *
+ * Those are different statements about a university, and `edgeCount > 0`
+ * cannot tell them apart — it answers "unknown" for both. That inference used
+ * to live here and is deliberately gone. Do not bring it back: the flag is a
+ * research finding about a document, and a generator cannot re-derive it from
+ * the rows it happens to have parsed.
+ *
+ * Missing means the researcher has not answered the question yet, so this
+ * fails rather than guessing.
  */
-function prerequisitesKnown(plan) {
-  return plan.subjects.some((s) => (s.prerequisites ?? []).length > 0)
+function readPrerequisiteProvenance(plan, file) {
+  const declared = plan.curriculum?.prerequisites
+  if (declared == null || typeof declared.known !== 'boolean') {
+    throw new Error(
+      `${file}: curriculum.prerequisites.known must be declared as a boolean. ` +
+        'It records whether the official source publishes correlativas, which is a ' +
+        'research finding and is never inferred from the number of edges parsed.',
+    )
+  }
+  if (declared.known === false && !declared.note) {
+    throw new Error(
+      `${file}: curriculum.prerequisites.note is required when known is false — ` +
+        'a student is told why they are unknown, so someone has to write it down.',
+    )
+  }
+  return { known: declared.known, note: declared.known ? null : declared.note }
 }
 
 const curricula = []
@@ -119,6 +141,8 @@ for (const file of files) {
     })
   }
 
+  const prerequisiteProvenance = readPrerequisiteProvenance(plan, file)
+
   const version = plan.curriculum.version
   const curriculumId = uuid5(`curriculum:${instSlug}:${unitSlug}:${programSlug}:${version}`)
   curricula.push({
@@ -133,10 +157,8 @@ for (const file of files) {
     // Kept identical to scripts/generate-catalog.mjs on purpose: the cloud and
     // the vault must answer "are the correlativas published?" the same way, or
     // the two adapters disagree about an academic fact.
-    prerequisites_known: prerequisitesKnown(plan),
-    prerequisites_note: prerequisitesKnown(plan)
-      ? null
-      : 'La facultad todavía no publicó las correlatividades de este plan.',
+    prerequisites_known: prerequisiteProvenance.known,
+    prerequisites_note: prerequisiteProvenance.note,
   })
 
   // Subjects are shared across plans, keyed by normalised name.

@@ -20,7 +20,12 @@
     "version": "TO 2024",
     "source_url": "https://web.fceia.unr.edu.ar/images/PDF/planes_de_estudio/Plan_LCC_CD_41043_2023_2.pdf",
     "source_kind": "pdf",
-    "retrieved_at": "2026-08-14"
+    "retrieved_at": "2026-08-14",
+    "prerequisites": {
+      "known": false,
+      "note": "La facultad todavía no publicó las correlatividades de este plan.",
+      "source": "Resolución C.D. N° 850/2023 (Texto Ordenado 2024) publica el plan de estudios pero no sus correlatividades: el texto indica que serán aprobadas oportunamente por el Consejo Directivo. No existe un documento posterior consultable que las fije."
+    }
   },
   "subjects": [
     {

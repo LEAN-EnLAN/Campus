@@ -2,100 +2,65 @@
 
 Unresolved **P0 / P1** findings only. Ordinary TODOs do not belong here.
 
-A finding is P0/P1 when it threatens a security boundary, canonical data
-semantics, cross-platform vault portability, backend equivalence, runtime
-correctness, receipt/evidence authority, significant data loss, or architecture
-Milestone B depends on.
+Last updated: 2026-08-15, COMODÍN hotfix pass.
 
-Last updated: 2026-08-15, end of the Milestone A acceleration pass.
+## Resolved in this pass
 
----
+| id | finding | proof |
+|----|---------|-------|
+| **P0-01** | `prerequisitesKnown` had no executed cloud coverage | RESOLVED — `pnpm db:reset` applies `20260815000100`; Postgres holds UTN `t`/186 edges and UNR `f`/0 edges with its note. `test:db` 29/29 asserts the adapter reads the column. Zero `prerequisites.length > 0` inferences remain in production code (the three matches are comments forbidding it) |
+| **P0-02** | A-10 dual-adapter conformance did not exist | RESOLVED — `tests/db/conformance.test.ts`, all 16 methods against both adapters. Caught a real divergence on its first run (below). Mutation-verified: restoring `known = edges.length > 0` in both adapters kills exactly the known-empty fixture |
+| **P1-03** | 3 unresolved browser checks / intermittent 404s | RESOLVED — diagnosed, not dismissed. Two were the check racing the destination; the last was a defect in the TEST (phase boundary sat after the rename, so the missing-vault phase's own correct 404 was attributed to the happy path). `scripts/lib/dev-server.mjs` replaces unbounded readiness loops. `pnpm verify:local` 12/12 |
+| **P1-04** | A-11 never ran | RESOLVED — `pnpm verify:a11` 8/8 with Supabase at `http://127.0.0.1:1`, across a real restart of both browser and server |
+| **P1-05** | Vault API bind could follow `vite --host` | RESOLVED — `src/server/bind-guard.ts` fails startup loudly. 24 classifier tests, `pnpm verify:bind` 10/10: `vite --host` exits 1; `CAMPUS_VAULT_API=off` serves the frontend with no token injected and the endpoint unmounted |
 
-## P0-01 — `prerequisitesKnown` has no cloud-side test coverage
+### Divergence A-10 caught, and fixed
 
-**Threatens:** backend equivalence, canonical academic semantics.
-
-Migration `20260815000100` adds `prerequisites_known` / `prerequisites_note` to
-`public.curricula`, and `SupabaseBackend` now reads them. That path has **not**
-been executed: `pnpm test:db` was not run during this pass, so the column, the
-regenerated seed and the adapter mapping are unverified together.
-
-The local side is covered, including the synthetic `known: true, edges: []`
-case. The cloud side is code that compiles and nothing more.
-
-**Exit:** run `pnpm test:db` against a reset database and add the three semantic
-cases (UTN known, UNR unknown, synthetic known-empty) to the cloud suite.
+`SupabaseBackend.curriculumBundle` **threw** for a curriculum that does not
+exist (`.single()`), while `LocalBackend` answered `prerequisitesKnown: false`.
+The same question got an error from one adapter and an answer from the other.
+Fixed with `maybeSingle` and the identical UNKNOWN bundle.
 
 ---
 
-## P0-02 — A-10 conformance suite does not exist
+## Open
 
-**Threatens:** backend equivalence — the ADR's own stated risk.
+### P1-06 — the A-11 journey stops at academic context
 
-`LocalBackend` and `SupabaseBackend` are each tested separately. There is no
-single suite asserting they answer the same 16-method contract identically, so
-nothing detects drift between them.
+**Threatens:** the completeness of the Milestone A claim.
 
-**Exit:** one semantic suite, parameterised over both adapters, covering every
-method plus date round-tripping and the academic-uncertainty cases. For the
-local adapter, every persistence assertion must run against a **new instance**.
+`verify:a11` proves: open vault → onboarding → Today → `context.json` written →
+restart → same vault, same state, no Supabase.
 
----
+It does **not** yet cover the second half of the specified journey: marking a
+subject `in_progress`, creating a deadline, seeing it in Today and in the
+Course, and finding all three after a restart. `subject-state.json` and
+`items.json` are covered by the conformance suite against a new instance, but
+not through the UI.
 
-## P1-03 — local browser journey is 8/11, and the gaps are unexplained
+**Exit:** extend `verify:a11` through Plan and the deadline form, then assert
+the three files after the restart boundary.
 
-**Threatens:** runtime correctness.
+### P1-07 — UNR uncertainty is not verified through the UI
 
-`scripts/verify-local-journey.mjs` proves the local runtime genuinely works in a
-real browser: picker → open a real folder → `LocalBackend` active → `/today` →
-reload reopens the same vault → a moved vault is explained without a login
-redirect and without recreating the folder.
+**Threatens:** canonical academic semantics at the surface the student sees.
 
-Three checks still fail and were **not** diagnosed:
+Every layer below the UI is proven: research provenance → catalog → seed →
+Postgres → both adapters, all asserting UNKNOWN with its note. The rendering
+is not covered by a browser check, so nothing prevents a screen from showing an
+empty prerequisite list as "nothing blocks you".
 
-- `a fresh vault lands on onboarding, not login` — a manual probe confirms the
-  app does reach `/onboarding` and renders the portable catalog (UNR and UTN
-  both listed) with Supabase untouched, so this reads as a race in the check
-  rather than a product defect. Unproven either way.
-- `the portable catalog was read with no Supabase` — same race.
-- `no console errors` — two `404` responses during the local journey. Cause
-  unknown. A 404 on a catalog fetch would be material; a 404 on a dev-server
-  asset would not. **Not investigated.**
+**Exit:** a bounded local journey selecting UNR FCEIA LCC TO 2024 that asserts
+the explanatory copy appears and no course renders as unblocked.
 
-**Exit:** wait on the destination rather than on elapsed time, then identify
-both 404s by URL before dismissing them.
+### P1-08 — frontend and a11y sweeps not run against the new surfaces
 
----
+**Threatens:** regression coverage.
 
-## P1-04 — A-11 was never run
+Startup composition changed materially (`RuntimeProvider` now wraps the router)
+and three surfaces are new: the picker, the missing-vault explanation, and the
+cloud choice. `verify:frontend` and `verify:a11` were **not** executed in this
+pass, so the 195-check sweep and the zero-violation a11y counts are unverified
+against the current tree.
 
-**Threatens:** the milestone claim itself.
-
-The full journey — choose institution → academic unit → program → curriculum →
-Today → mark a subject `in_progress` → create a deadline → see it in Today and
-in the Course → restart → everything persists from vault files — has **not**
-been executed. Nor has the UNR uncertainty journey through the UI.
-
-No vault has yet been written by the product: `.campus/` is created on first
-authored state, and no run has reached that point.
-
-**Exit:** complete the journey with Supabase intentionally unreachable, then
-show the resulting vault tree.
-
----
-
-## P1-05 — stale dev server was bound to `0.0.0.0` with TLS
-
-**Threatens:** security boundary.
-
-During this pass a dev server left running from an earlier session was found
-listening on `0.0.0.0:5173`, from the tailnet script. The new Vault API binds to
-loopback and validates Origin, but it mounts into whatever host Vite was given —
-so a tailnet-exposed dev server would expose an API that reads and writes the
-student's files to every host that can reach it.
-
-The capability token and the Origin allowlist are the mitigations, and they are
-real, but `--host` widening the bind is a foot-gun that currently has no guard.
-
-**Exit:** refuse to mount the Vault API when the dev server is not bound to
-loopback, unless an explicit opt-in flag is passed.
+**Exit:** run both, extend the surface list, keep critical = 0 and serious = 0.

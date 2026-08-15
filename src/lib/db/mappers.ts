@@ -54,6 +54,9 @@ export interface CurriculumRow {
   source_url: string | null
   source_kind: string | null
   source_fetched_at: string | null
+  /** See migration 20260815000100 — unknown correlativas are not absent correlativas. */
+  prerequisites_known: boolean
+  prerequisites_note: string | null
 }
 
 export interface CurriculumSubjectRow {

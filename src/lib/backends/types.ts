@@ -78,6 +78,22 @@ export interface CurriculumBundle {
   programName: string | null
   subjects: CurriculumSubject[]
   prerequisites: PrerequisiteEdge[]
+  /**
+   * Does the source publish correlativas for this plan at all?
+   *
+   * This field is the distinction, and it exists because the type could not
+   * express it before: with only `prerequisites`, an empty array meant both "we
+   * asked and there are none" and "nobody has told us". Callers were left to
+   * infer from `prerequisites.length === 0`, which answers UNKNOWN for a plan
+   * that genuinely has no correlativas — Campus asserting an academic fact it
+   * does not have.
+   *
+   * `false` → an empty `prerequisites` array means UNKNOWN. Never render it as
+   * "nothing blocks you".
+   */
+  prerequisitesKnown: boolean
+  /** Why they are unknown, in the student's language. Only meaningful when `prerequisitesKnown` is false. */
+  prerequisitesNote: string | null
 }
 
 export interface SaveContextInput {

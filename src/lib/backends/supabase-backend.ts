@@ -99,7 +99,7 @@ export function createSupabaseBackend(): CampusBackend {
           supabase
             .from('curricula')
             .select(
-              'id, program_id, name, version, source_url, source_kind, source_fetched_at, programs (name)',
+              'id, program_id, name, version, source_url, source_kind, source_fetched_at, prerequisites_known, prerequisites_note, programs (name)',
             )
             .eq('id', curriculumId)
             .single(),
@@ -148,6 +148,11 @@ export function createSupabaseBackend(): CampusBackend {
         return {
           curriculum: toCurriculum(curriculumRow),
           programName,
+          // Read, never derived from `prerequisites.length`. An empty edge list
+          // is the one thing this flag exists to disambiguate, so deriving it
+          // from that list would answer the question with the question.
+          prerequisitesKnown: curriculumRow.prerequisites_known,
+          prerequisitesNote: curriculumRow.prerequisites_note,
           subjects,
           prerequisites,
         }

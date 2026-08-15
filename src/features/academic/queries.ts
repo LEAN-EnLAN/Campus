@@ -126,7 +126,16 @@ export interface AcademicPlan {
    * correlatividades, so screens must say "no las tenemos" rather than let
    * silence read as "nada te bloquea".
    */
-  prerequisiteCount: number
+  /**
+   * Does the source publish correlativas at all?
+   *
+   * Read from the backend, never inferred from `prerequisites.length`. Screens
+   * used to ask "are there zero edges?" and render "no las tenemos" — which is
+   * a claim about the university, and it is wrong for any plan that genuinely
+   * has none.
+   */
+  prerequisitesKnown: boolean
+  prerequisitesNote: string | null
   views: SubjectView[]
   byYear: ReturnType<typeof groupByYear>
   progress: ReturnType<typeof computeProgress>
@@ -176,7 +185,8 @@ export function useAcademicPlan(): AcademicPlan {
     context,
     curriculum: bundleQuery.data?.curriculum ?? null,
     programName: bundleQuery.data?.programName ?? null,
-    prerequisiteCount: bundleQuery.data?.prerequisites.length ?? 0,
+    prerequisitesKnown: bundleQuery.data?.prerequisitesKnown ?? true,
+    prerequisitesNote: bundleQuery.data?.prerequisitesNote ?? null,
     views,
     byYear,
     progress,

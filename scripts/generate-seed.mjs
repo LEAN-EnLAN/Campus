@@ -58,6 +58,20 @@ if (files.length === 0) {
 const institutions = new Map()
 const units = new Map()
 const programs = new Map()
+/**
+ * Does this plan's source publish correlativas?
+ *
+ * DERIVED, and that is a known weakness recorded in tasks.md: the research JSON
+ * does not declare it, so this infers from whether any edge was recorded. It is
+ * correct for both plans we have — UNR FCEIA genuinely publishes none — but a
+ * plan that truly has no correlativas would be labelled "unpublished", which is
+ * a false statement about that university. The fix is a declared field at the
+ * research layer, not a cleverer inference here.
+ */
+function prerequisitesKnown(plan) {
+  return plan.subjects.some((s) => (s.prerequisites ?? []).length > 0)
+}
+
 const curricula = []
 const subjects = new Map() // normalized_name -> { id, code, name }
 const curriculumSubjects = []
@@ -116,6 +130,13 @@ for (const file of files) {
     source_kind: plan.curriculum.source_kind ?? null,
     source_fetched_at: plan.curriculum.retrieved_at ?? null,
     is_default: true,
+    // Kept identical to scripts/generate-catalog.mjs on purpose: the cloud and
+    // the vault must answer "are the correlativas published?" the same way, or
+    // the two adapters disagree about an academic fact.
+    prerequisites_known: prerequisitesKnown(plan),
+    prerequisites_note: prerequisitesKnown(plan)
+      ? null
+      : 'La facultad todavía no publicó las correlatividades de este plan.',
   })
 
   // Subjects are shared across plans, keyed by normalised name.
@@ -258,6 +279,8 @@ insert(
     'source_kind',
     'source_fetched_at',
     'is_default',
+    'prerequisites_known',
+    'prerequisites_note',
   ],
   curricula,
   {
@@ -269,6 +292,8 @@ insert(
     source_kind: q,
     source_fetched_at: (v) => (v ? `${q(v)}::timestamptz` : 'NULL'),
     is_default: (v) => (v ? 'true' : 'false'),
+    prerequisites_known: (v) => (v ? 'true' : 'false'),
+    prerequisites_note: (v) => (v ? q(v) : 'NULL'),
   },
 )
 

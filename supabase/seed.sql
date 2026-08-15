@@ -22,9 +22,9 @@ insert into public.programs (id, academic_unit_id, slug, name, degree_type, dura
   ('207c3238-25f5-5a35-8804-a7efb11fc44e', 'b58c69e7-2976-5719-b1cb-bd025b222c7b', 'isi', 'Ingeniería en Sistemas de Información', 'grado', NULL)
 on conflict (id) do nothing;
 
-insert into public.curricula (id, program_id, name, version, source_url, source_kind, source_fetched_at, is_default) values
-  ('83bc760e-c983-5bd2-b84a-f6278660f1fa', 'b083fd5d-878f-5eed-990b-bd78e3f5f251', 'Plan de Estudios de la Licenciatura en Ciencias de la Computación - Texto Ordenado 2024 (Resolución C.D. N° 850/2023, Expte. CUDI N° 41043/2023; texto ordenado del plan aprobado por Resolución C.S. N° 246/2010)', 'TO 2024', 'https://web.fceia.unr.edu.ar/images/PDF/planes_de_estudio/Plan_LCC_CD_41043_2023_2.pdf', 'pdf', '2026-08-14'::timestamptz, true),
-  ('a7c10258-7941-50fd-a567-58750a6519a5', '207c3238-25f5-5a35-8804-a7efb11fc44e', 'Diseño Curricular de Ingeniería en Sistemas de Información - Plan 2023 (Ordenanza CSU N° 1877/2022); correlatividades por Ordenanza CSU N° 1878/2022', 'Plan 2023', 'https://www.frro.utn.edu.ar/26/ingenieria-en-sistemas-de-informacion-utn#utn-887', 'pdf', '2026-08-14'::timestamptz, true)
+insert into public.curricula (id, program_id, name, version, source_url, source_kind, source_fetched_at, is_default, prerequisites_known, prerequisites_note) values
+  ('83bc760e-c983-5bd2-b84a-f6278660f1fa', 'b083fd5d-878f-5eed-990b-bd78e3f5f251', 'Plan de Estudios de la Licenciatura en Ciencias de la Computación - Texto Ordenado 2024 (Resolución C.D. N° 850/2023, Expte. CUDI N° 41043/2023; texto ordenado del plan aprobado por Resolución C.S. N° 246/2010)', 'TO 2024', 'https://web.fceia.unr.edu.ar/images/PDF/planes_de_estudio/Plan_LCC_CD_41043_2023_2.pdf', 'pdf', '2026-08-14'::timestamptz, true, false, 'La facultad todavía no publicó las correlatividades de este plan.'),
+  ('a7c10258-7941-50fd-a567-58750a6519a5', '207c3238-25f5-5a35-8804-a7efb11fc44e', 'Diseño Curricular de Ingeniería en Sistemas de Información - Plan 2023 (Ordenanza CSU N° 1877/2022); correlatividades por Ordenanza CSU N° 1878/2022', 'Plan 2023', 'https://www.frro.utn.edu.ar/26/ingenieria-en-sistemas-de-informacion-utn#utn-887', 'pdf', '2026-08-14'::timestamptz, true, true, NULL)
 on conflict (id) do nothing;
 
 insert into public.subjects (id, code, name, normalized_name) values

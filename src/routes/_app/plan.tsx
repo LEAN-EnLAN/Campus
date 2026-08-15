@@ -97,7 +97,7 @@ function PlanScreen() {
       {/* Silence here would read as "nada te bloquea", which is a claim we cannot make.
           A plan with no correlativa graph has to say so, or Campus is quietly asserting
           an academic fact it does not have (P-05). */}
-      {plan.prerequisiteCount === 0 && plan.views.length > 0 ? (
+      {!plan.prerequisitesKnown && plan.views.length > 0 ? (
         <p className="border-rule bg-paper-elevated text-ink-muted rounded-lg border border-dashed px-4 py-3 text-sm">
           Esta facultad todavía no publicó las correlatividades de este plan, así que Campus no
           puede decirte qué te habilita cada materia. Cuando salgan, las cargamos.{' '}

@@ -165,7 +165,10 @@ const authored = await session(async (page, server, supabaseCalls) => {
   await dialog.getByRole('button', { name: 'Guardar' }).click()
   await page.waitForTimeout(2000)
 
-  check('the deadline reached items.json', existsSync(join(VAULT, '.campus/academic/items.json')))
+  check(
+    'the deadline reached items.json',
+    existsSync(join(VAULT, '.campus/academic/items.json')),
+  )
 
   // ---- it is visible where the student actually looks ---------------------
   await page.goto(`${server.url}/today`, { waitUntil: 'domcontentloaded' })

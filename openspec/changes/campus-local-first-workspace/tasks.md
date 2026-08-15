@@ -72,9 +72,21 @@ Every task declares `implements:`. Requirement IDs come from `spec.md`.
       `realpath` and VAULT-002 says fsync; the browser File System Access API has
       neither and is Chromium-only. Tauri (Milestone D) reuses the same port
 
-- [ ] **A-08** — `LocalBackend` implementing `CampusBackend` over the vault
+- [x] **A-08** — `LocalBackend` implementing `CampusBackend` over the vault
       _implements:_ LOCAL-003
       _acceptance:_ Today, Plan, Courses, Calendar and Library work with Supabase stopped
+      _evidence:_ `src/lib/backends/local/` — 26 tests. Every persistence assertion is
+      made against a BRAND NEW `LocalBackend`, so no in-memory state can hide a badly
+      written file. Exactly 16 methods, asserted as an equality not a superset.
+      Four files under `.campus/academic/`, each with `schemaVersion: 1`, each
+      changed by one read→derive→atomic-write through `VaultRepository`
+      _boundary:_ `boundary.test.ts` — LocalBackend imports neither `node:fs`,
+      `node:path` nor Supabase, and composes no vault paths. Verified by
+      introducing the violation; two tests catch it
+      _blind spot found and closed:_ the first round of tests could NOT catch the
+      flag being re-derived from `prerequisites.length`, because both real plans
+      agree with that derivation (UTN 186→true, UNR 0→false). Only a synthetic
+      plan declaring `known: true` with zero edges tells them apart
 
 - [ ] **A-09** — `CampusRuntime` and the vault picker; `/login` preserved
       _implements:_ LOCAL-004

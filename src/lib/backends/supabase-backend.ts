@@ -20,7 +20,9 @@ import {
   type ResourceRow,
   type UserSubjectStateRow,
 } from '@/lib/db/mappers'
-import { supabase } from '@/lib/supabase'
+import type { SupabaseClient } from '@supabase/supabase-js'
+
+import { supabase as defaultClient } from '@/lib/supabase'
 import type { PrerequisiteEdge } from '@/domain/types'
 
 import { backendError, type CampusBackend, type CurriculumBundle } from './types'
@@ -43,14 +45,18 @@ const RESOURCE_COLUMNS =
 const CONTEXT_COLUMNS =
   'id, institution_id, academic_unit_id, program_id, curriculum_id, unmapped_label, is_active'
 
-async function requireUserId(): Promise<string> {
+async function requireUserId(supabase: SupabaseClient): Promise<string> {
   const { data } = await supabase.auth.getUser()
   const id = data.user?.id
   if (!id) backendError('Sesión', 'no hay una sesión activa')
   return id
 }
 
-export function createSupabaseBackend(): CampusBackend {
+export function createSupabaseBackend(client?: SupabaseClient): CampusBackend {
+  // Injected only by the conformance suite, which needs a client carrying a
+  // real test user's JWT so RLS applies exactly as it does in the app. The
+  // default is the module singleton, so production behaviour is unchanged.
+  const supabase = client ?? defaultClient
   return {
     kind: 'cloud',
 
@@ -102,7 +108,12 @@ export function createSupabaseBackend(): CampusBackend {
               'id, program_id, name, version, source_url, source_kind, source_fetched_at, prerequisites_known, prerequisites_note, programs (name)',
             )
             .eq('id', curriculumId)
-            .single(),
+            // `maybeSingle`, not `single`. A plan we do not have is a QUESTION
+            // with an answer — "we do not know your correlativas" — not a
+            // database error. `single()` threw, so the cloud adapter exploded
+            // where the local one answered UNKNOWN: the exact behavioural drift
+            // the conformance suite exists to catch.
+            .maybeSingle(),
           supabase
             .from('curriculum_subjects')
             .select(
@@ -115,6 +126,19 @@ export function createSupabaseBackend(): CampusBackend {
 
         if (curriculumResult.error)
           backendError('No pudimos cargar el plan', curriculumResult.error.message)
+
+        if (!curriculumResult.data) {
+          // Identical to LocalBackend's answer for an unknown plan. An absent
+          // plan must never read as "nothing blocks you".
+          return {
+            curriculum: null,
+            programName: null,
+            subjects: [],
+            prerequisites: [],
+            prerequisitesKnown: false,
+            prerequisitesNote: 'No encontramos este plan en el catálogo.',
+          }
+        }
         if (subjectsResult.error)
           backendError('No pudimos cargar las materias', subjectsResult.error.message)
 
@@ -171,7 +195,7 @@ export function createSupabaseBackend(): CampusBackend {
       },
 
       async saveContext(input) {
-        const userId = await requireUserId()
+        const userId = await requireUserId(supabase)
 
         // One active context per user is a unique index; deactivate before inserting.
         const { error: deactivateError } = await supabase
@@ -209,7 +233,7 @@ export function createSupabaseBackend(): CampusBackend {
       },
 
       async setSubjectStatus({ curriculumSubjectId, status, grade }) {
-        const userId = await requireUserId()
+        const userId = await requireUserId(supabase)
 
         if (status === null) {
           const { error } = await supabase
@@ -251,7 +275,7 @@ export function createSupabaseBackend(): CampusBackend {
       },
 
       async create(input) {
-        const userId = await requireUserId()
+        const userId = await requireUserId(supabase)
         const { data, error } = await supabase
           .from('academic_items')
           .insert({
@@ -293,7 +317,7 @@ export function createSupabaseBackend(): CampusBackend {
       },
 
       async create(input) {
-        const userId = await requireUserId()
+        const userId = await requireUserId(supabase)
         const { data, error } = await supabase
           .from('resources')
           .insert({

@@ -20,6 +20,13 @@ import { startDevServer, waitForPortFree } from './lib/dev-server.mjs'
 const WORK = '/tmp/campus-a11'
 const VAULT = join(WORK, 'MiVault')
 const PROFILE = join(WORK, 'browser-profile')
+const DEADLINE_TITLE = 'TP 4 de Analisis'
+const SUBJECT_ID = 'analisis-matematico-i-1'
+// A future date, chosen so it lands in "próximamente" under the product's own
+// Today rules rather than by bending them. Local date string, no timezone
+// arithmetic: Argentina is UTC-3 and a naive ISO conversion moves the day.
+const DUE = new Date(Date.now() + 7 * 24 * 3600 * 1000)
+const DUE_LOCAL = `${DUE.getFullYear()}-${String(DUE.getMonth() + 1).padStart(2, '0')}-${String(DUE.getDate()).padStart(2, '0')}`
 const results = []
 const check = (n, ok, d = '') => {
   results.push(ok)
@@ -78,6 +85,7 @@ mkdirSync(VAULT, { recursive: true })
 mkdirSync(PROFILE, { recursive: true })
 
 // ---------------------------------------------------------------- session one
+let courseHref = ''
 const authored = await session(async (page, server, supabaseCalls) => {
   await page.goto(server.url, { waitUntil: 'domcontentloaded' })
   await page.getByLabel('Ruta de la carpeta').fill(VAULT)
@@ -110,6 +118,66 @@ const authored = await session(async (page, server, supabaseCalls) => {
   const ctx = join(VAULT, '.campus/academic/context.json')
   check('academic context was written to the vault', existsSync(ctx))
 
+  // ---- Plan → Course → mark the subject in_progress -----------------------
+  await page.goto(`${server.url}/plan`, { waitUntil: 'domcontentloaded' })
+  const subject = page.getByRole('link', { name: /Análisis Matemático I\b/ }).first()
+  await subject.waitFor({ state: 'visible', timeout: 20_000 })
+  await subject.click()
+  await page.waitForURL(/courses\//, { timeout: 20_000 })
+  check('opened a Course from Plan', /courses\//.test(page.url()))
+  const courseUrl = page.url()
+  // Path only: the port is the same but the object is a new server after restart.
+  courseHref = new URL(courseUrl).pathname
+
+  // A select, not buttons — driven the way a student drives it.
+  const statusSelect = page.getByLabel('¿Cómo vas?')
+  await statusSelect.waitFor({ state: 'visible', timeout: 20_000 })
+  await statusSelect.selectOption('in_progress')
+  await page.waitForTimeout(1500)
+
+  const stateFile = join(VAULT, '.campus/academic/subject-state.json')
+  check('in_progress reached subject-state.json', existsSync(stateFile))
+  if (existsSync(stateFile)) {
+    const doc = JSON.parse(readFileSync(stateFile, 'utf8'))
+    check(
+      'and it is stored as in_progress',
+      (doc.states ?? []).some((s) => s.status === 'in_progress'),
+      JSON.stringify((doc.states ?? [])[0] ?? {}),
+    )
+  }
+
+  // ---- create a real deadline ---------------------------------------------
+  // Ctrl+K, the product's own shortcut — driven the way a student drives it.
+  await page.keyboard.press('Control+k')
+  // Scoped to the capture dialog. The Course page has its OWN "Guardar" for
+  // material, and an unscoped locator matched both — which is the dialog
+  // telling us its accessible name is doing its job.
+  const dialog = page.getByLabel('Agregar algo')
+  await dialog.waitFor({ state: 'visible', timeout: 20_000 })
+  await dialog.getByLabel('¿Qué es?').fill(DEADLINE_TITLE)
+  await dialog.getByLabel('Tipo').selectOption('assignment')
+  // By VALUE, and with no catch. `selectOption({label: /regex/})` silently did
+  // nothing, the item was stored with curriculumSubjectId: null, and the
+  // swallowed failure surfaced three steps later as "not visible in the Course".
+  await dialog.getByLabel('Materia').selectOption(SUBJECT_ID)
+  const due = dialog.getByLabel(/Cuándo|Fecha|Vence|Entrega/i).first()
+  if (await due.isVisible().catch(() => false)) await due.fill(DUE_LOCAL).catch(() => {})
+  await dialog.getByRole('button', { name: 'Guardar' }).click()
+  await page.waitForTimeout(2000)
+
+  check('the deadline reached items.json', existsSync(join(VAULT, '.campus/academic/items.json')))
+
+  // ---- it is visible where the student actually looks ---------------------
+  await page.goto(`${server.url}/today`, { waitUntil: 'domcontentloaded' })
+  const inToday = page.getByText(DEADLINE_TITLE).first()
+  await inToday.waitFor({ state: 'visible', timeout: 20_000 }).catch(() => {})
+  check('the deadline appears in Today', await inToday.isVisible().catch(() => false))
+
+  await page.goto(courseUrl, { waitUntil: 'domcontentloaded' })
+  const inCourse = page.getByText(DEADLINE_TITLE).first()
+  await inCourse.waitFor({ state: 'visible', timeout: 20_000 }).catch(() => {})
+  check('the deadline appears in the Course', await inCourse.isVisible().catch(() => false))
+
   check(
     'no Supabase request was made at any point',
     supabaseCalls.length === 0,
@@ -134,6 +202,24 @@ await session(async (page, server, supabaseCalls) => {
     /today/.test(page.url()),
     page.url().split('/').pop(),
   )
+
+  // Nothing was injected after the restart. Everything below has to come from
+  // the four JSON files, read by a LocalBackend that did not exist a moment ago.
+  const inToday = page.getByText(DEADLINE_TITLE).first()
+  await inToday.waitFor({ state: 'visible', timeout: 20_000 }).catch(() => {})
+  check(
+    'the deadline is STILL in Today after the restart',
+    await inToday.isVisible().catch(() => false),
+  )
+
+  await page.goto(`${server.url}${courseHref}`, { waitUntil: 'domcontentloaded' })
+  const statusSelect = page.getByLabel('¿Cómo vas?')
+  await statusSelect.waitFor({ state: 'visible', timeout: 20_000 }).catch(() => {})
+  check(
+    'the subject is STILL in_progress after the restart',
+    (await statusSelect.inputValue().catch(() => '')) === 'in_progress',
+  )
+
   check('and still made no Supabase request', supabaseCalls.length === 0)
 })
 

@@ -60,10 +60,17 @@ Every task declares `implements:`. Requirement IDs come from `spec.md`.
       `tests/unit/academic-catalog.test.ts` — 10 tests, including a regeneration-diff check
       so the two catalogs cannot drift
 
-- [ ] **A-07** — `VaultRepository` over a real filesystem, with the path resolver as the
+- [x] **A-07** — `VaultRepository` over a real filesystem, with the path resolver as the
       security boundary
       _implements:_ VAULT-001, VAULT-002, VAULT-003
-      _blocked on:_ nothing — next task
+      _evidence:_ `src/lib/vault/` — `fs-port.ts` (the port), `node-fs.ts` (Node adapter),
+      `path-resolver.ts` (pure string half), `vault-repository.ts` (filesystem half).
+      34 tests: 20 on the resolver, 14 against real temp dirs and real symlinks.
+      Mutation-verified — separator confusion, trailing dot/space, reserved-name
+      over- and under-matching, and the dangling-symlink bypass each kill a test
+      _decision:_ the vault runs on a Node adapter behind the port. VAULT-001 says
+      `realpath` and VAULT-002 says fsync; the browser File System Access API has
+      neither and is Chromium-only. Tauri (Milestone D) reuses the same port
 
 - [ ] **A-08** — `LocalBackend` implementing `CampusBackend` over the vault
       _implements:_ LOCAL-003

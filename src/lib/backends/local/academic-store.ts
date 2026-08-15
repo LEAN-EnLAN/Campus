@@ -1,5 +1,5 @@
 import { backendError } from '@/lib/backends/types'
-import type { VaultRepository } from '@/lib/vault/vault-repository'
+import type { VaultAccess } from '@/lib/vault/vault-access'
 
 /**
  * The four academic files, and the only way they are ever changed.
@@ -10,9 +10,10 @@ import type { VaultRepository } from '@/lib/vault/vault-repository'
  * the vault in a state no single file describes, and the student's own data is
  * what pays for it.
  *
- * Writes go through `VaultRepository`, never the filesystem. If this module
- * started resolving paths itself, VAULT-001 would stop being a boundary and
- * become a suggestion.
+ * Writes go through `VaultAccess`, never the filesystem. Which implementation
+ * is behind it — the in-process repository, or the HTTP client that reaches the
+ * privileged side — is not this module's business, and that is the point: there
+ * is exactly one filesystem security authority and it is never in the browser.
  */
 
 export const SCHEMA_VERSION = 1
@@ -39,7 +40,7 @@ const pathFor = (file: AcademicFile) => `${DIR}/${file}.json`
  * student loses a semester.
  */
 async function readFile<T>(
-  vault: VaultRepository,
+  vault: VaultAccess,
   file: AcademicFile,
   key: string,
   empty: T,
@@ -89,7 +90,7 @@ async function readFile<T>(
  * VAULT-003 check exists to catch.
  */
 async function update<T>(
-  vault: VaultRepository,
+  vault: VaultAccess,
   file: AcademicFile,
   key: string,
   empty: T,

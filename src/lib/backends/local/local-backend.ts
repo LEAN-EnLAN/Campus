@@ -17,7 +17,7 @@ import type {
   SaveContextInput,
   SetSubjectStatusInput,
 } from '@/lib/backends/types'
-import type { VaultRepository } from '@/lib/vault/vault-repository'
+import type { VaultAccess } from '@/lib/vault/vault-access'
 
 import { store } from './academic-store'
 import {
@@ -44,10 +44,10 @@ import { ulid } from './ulid'
 export class LocalBackend implements CampusBackend {
   readonly kind = 'local' as const
 
-  private readonly vault: VaultRepository
+  private readonly vault: VaultAccess
   private readonly source: PortableCatalog
 
-  constructor(vault: VaultRepository, source: PortableCatalog) {
+  constructor(vault: VaultAccess, source: PortableCatalog) {
     this.vault = vault
     this.source = source
   }

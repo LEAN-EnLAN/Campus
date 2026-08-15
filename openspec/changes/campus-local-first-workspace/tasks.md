@@ -89,20 +89,20 @@ Every task declares `implements:`. Requirement IDs come from `spec.md`.
       plan declaring `known: true` with zero edges tells them apart
 
 - [~] **A-09** — `CampusRuntime` and the vault picker; `/login` preserved
-      _implements:_ LOCAL-004
-      _done:_ `src/lib/runtime/` — one resolution point (`resolveCampusRuntime`), device
-      config, `RuntimeProvider → BackendProvider`. 26 tests. Startup is a four-state
-      union, so `resolving` and `needs-choice` cannot be confused; a remembered vault
-      that is gone reports `vault-missing` and never falls back to cloud, never
-      redirects to login, and never creates a folder. Recent vaults live in device
-      storage, never in `.campus/`. Both modes reach the SAME component tree, asserted
-      by comparing rendered HTML
-      _boundary:_ `tests/unit/runtime-boundary.test.ts` — presentation code may not
-      construct a backend, import the vault, branch on `mode`, or call `useRuntime`.
-      Verified by introducing a `mode === 'local'` into a route
-      _remaining:_ the browser-side local transport. `RuntimeCapabilities.openLocal`
-      needs an HTTP `FileSystemPort` behind a dev-server route before `main.tsx` can be
-      rewired — until then the running app still mounts `BackendProvider` directly
+  _implements:_ LOCAL-004
+  _done:_ `src/lib/runtime/` — one resolution point (`resolveCampusRuntime`), device
+  config, `RuntimeProvider → BackendProvider`. 26 tests. Startup is a four-state
+  union, so `resolving` and `needs-choice` cannot be confused; a remembered vault
+  that is gone reports `vault-missing` and never falls back to cloud, never
+  redirects to login, and never creates a folder. Recent vaults live in device
+  storage, never in `.campus/`. Both modes reach the SAME component tree, asserted
+  by comparing rendered HTML
+  _boundary:_ `tests/unit/runtime-boundary.test.ts` — presentation code may not
+  construct a backend, import the vault, branch on `mode`, or call `useRuntime`.
+  Verified by introducing a `mode === 'local'` into a route
+  _remaining:_ the browser-side local transport. `RuntimeCapabilities.openLocal`
+  needs an HTTP `FileSystemPort` behind a dev-server route before `main.tsx` can be
+  rewired — until then the running app still mounts `BackendProvider` directly
 
 - [ ] **A-10** — Backend conformance suite run against both adapters
       _implements:_ LOCAL-002, LOCAL-003

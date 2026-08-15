@@ -1,5 +1,6 @@
 import type { FileSystemPort } from './fs-port'
 import { validateVaultPath } from './path-resolver'
+import type { LoadedNote, VaultAccess } from './vault-access'
 
 /**
  * VAULT-001/002/003 — the vault, and the boundary around it.
@@ -27,13 +28,7 @@ export class VaultConflictError extends Error {
   }
 }
 
-export interface LoadedNote {
-  readonly contents: string
-  /** Pass this back to `writeNote` so the write can prove nothing moved underneath it. */
-  readonly mtimeMs: number
-}
-
-export class VaultRepository {
+export class VaultRepository implements VaultAccess {
   private readonly fs: FileSystemPort
   private readonly root: string
 

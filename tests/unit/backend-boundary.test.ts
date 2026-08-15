@@ -37,6 +37,11 @@ const ALLOWED = [
   'src/lib/backends/supabase-backend.ts',
   'src/features/auth/auth-context.tsx',
   'src/routes/dev.tsx',
+  // The composition root. It is the one place allowed to know that BOTH
+  // adapters exist, because choosing between them is exactly its job — see
+  // `tests/unit/runtime-boundary.test.ts`, which stops that knowledge leaking
+  // any further down.
+  'src/app/runtime-capabilities.ts',
 ]
 
 describe('backend boundary', () => {

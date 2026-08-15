@@ -89,20 +89,18 @@ Every task declares `implements:`. Requirement IDs come from `spec.md`.
       plan declaring `known: true` with zero edges tells them apart
 
 - [~] **A-09** — `CampusRuntime` and the vault picker; `/login` preserved
-  _implements:_ LOCAL-004
-  _done:_ `src/lib/runtime/` — one resolution point (`resolveCampusRuntime`), device
-  config, `RuntimeProvider → BackendProvider`. 26 tests. Startup is a four-state
-  union, so `resolving` and `needs-choice` cannot be confused; a remembered vault
-  that is gone reports `vault-missing` and never falls back to cloud, never
-  redirects to login, and never creates a folder. Recent vaults live in device
-  storage, never in `.campus/`. Both modes reach the SAME component tree, asserted
-  by comparing rendered HTML
-  _boundary:_ `tests/unit/runtime-boundary.test.ts` — presentation code may not
-  construct a backend, import the vault, branch on `mode`, or call `useRuntime`.
-  Verified by introducing a `mode === 'local'` into a route
-  _remaining:_ the browser-side local transport. `RuntimeCapabilities.openLocal`
-  needs an HTTP `FileSystemPort` behind a dev-server route before `main.tsx` can be
-  rewired — until then the running app still mounts `BackendProvider` directly
+      _implements:_ LOCAL-004
+      _done:_ `src/lib/runtime/` + `src/app/` — one resolution point, device config,
+      `RuntimeProvider → BackendProvider`, real picker, `main.tsx` wired. 26 unit tests
+      _done:_ A-09.1 browser transport — `VaultAccess` (2 semantic ops, derived from
+      real call sites), `HttpVaultAccess`, framework-agnostic `vault-api.ts`, Vite
+      plugin that only mounts it. ONE filesystem authority, server-side
+      _proven in a real browser:_ picker → open a real folder → LocalBackend active
+      → `/today` → reload reopens the same vault → a moved vault is explained by name
+      with no login redirect and no mkdir. `scripts/verify-local-journey.mjs` 8/11
+      _NOT proven:_ 3 of 11 checks fail — two look like races in the check (a manual
+      probe shows onboarding rendering the portable catalog with Supabase untouched)
+      and two undiagnosed 404s. See `docs/HOTFIX_REGISTER.md` P1-03
 
 - [ ] **A-10** — Backend conformance suite run against both adapters
       _implements:_ LOCAL-002, LOCAL-003

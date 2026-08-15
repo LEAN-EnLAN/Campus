@@ -28,6 +28,7 @@
     "tester": "node scripts/tester.mjs",
     "verify:frontend": "node scripts/verify-frontend.mjs",
     "verify:local": "node scripts/verify-local-journey.mjs",
+    "verify:a11": "node scripts/verify-a11-journey.mjs",
     "verify:bind": "node scripts/verify-vault-bind.mjs",
     "verify:frontend:xvfb": "xvfb-run -n 99 -s \"-screen 0 1600x1200x24 -nolisten tcp\" env CAMPUS_HEADED=1 node scripts/verify-frontend.mjs",
     "dev:tailnet": "node scripts/dev-tailnet.mjs",

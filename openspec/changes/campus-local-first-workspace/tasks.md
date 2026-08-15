@@ -55,7 +55,7 @@ Every task declares `implements:`. Requirement IDs come from `spec.md`.
 
 - [x] **A-06** — Portable academic catalog generated from the single source of truth
       _implements:_ ACADEMIC-001, ACADEMIC-002
-      _evidence:_ `scripts/generate-catalog.mjs` → `resources/academic-catalog/`.
+      _evidence:_ `scripts/generate-catalog.mjs` → `public/academic-catalog/`.
       UTN `prerequisitesKnown: true` / 186 edges · UNR `prerequisitesKnown: false` + note.
       `tests/unit/academic-catalog.test.ts` — 10 tests, including a regeneration-diff check
       so the two catalogs cannot drift

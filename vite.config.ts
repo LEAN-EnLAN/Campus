@@ -7,6 +7,8 @@ import { tanstackRouter } from '@tanstack/router-plugin/vite'
 import react from '@vitejs/plugin-react'
 import { defineConfig, type ServerOptions } from 'vite'
 
+import { campusVaultPlugin } from './src/server/vite-vault-plugin'
+
 /**
  * Serving over the tailnet — see `scripts/dev-tailnet.mjs`, which sets these.
  *
@@ -31,6 +33,9 @@ export default defineConfig({
     tanstackRouter({ target: 'react', autoCodeSplitting: true }),
     react(),
     tailwindcss(),
+    // Development only (`apply: 'serve'`). Mounts the Vault API so LOCAL mode
+    // can reach a real folder; `campus serve` will mount the same handler.
+    campusVaultPlugin(),
   ],
   resolve: {
     alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },

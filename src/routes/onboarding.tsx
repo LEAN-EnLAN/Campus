@@ -13,6 +13,7 @@ import {
   usePrograms,
   useSaveAcademicContext,
 } from '@/features/academic/queries'
+import { useRequiresAccount } from '@/lib/runtime/identity'
 import { useAuth } from '@/features/auth/auth-context'
 import { cn } from '@/lib/utils'
 
@@ -32,6 +33,7 @@ const STEPS = ['Universidad', 'Facultad', 'Carrera', 'Plan'] as const
  */
 function OnboardingScreen() {
   const { session, loading } = useAuth()
+  const requiresAccount = useRequiresAccount()
   const navigate = useNavigate()
 
   const [institutionId, setInstitutionId] = useState<string | null>(null)
@@ -49,7 +51,9 @@ function OnboardingScreen() {
   const save = useSaveAcademicContext()
 
   useEffect(() => {
-    if (!loading && !session) void navigate({ to: '/login' })
+    // Same rule as the app layout: LOCAL mode has no account, and a student
+    // choosing their carrera does not need one.
+    if (requiresAccount && !loading && !session) void navigate({ to: '/login' })
   }, [loading, session, navigate])
 
   // Pre-select when there is only one option — a list of one is not a decision.
@@ -85,7 +89,7 @@ function OnboardingScreen() {
 
   // Gate on the session too, not just the auth load: otherwise the whole wizard
   // paints for one tick before the redirect effect fires.
-  if (loading || !session) return null
+  if (requiresAccount && (loading || !session)) return null
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-xl flex-col px-5 py-10 sm:px-6">

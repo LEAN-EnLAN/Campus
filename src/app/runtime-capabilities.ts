@@ -36,7 +36,7 @@ function catalog(): Promise<PortableCatalog> {
       // The bundled catalog ships a manifest rather than a directory listing:
       // a browser cannot list a directory, and inventing an endpoint that could
       // would be a filesystem API by another name.
-      const response = await fetch('/academic-catalog/manifest.json')
+      const response = await fetch('/academic-catalog/curricula.json')
       if (!response.ok) throw new Error('no pudimos cargar el índice del catálogo')
       return (await response.json()) as string[]
     },

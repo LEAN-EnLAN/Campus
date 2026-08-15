@@ -9,7 +9,7 @@
  *
  *   docs/research/curricula/*.json      ← verified, provenance-carrying research
  *          ├── generate-seed.mjs    → supabase/seed.sql        (CLOUD)
- *          └── generate-catalog.mjs → resources/academic-catalog/ (LOCAL)
+ *          └── generate-catalog.mjs → public/academic-catalog/ (LOCAL)
  *
  * The output must preserve, per curriculum: sourceUrl, sourceKind, retrievedAt,
  * per-subject `verified`, and — the one that matters most — whether the
@@ -20,7 +20,7 @@ import { join } from 'node:path'
 import process from 'node:process'
 
 const CURRICULA_DIR = 'docs/research/curricula'
-const OUT_DIR = join('resources', 'academic-catalog')
+const OUT_DIR = join('public', 'academic-catalog')
 
 /**
  * Read the plan's epistemic flag. DECLARED by research, never inferred here.
@@ -208,6 +208,15 @@ for (const file of files) {
     prerequisitesKnown,
   })
 }
+
+// A manifest, because a browser cannot list a directory and inventing an
+// endpoint that could would be a filesystem API by another name. It sits
+// BESIDE curricula/ rather than inside it, so the directory stays exactly the
+// set of curricula and nothing has to filter the index back out.
+writeFileSync(
+  join(OUT_DIR, 'curricula.json'),
+  JSON.stringify(readdirSync(join(OUT_DIR, 'curricula')).sort(), null, 2) + '\n',
+)
 
 writeFileSync(
   join(OUT_DIR, 'institutions.json'),

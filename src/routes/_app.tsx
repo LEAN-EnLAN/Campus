@@ -5,6 +5,7 @@ import { AcademicShell } from '@/components/academic-shell'
 import { QuickCapture, type QuickCaptureValues } from '@/components/quick-capture'
 import { SearchPalette } from '@/features/search/search-palette'
 import { useAcademicPlan } from '@/features/academic/queries'
+import { useRequiresAccount } from '@/lib/runtime/identity'
 import { useAuth } from '@/features/auth/auth-context'
 import { useAcademicItems, useCreateAcademicItem, useResources } from '@/features/items/queries'
 
@@ -21,6 +22,9 @@ export const Route = createFileRoute('/_app')({
  */
 function AppLayout() {
   const { session, loading } = useAuth()
+  // LOCAL mode has no account and never will. Gating on a Supabase session
+  // here sent those students to a login screen they cannot satisfy.
+  const requiresAccount = useRequiresAccount()
   const navigate = useNavigate()
 
   const [captureOpen, setCaptureOpen] = useState(false)
@@ -32,14 +36,14 @@ function AppLayout() {
   const createItem = useCreateAcademicItem()
 
   useEffect(() => {
-    if (!loading && !session) void navigate({ to: '/login' })
-  }, [loading, session, navigate])
+    if (requiresAccount && !loading && !session) void navigate({ to: '/login' })
+  }, [requiresAccount, loading, session, navigate])
 
   // A student with no academic context has nothing to look at here. Routing that
   // decision at the layout — rather than at the screen that happened to send them —
   // means it holds no matter how they arrived: signup, a bookmark, or a reload.
   useEffect(() => {
-    if (loading || !session) return
+    if (requiresAccount && (loading || !session)) return
     // Three guards, each for a different way this went wrong before:
     //   contextSettled — mid-refetch the query still reads null, which would bounce
     //                    a student who had just finished onboarding;
@@ -84,7 +88,7 @@ function AppLayout() {
     )
   }
 
-  if (!session) return null
+  if (requiresAccount && !session) return null
 
   async function handleCapture(values: QuickCaptureValues) {
     // The dialog stays open and `createItem.error` is what the student reads; catching

@@ -1,7 +1,7 @@
 import { randomBytes } from 'node:crypto'
 
-import { nodeFileSystem } from '@/lib/vault/node-fs'
-import { VaultRepository } from '@/lib/vault/vault-repository'
+import { nodeFileSystem } from '../lib/vault/node-fs'
+import { VaultRepository } from '../lib/vault/vault-repository'
 
 /**
  * The local Vault API.

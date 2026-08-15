@@ -38,7 +38,7 @@ beforeEach(async () => {
   root = join(mkdtempSync(join(tmpdir(), 'campus-transport-')), 'Campus')
   mkdirSync(root, { recursive: true })
   catalog = await loadPortableCatalog(
-    join(process.cwd(), 'resources/academic-catalog'),
+    join(process.cwd(), 'public/academic-catalog'),
     nodeCatalogReader,
   )
 

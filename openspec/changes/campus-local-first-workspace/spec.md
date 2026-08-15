@@ -216,7 +216,7 @@ attempt, host file read attempt — each with a recorded result.
 
 ### ACADEMIC-001 — portable academic catalog 🚧
 
-`resources/academic-catalog/` is **generated** from the same verified JSON that produces
+`public/academic-catalog/` is **generated** from the same verified JSON that produces
 `supabase/seed.sql`. One source of truth. Preserves `sourceUrl`, `sourceKind`, `retrievedAt`
 and per-subject `verified`.
 

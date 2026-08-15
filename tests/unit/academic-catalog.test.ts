@@ -17,7 +17,7 @@ import { describe, expect, it } from 'vitest'
 
 const ROOT = process.cwd()
 const RESEARCH = join(ROOT, 'docs/research/curricula')
-const CATALOG = join(ROOT, 'resources/academic-catalog')
+const CATALOG = join(ROOT, 'public/academic-catalog')
 
 interface CatalogSubject {
   id: string

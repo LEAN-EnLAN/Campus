@@ -29,7 +29,7 @@ const research = (name: string) =>
 
 const catalog = (name: string) =>
   JSON.parse(
-    readFileSync(join(ROOT, 'resources/academic-catalog/curricula', `${name}.json`), 'utf8'),
+    readFileSync(join(ROOT, 'public/academic-catalog/curricula', `${name}.json`), 'utf8'),
   ) as {
     prerequisitesKnown: boolean
     prerequisitesNote: string | null
@@ -96,7 +96,7 @@ describe('the generators refuse to infer', () => {
     try {
       cpSync(join(ROOT, 'docs'), join(dir, 'docs'), { recursive: true })
       cpSync(join(ROOT, 'scripts'), join(dir, 'scripts'), { recursive: true })
-      mkdirSync(join(dir, 'resources/academic-catalog/curricula'), { recursive: true })
+      mkdirSync(join(dir, 'public/academic-catalog/curricula'), { recursive: true })
 
       const target = join(dir, 'docs/research/curricula/utn-frro-isi.json')
       const doc = JSON.parse(readFileSync(target, 'utf8')) as Record<string, unknown>
@@ -139,7 +139,7 @@ describe('the generators refuse to infer', () => {
     try {
       cpSync(join(ROOT, 'docs'), join(dir, 'docs'), { recursive: true })
       cpSync(join(ROOT, 'scripts'), join(dir, 'scripts'), { recursive: true })
-      mkdirSync(join(dir, 'resources/academic-catalog/curricula'), { recursive: true })
+      mkdirSync(join(dir, 'public/academic-catalog/curricula'), { recursive: true })
 
       const target = join(dir, 'docs/research/curricula/utn-frro-isi.json')
       const doc = JSON.parse(readFileSync(target, 'utf8')) as {
@@ -158,7 +158,7 @@ describe('the generators refuse to infer', () => {
 
       const out = JSON.parse(
         readFileSync(
-          join(dir, 'resources/academic-catalog/curricula/utn-frro-isi.json'),
+          join(dir, 'public/academic-catalog/curricula/utn-frro-isi.json'),
           'utf8',
         ),
       ) as { prerequisitesKnown: boolean; subjects: { prerequisites: unknown[] }[] }

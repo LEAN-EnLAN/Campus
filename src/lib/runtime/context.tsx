@@ -2,6 +2,8 @@ import { createContext, use, useCallback, useEffect, useState, type ReactNode } 
 
 import { BackendProvider } from '@/lib/backends/context'
 
+import { RequiresAccountProvider } from './identity'
+
 import {
   forgetVault,
   readDeviceConfig,
@@ -108,7 +110,11 @@ export function RuntimeProvider({
 
   return (
     <RuntimeContext value={value}>
-      <BackendProvider backend={state.runtime.backend}>{children}</BackendProvider>
+      {/* The only fact about the runtime that reaches routes, and it is a
+          capability rather than an identity: LOCAL needs no account. */}
+      <RequiresAccountProvider value={state.runtime.mode === 'cloud'}>
+        <BackendProvider backend={state.runtime.backend}>{children}</BackendProvider>
+      </RequiresAccountProvider>
     </RuntimeContext>
   )
 }

@@ -101,7 +101,13 @@ describe('backend boundary', () => {
       expect(source, `${file} should call supabase.from() nowhere`).not.toMatch(
         /supabase\s*\.\s*from\(/,
       )
-      expect(source, `${file} should use the backend seam`).toMatch(/useBackend\(\)/)
+      // Two legal seams, one rule: a feature hook consumes a CAPABILITY.
+      // Academic data rides useBackend(); vault files ride useFiles(), which
+      // the composition root wires from the same runtime decision. What stays
+      // forbidden is a hook talking to Supabase or the filesystem directly.
+      expect(source, `${file} should use a capability seam`).toMatch(
+        /useBackend\(\)|useFiles\(\)/,
+      )
     }
   })
 })

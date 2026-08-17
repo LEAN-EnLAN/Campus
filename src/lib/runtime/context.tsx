@@ -1,6 +1,7 @@
 import { createContext, use, useCallback, useEffect, useState, type ReactNode } from 'react'
 
 import { BackendProvider } from '@/lib/backends/context'
+import { FilesProvider } from '@/lib/files/context'
 
 import { RequiresAccountProvider } from './identity'
 
@@ -113,7 +114,13 @@ export function RuntimeProvider({
       {/* The only fact about the runtime that reaches routes, and it is a
           capability rather than an identity: LOCAL needs no account. */}
       <RequiresAccountProvider value={state.runtime.mode === 'cloud'}>
-        <BackendProvider backend={state.runtime.backend}>{children}</BackendProvider>
+        <BackendProvider backend={state.runtime.backend}>
+          {/* Files are a capability, not a mode: cloud simply has none, and
+              every file surface renders its no-vault state from that null. */}
+          <FilesProvider access={state.runtime.mode === 'local' ? state.runtime.access : null}>
+            {children}
+          </FilesProvider>
+        </BackendProvider>
       </RequiresAccountProvider>
     </RuntimeContext>
   )

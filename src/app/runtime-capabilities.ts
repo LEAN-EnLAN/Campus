@@ -61,13 +61,13 @@ export function resolveRuntimeCapabilities(): RuntimeCapabilities {
       // theatre — a compromised page skips them — so the only authority is the
       // one behind the wire, and duplicating it would create a second boundary
       // that eventually disagrees with the first.
+      const access = httpVaultAccess({ vaultId: session.id, token, baseUrl })
       return {
         mode: 'local',
         vault: { ...vault, name: session.name },
-        backend: new LocalBackend(
-          httpVaultAccess({ vaultId: session.id, token, baseUrl }),
-          await catalog(),
-        ),
+        backend: new LocalBackend(access, await catalog()),
+        // The SAME instance the backend uses: one session, one capability.
+        access,
       }
     },
 

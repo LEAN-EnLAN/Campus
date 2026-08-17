@@ -1,4 +1,5 @@
 import type { CampusBackend } from '@/lib/backends/types'
+import type { VaultAccess } from '@/lib/vault/vault-access'
 
 /**
  * LOCAL-004 — which world Campus is running in, decided once.
@@ -8,7 +9,17 @@ import type { CampusBackend } from '@/lib/backends/types'
  * place — see `docs/adr/ADR-local-first-backend.md`.
  */
 export type CampusRuntime =
-  | { mode: 'local'; vault: VaultDescriptor; backend: CampusBackend }
+  | {
+      mode: 'local'
+      vault: VaultDescriptor
+      backend: CampusBackend
+      /**
+       * The raw file capability, for the workspace. Carried on the runtime so
+       * the composition root can hand it to FilesProvider — screens still never
+       * import the vault; they ask `useFiles()`, which is null in cloud mode.
+       */
+      access: VaultAccess
+    }
   | { mode: 'cloud'; backend: CampusBackend }
 
 /** A vault the student chose, as the DEVICE knows it. */

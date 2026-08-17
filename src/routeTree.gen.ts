@@ -19,6 +19,7 @@ import { Route as AppLibraryRouteImport } from './routes/_app/library'
 import { Route as AppPlanRouteImport } from './routes/_app/plan'
 import { Route as AppSettingsRouteImport } from './routes/_app/settings'
 import { Route as AppTodayRouteImport } from './routes/_app/today'
+import { Route as AppVaultRouteImport } from './routes/_app/vault'
 import { Route as AppCoursesIndexRouteImport } from './routes/_app/courses.index'
 import { Route as AppCoursesCourseIdRouteImport } from './routes/_app/courses.$courseId'
 
@@ -71,6 +72,11 @@ const AppTodayRoute = AppTodayRouteImport.update({
   path: '/today',
   getParentRoute: () => AppRoute,
 } as any)
+const AppVaultRoute = AppVaultRouteImport.update({
+  id: '/vault',
+  path: '/vault',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppCoursesIndexRoute = AppCoursesIndexRouteImport.update({
   id: '/courses/',
   path: '/courses/',
@@ -92,6 +98,7 @@ export interface FileRoutesByFullPath {
   '/plan': typeof AppPlanRoute
   '/settings': typeof AppSettingsRoute
   '/today': typeof AppTodayRoute
+  '/vault': typeof AppVaultRoute
   '/courses/$courseId': typeof AppCoursesCourseIdRoute
   '/courses/': typeof AppCoursesIndexRoute
 }
@@ -105,6 +112,7 @@ export interface FileRoutesByTo {
   '/plan': typeof AppPlanRoute
   '/settings': typeof AppSettingsRoute
   '/today': typeof AppTodayRoute
+  '/vault': typeof AppVaultRoute
   '/courses/$courseId': typeof AppCoursesCourseIdRoute
   '/courses': typeof AppCoursesIndexRoute
 }
@@ -120,6 +128,7 @@ export interface FileRoutesById {
   '/_app/plan': typeof AppPlanRoute
   '/_app/settings': typeof AppSettingsRoute
   '/_app/today': typeof AppTodayRoute
+  '/_app/vault': typeof AppVaultRoute
   '/_app/courses/$courseId': typeof AppCoursesCourseIdRoute
   '/_app/courses/': typeof AppCoursesIndexRoute
 }
@@ -135,6 +144,7 @@ export interface FileRouteTypes {
     | '/plan'
     | '/settings'
     | '/today'
+    | '/vault'
     | '/courses/$courseId'
     | '/courses/'
   fileRoutesByTo: FileRoutesByTo
@@ -148,6 +158,7 @@ export interface FileRouteTypes {
     | '/plan'
     | '/settings'
     | '/today'
+    | '/vault'
     | '/courses/$courseId'
     | '/courses'
   id:
@@ -162,6 +173,7 @@ export interface FileRouteTypes {
     | '/_app/plan'
     | '/_app/settings'
     | '/_app/today'
+    | '/_app/vault'
     | '/_app/courses/$courseId'
     | '/_app/courses/'
   fileRoutesById: FileRoutesById
@@ -246,6 +258,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppTodayRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/vault': {
+      id: '/_app/vault'
+      path: '/vault'
+      fullPath: '/vault'
+      preLoaderRoute: typeof AppVaultRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/courses/': {
       id: '/_app/courses/'
       path: '/courses'
@@ -269,6 +288,7 @@ interface AppRouteChildren {
   AppPlanRoute: typeof AppPlanRoute
   AppSettingsRoute: typeof AppSettingsRoute
   AppTodayRoute: typeof AppTodayRoute
+  AppVaultRoute: typeof AppVaultRoute
   AppCoursesCourseIdRoute: typeof AppCoursesCourseIdRoute
   AppCoursesIndexRoute: typeof AppCoursesIndexRoute
 }
@@ -279,6 +299,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppPlanRoute: AppPlanRoute,
   AppSettingsRoute: AppSettingsRoute,
   AppTodayRoute: AppTodayRoute,
+  AppVaultRoute: AppVaultRoute,
   AppCoursesCourseIdRoute: AppCoursesCourseIdRoute,
   AppCoursesIndexRoute: AppCoursesIndexRoute,
 }

@@ -52,6 +52,10 @@ function AppLayout() {
     //                    onboarding would deactivate the context they already had;
     //   hasContext     — the actual condition we care about.
     if (!plan.contextSettled || plan.contextError || plan.hasContext) return
+    // The workspace works BEFORE a carrera is chosen: notes need a folder, not
+    // a plan. Bouncing /vault through onboarding would tell a student their
+    // own files are gated behind picking a university.
+    if (window.location.pathname.startsWith('/vault')) return
     void navigate({ to: '/onboarding' })
   }, [loading, session, plan.contextSettled, plan.contextError, plan.hasContext, navigate])
 

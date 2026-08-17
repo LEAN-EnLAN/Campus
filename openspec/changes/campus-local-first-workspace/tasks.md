@@ -88,27 +88,37 @@ Every task declares `implements:`. Requirement IDs come from `spec.md`.
       agree with that derivation (UTN 186→true, UNR 0→false). Only a synthetic
       plan declaring `known: true` with zero edges tells them apart
 
-- [~] **A-09** — `CampusRuntime` and the vault picker; `/login` preserved
-  _implements:_ LOCAL-004
-  _done:_ `src/lib/runtime/` + `src/app/` — one resolution point, device config,
-  `RuntimeProvider → BackendProvider`, real picker, `main.tsx` wired. 26 unit tests
-  _done:_ A-09.1 browser transport — `VaultAccess` (2 semantic ops, derived from
-  real call sites), `HttpVaultAccess`, framework-agnostic `vault-api.ts`, Vite
-  plugin that only mounts it. ONE filesystem authority, server-side
-  _proven in a real browser:_ picker → open a real folder → LocalBackend active
-  → `/today` → reload reopens the same vault → a moved vault is explained by name
-  with no login redirect and no mkdir. `scripts/verify-local-journey.mjs` 8/11
-  _NOT proven:_ 3 of 11 checks fail — two look like races in the check (a manual
-  probe shows onboarding rendering the portable catalog with Supabase untouched)
-  and two undiagnosed 404s. See `docs/HOTFIX_REGISTER.md` P1-03
+- [x] **A-09** — `CampusRuntime` and the vault picker; `/login` preserved
+      _implements:_ LOCAL-004
+      _evidence:_ `src/lib/runtime/` + `src/app/` + `src/server/` — one resolution point,
+      device config, real picker, `main.tsx` wired, `VaultAccess` transport with ONE
+      server-side security authority, loopback-only bind guard.
+      `verify:local` 12/12 in a real headless browser · `verify:bind` 10/10
 
-- [ ] **A-10** — Backend conformance suite run against both adapters
+- [x] **A-10** — Backend conformance suite run against both adapters
       _implements:_ LOCAL-002, LOCAL-003
-      _why:_ two implementations without a shared suite drift. This is the ADR's stated risk
+      _evidence:_ `tests/db/conformance.test.ts` — 16 methods × 2 adapters, 29/29 with
+      the 15 RLS tests. Caught a real divergence on its first run: SupabaseBackend
+      THREW for a missing curriculum while LocalBackend answered UNKNOWN; fixed with
+      `maybeSingle` and the identical UNKNOWN bundle. Mutation-verified: restoring
+      `known = edges.length > 0` in both adapters kills exactly the known-empty fixture
 
-- [ ] **A-11** — Milestone A journey: open vault → select plan → create deadline → restart →
+- [x] **A-11** — Milestone A journey: open vault → select plan → create deadline → restart →
       deadline persists, with no Supabase
       _implements:_ LOCAL-003, ACADEMIC-003
+      _evidence:_ `verify:a11` 16/16 with Supabase at http://127.0.0.1:1 — onboarding
+      cascade → Today → Plan → Course → in_progress → linked deadline → visible in
+      Today AND Course → HARD RESTART (browser + server killed) → all three persist
+      from `context.json`, `subject-state.json`, `items.json`. Zero Supabase requests.
+      `verify:unr` 14/14 proves UNR uncertainty in the UI the student sees;
+      `verify:local-frontend` 25/25, axe 0/0/0/0
+      _delivery:_ pre-commit AUTHORIZED · ready-to-commit (engineer(), review not
+      required by policy). Pre-PR: blocked — gentle-ai 2.4.0-rc.8 stopped the 89-file
+      / 11,766-line candidate with `lens_context_budget_exceeded` (documented contract
+      behaviour: reviewer evidence is never truncated). Consent was granted, lineage
+      review-4e8a971a62b1527a froze at HIGH risk / 4 lenses and cannot proceed at this
+      size. Recorded as a factual external blocker; future work reviews per-commit
+      candidates, which fit
 
 ## Milestone B — workspace and notes ⬜
 

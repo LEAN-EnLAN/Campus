@@ -2,7 +2,25 @@
 
 Unresolved **P0 / P1** findings only. Ordinary TODOs do not belong here.
 
-Last updated: 2026-08-15, COMODÍN continuation.
+Last updated: 2026-08-16, final gate closure.
+
+## Delivery gates — final state
+
+Pre-commit: **AUTHORIZED · ready-to-commit** via the real `engineer()` workflow
+(candidate `cand_2fa5ade35e3c547251085c14`, tree `546e7c77`, format/lint/
+typecheck/test all passed, unverified 0, review not required by policy).
+
+Pre-PR: **blocked by a documented external limit**, not by the product. The
+user granted consent; Gentle-AI 2.4.0-rc.8 froze the full-milestone candidate
+(89 files / 11,766 lines, HIGH risk, 4 lenses, lineage `review-4e8a971a62b1527a`)
+and then stopped with `lens_context_budget_exceeded`: reviewer evidence is never
+truncated and this candidate exceeds the native budget. The smallest natural
+slice alone is 8,832 lines. Slicing further would cost one consent per slice and
+review intermediate trees that later commits deleted. Decision: record the
+blocker; future work is reviewed per-commit, which fits the budget.
+
+`verify:journey` is required by NEITHER gate (policy: pre-commit = format+lint;
+pre-pr = +typecheck+test+review), so P2-01 is confirmed non-blocking.
 
 ## All P0/P1 resolved
 

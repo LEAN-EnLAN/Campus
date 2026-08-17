@@ -54,12 +54,15 @@ export function NoteEditor({
   path,
   onWikilink,
   wikilinkTargets,
+  onSaved,
 }: {
   path: string
   /** Navigate to a [[target]]. The workspace decides what opening means. */
   onWikilink?: (target: string) => void
   /** Known note titles/paths, for `[[` autocomplete. */
   wikilinkTargets?: () => { label: string; detail?: string }[]
+  /** Fired after a successful save, so the knowledge index stays incremental. */
+  onSaved?: (path: string, contents: string) => void
 }) {
   const files = useFiles()
   const hostRef = useRef<HTMLDivElement | null>(null)
@@ -92,6 +95,7 @@ export function NoteEditor({
         if (fresh) mtimeRef.current = fresh.mtimeMs
         dirtyRef.current = false
         if (!disposed) setStatus({ kind: 'saved' })
+        onSaved?.(path, contents)
       } catch (error) {
         if (disposed) return
         const message = (error as Error).message
@@ -240,7 +244,7 @@ export function NoteEditor({
       viewRef.current = null
     }
     // The editor's whole lifecycle is keyed to the note it edits.
-  }, [files, path, onWikilink, wikilinkTargets])
+  }, [files, path, onWikilink, wikilinkTargets, onSaved])
 
   const resolveConflict = async (keepMine: boolean) => {
     const view = viewRef.current

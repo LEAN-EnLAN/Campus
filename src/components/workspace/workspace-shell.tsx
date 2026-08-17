@@ -14,8 +14,14 @@ import {
   type WorkspaceState,
 } from '@/lib/workspace/model'
 
+import { useFiles } from '@/lib/files/context'
+import { KnowledgeProvider, useKnowledge } from '@/lib/knowledge/provider'
+
+import { BacklinksPanel } from './backlinks-panel'
 import { FileExplorer } from './file-explorer'
 import { NoteEditor } from './note-editor'
+import { QuickSwitcher } from './quick-switcher'
+import { SearchDialog } from './search-dialog'
 
 /**
  * The workspace shell: explorer beside a pane group, tabs above each pane.
@@ -32,11 +38,23 @@ import { NoteEditor } from './note-editor'
  */
 
 export function WorkspaceShell({ vaultKey }: { vaultKey: string }) {
+  return (
+    <KnowledgeProvider>
+      <WorkspaceShellInner vaultKey={vaultKey} />
+    </KnowledgeProvider>
+  )
+}
+
+function WorkspaceShellInner({ vaultKey }: { vaultKey: string }) {
   const storageKey = workspaceStorageKey(vaultKey)
   const [state, setState] = useState<WorkspaceState>(() =>
     deserialize(localStorage.getItem(storageKey)),
   )
   const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [switcherOpen, setSwitcherOpen] = useState(false)
+  const [searchOpen, setSearchOpen] = useState(false)
+  const files = useFiles()
+  const knowledge = useKnowledge()
 
   // Persist on every change, debounced by the event loop — layout writes are
   // tiny and losing one to a crash costs nothing.
@@ -47,19 +65,73 @@ export function WorkspaceShell({ vaultKey }: { vaultKey: string }) {
   const active = state.panes.find((p) => p.id === state.activePaneId) ?? state.panes[0]!
   const activePath = active.activeTab
 
-  const open = useCallback((path: string) => {
-    setState((s) => openNote(s, path))
-  }, [])
+  const open = useCallback(
+    (path: string) => {
+      setState((s) => openNote(s, path))
+      knowledge.noteOpened(path)
+    },
+    [knowledge],
+  )
 
-  // Wikilink targets for editor autocomplete: file names the explorer knows.
-  // The knowledge index will replace this with titles; a name list is the
-  // honest v1 that never lies about what exists.
   const openRef = useRef(open)
   openRef.current = open
-  const onWikilink = useCallback((target: string) => {
-    const path = target.endsWith('.md') ? target : `${target}.md`
+  const knowledgeRef = useRef(knowledge)
+  knowledgeRef.current = knowledge
+  const filesRef = useRef(files)
+  filesRef.current = files
+
+  // "Nota de hoy": Daily/YYYY-MM-DD.md, created from a tiny template on first
+  // use, just opened afterwards. The date is built from LOCAL components —
+  // Argentina is UTC-3 and toISOString() would file tonight's note under
+  // tomorrow.
+  const openDailyNote = useCallback(async () => {
+    const files = filesRef.current
+    if (!files) return
+    const now = new Date()
+    const stamp = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+    const path = `Daily/${stamp}.md`
+    const existing = await files.stat(path).catch(() => null)
+    if (!existing) {
+      const body = `---\ndate: ${stamp}\ntype: daily\n---\n\n# ${stamp}\n\n- [ ] \n`
+      await files.writeNote(path, body, null).catch(() => {})
+      knowledgeRef.current.noteCreated(path, body)
+    }
     openRef.current(path)
   }, [])
+
+  // [[Target]] resolution goes through the index: exact path, then unique
+  // title, then unique basename. A MISSING target creates the note — that is
+  // the wiki gesture, linking into existence. Ambiguity opens nothing and is
+  // surfaced, because guessing between two "Parcial.md"s is how a student
+  // writes into the wrong course.
+  const onWikilink = useCallback((target: string) => {
+    const verdict = knowledgeRef.current.index.resolve(target)
+    if (verdict.status === 'resolved') {
+      openRef.current(verdict.path)
+    } else if (verdict.status === 'missing') {
+      const path = target.endsWith('.md') ? target : `${target}.md`
+      void filesRef.current
+        ?.writeNote(path, `# ${target}\n\n`, null)
+        .then(() => {
+          knowledgeRef.current.noteCreated(path, `# ${target}\n\n`)
+          openRef.current(path)
+        })
+        .catch(() => {
+          // The vault refused the name (invalid, or created meanwhile). The
+          // student sees nothing happen rather than a wrong note opening.
+        })
+    }
+  }, [])
+
+  // Autocomplete after [[ offers real titles from the index.
+  const wikilinkTargets = useCallback(
+    () =>
+      knowledgeRef.current.index
+        .notes()
+        .map((n) => ({ label: n.title, detail: n.path }))
+        .slice(0, 200),
+    [],
+  )
 
   const shortcuts = useMemo(
     () => ({
@@ -93,6 +165,12 @@ export function WorkspaceShell({ vaultKey }: { vaultKey: string }) {
       } else if (event.key.toLowerCase() === 'b') {
         event.preventDefault()
         shortcuts.toggleSidebar()
+      } else if (event.key.toLowerCase() === 'p' && !event.shiftKey) {
+        event.preventDefault()
+        setSwitcherOpen(true)
+      } else if (event.key.toLowerCase() === 'f' && event.shiftKey) {
+        event.preventDefault()
+        setSearchOpen(true)
       }
     }
     window.addEventListener('keydown', onKey)
@@ -101,15 +179,28 @@ export function WorkspaceShell({ vaultKey }: { vaultKey: string }) {
 
   // Explorer mutations must not orphan tabs: rename/trash flow through the
   // model so an open note follows its file.
-  const handleRenamed = useCallback((from: string, to: string) => {
-    setState((s) => renamePath(s, from, to))
-  }, [])
-  const handleTrashed = useCallback((path: string) => {
-    setState((s) => closePath(s, path))
+  const handleRenamed = useCallback(
+    (from: string, to: string) => {
+      setState((s) => renamePath(s, from, to))
+      knowledge.noteRenamed(from, to)
+    },
+    [knowledge],
+  )
+  const handleTrashed = useCallback(
+    (path: string) => {
+      setState((s) => closePath(s, path))
+      knowledge.noteTrashed(path)
+    },
+    [knowledge],
+  )
+  const handleSaved = useCallback((path: string, contents: string) => {
+    knowledgeRef.current.noteSaved(path, contents)
   }, [])
 
   return (
     <div className="flex h-full min-h-0">
+      <QuickSwitcher open={switcherOpen} onClose={() => setSwitcherOpen(false)} onOpen={open} />
+      <SearchDialog open={searchOpen} onClose={() => setSearchOpen(false)} onOpen={open} />
       {/* Sidebar: fixed panel ≥768, overlay sheet below. */}
       {sidebarOpen && (
         <>
@@ -133,6 +224,13 @@ export function WorkspaceShell({ vaultKey }: { vaultKey: string }) {
                 ✕
               </button>
             </div>
+            <button
+              type="button"
+              onClick={() => void openDailyNote()}
+              className="border-rule text-ink-muted hover:text-ink mx-2 mt-2 rounded-md border border-dashed px-2 py-1 text-left text-xs"
+            >
+              ☀ Nota de hoy
+            </button>
             <FileExplorer
               activePath={activePath}
               onOpen={(p) => (open(p), setSidebarOpen(window.innerWidth >= 768))}
@@ -210,13 +308,20 @@ export function WorkspaceShell({ vaultKey }: { vaultKey: string }) {
 
               <div className="min-h-0 flex-1">
                 {pane.activeTab ? (
-                  <NoteEditor
-                    // Key per pane+path: two panes showing the same note are two
-                    // editors, each with its own conflict state.
-                    key={`${pane.id}:${pane.activeTab}`}
-                    path={pane.activeTab}
-                    onWikilink={onWikilink}
-                  />
+                  <div className="flex h-full min-h-0 flex-col">
+                    <div className="min-h-0 flex-1">
+                      <NoteEditor
+                        // Key per pane+path: two panes showing the same note are
+                        // two editors, each with its own conflict state.
+                        key={`${pane.id}:${pane.activeTab}`}
+                        path={pane.activeTab}
+                        onWikilink={onWikilink}
+                        wikilinkTargets={wikilinkTargets}
+                        onSaved={handleSaved}
+                      />
+                    </div>
+                    <BacklinksPanel path={pane.activeTab} onOpen={open} />
+                  </div>
                 ) : (
                   <EmptyPane onOpenSidebar={() => setSidebarOpen(true)} />
                 )}

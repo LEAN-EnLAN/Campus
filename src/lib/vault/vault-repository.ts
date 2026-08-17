@@ -1,6 +1,12 @@
 import type { FileSystemPort } from './fs-port'
 import { validateVaultPath } from './path-resolver'
-import type { LoadedNote, VaultAccess } from './vault-access'
+import type {
+  LoadedNote,
+  TrashedEntry,
+  VaultAccess,
+  VaultEntry,
+  VaultStat,
+} from './vault-access'
 
 /**
  * VAULT-001/002/003 — the vault, and the boundary around it.
@@ -186,6 +192,15 @@ export class VaultRepository implements VaultAccess {
     // sandbox, because only the destination has to escape.
     const source = await this.require(from)
     const destination = await this.require(to)
+
+    // POSIX rename replaces the destination atomically. For a student that is
+    // "renaming a.md onto b.md deleted my b.md" — the filesystem's own default
+    // is the data-loss bug, so an existing destination is a CONFLICT the
+    // student resolves, never a thing we resolve for them.
+    if ((await this.fs.lstat(destination)) !== null) {
+      throw new VaultConflictError(to, 'ya existe un archivo con ese nombre')
+    }
+
     await this.fs.mkdirp(this.fs.dirname(destination))
     await this.fs.rename(source, destination)
   }
@@ -194,5 +209,67 @@ export class VaultRepository implements VaultAccess {
     const absolute = await this.require(relative)
     const entries = await this.fs.readdir(absolute)
     return entries.map((e) => e.name)
+  }
+
+  async listDir(relative: string): Promise<VaultEntry[]> {
+    // '' means the vault root, which validateVaultPath refuses as empty — the
+    // root is the one path that needs no per-segment judgement.
+    const absolute =
+      relative === '' ? await this.fs.realpath(this.root) : await this.require(relative)
+    const raw = await this.fs.readdir(absolute)
+
+    const out: VaultEntry[] = []
+    for (const entry of raw) {
+      // .campus is Campus's own state (trash, index, academic JSON). The
+      // explorer shows the student THEIR vault; hiding it here rather than in
+      // the UI means no surface can forget to.
+      if (relative === '' && entry.name === '.campus') continue
+      if (entry.kind !== 'file' && entry.kind !== 'dir') continue
+      const stat = await this.fs.lstat(this.fs.join(absolute, entry.name))
+      if (stat === null) continue
+      out.push({ name: entry.name, kind: entry.kind, mtimeMs: stat.mtimeMs, size: stat.size })
+    }
+    return out.sort((a, b) =>
+      a.kind === b.kind ? a.name.localeCompare(b.name, 'es') : a.kind === 'dir' ? -1 : 1,
+    )
+  }
+
+  async mkdir(relative: string): Promise<void> {
+    const absolute = await this.require(relative)
+    await this.fs.mkdirp(absolute)
+  }
+
+  async trash(relative: string): Promise<TrashedEntry> {
+    const source = await this.require(relative)
+    const stat = await this.fs.lstat(source)
+    if (stat === null) throw new Error(`${relative}: not found`)
+
+    // A unique destination, so two deleted "nota.md" never clobber each other.
+    // The suffix is time-based for a human sorting the trash by hand, plus a
+    // random tail because two deletes can land on the same millisecond.
+    const name = relative.split('/').pop() ?? relative
+    const unique = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`
+    const trashedTo = `.campus/trash/${unique}-${name}`
+
+    const destination = await this.require(trashedTo)
+    await this.fs.mkdirp(this.fs.dirname(destination))
+    await this.fs.rename(source, destination)
+
+    // The sidecar is what makes restore possible: the trash entry knows where
+    // it came from, in plain JSON any file manager can read.
+    const meta = await this.require(trashedTo + '.meta.json')
+    await this.fs.writeFileAtomic(
+      meta,
+      JSON.stringify({ originalPath: relative, trashedAt: new Date().toISOString() }, null, 2) +
+        '\n',
+    )
+    return { trashedTo }
+  }
+
+  async stat(relative: string): Promise<VaultStat | null> {
+    const absolute = await this.require(relative)
+    const stat = await this.fs.lstat(absolute)
+    if (stat === null || (stat.kind !== 'file' && stat.kind !== 'dir')) return null
+    return { kind: stat.kind, mtimeMs: stat.mtimeMs, size: stat.size }
   }
 }

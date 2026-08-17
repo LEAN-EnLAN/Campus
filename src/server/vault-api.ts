@@ -31,7 +31,15 @@ import { VaultRepository } from '../lib/vault/vault-repository'
  */
 
 /** Exactly `VaultAccess`. Adding to this list is adding to the attack surface. */
-const OPERATIONS = ['readNote', 'writeNote'] as const
+const OPERATIONS = [
+  'readNote',
+  'writeNote',
+  'listDir',
+  'mkdir',
+  'rename',
+  'trash',
+  'stat',
+] as const
 
 type Operation = (typeof OPERATIONS)[number]
 
@@ -211,18 +219,36 @@ export async function handleVaultRequest(
   try {
     // Delegated to VaultRepository, the single authority. Nothing here
     // re-derives traversal, symlink or containment rules.
-    if (op === 'readNote') {
-      return reply(200, { ok: true, value: await session.repo.readNote(relative) })
+    switch (op as Operation) {
+      case 'readNote':
+        return reply(200, { ok: true, value: await session.repo.readNote(relative) })
+      case 'writeNote': {
+        const contents = payload.contents
+        const expected = payload.expectedMtimeMs
+        if (typeof contents !== 'string')
+          return reply(400, { error: 'contents must be a string' })
+        if (expected !== null && typeof expected !== 'number') {
+          return reply(400, { error: 'expectedMtimeMs must be a number or null' })
+        }
+        await session.repo.writeNote(relative, contents, expected)
+        return reply(200, { ok: true, value: null })
+      }
+      case 'listDir':
+        return reply(200, { ok: true, value: await session.repo.listDir(relative) })
+      case 'mkdir':
+        await session.repo.mkdir(relative)
+        return reply(200, { ok: true, value: null })
+      case 'rename': {
+        const to = payload.to
+        if (typeof to !== 'string') return reply(400, { error: 'to must be a string' })
+        await session.repo.rename(relative, to)
+        return reply(200, { ok: true, value: null })
+      }
+      case 'trash':
+        return reply(200, { ok: true, value: await session.repo.trash(relative) })
+      case 'stat':
+        return reply(200, { ok: true, value: await session.repo.stat(relative) })
     }
-
-    const contents = payload.contents
-    const expected = payload.expectedMtimeMs
-    if (typeof contents !== 'string') return reply(400, { error: 'contents must be a string' })
-    if (expected !== null && typeof expected !== 'number') {
-      return reply(400, { error: 'expectedMtimeMs must be a number or null' })
-    }
-    await session.repo.writeNote(relative, contents, expected)
-    return reply(200, { ok: true, value: null })
   } catch (error) {
     const message = (error as Error).message
 

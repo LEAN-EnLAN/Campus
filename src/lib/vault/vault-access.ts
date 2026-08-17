@@ -30,6 +30,25 @@ export interface LoadedNote {
   readonly mtimeMs: number
 }
 
+export interface VaultEntry {
+  readonly name: string
+  readonly kind: 'file' | 'dir'
+  /** Milliseconds. What conflict detection compares against. */
+  readonly mtimeMs: number
+  readonly size: number
+}
+
+export interface VaultStat {
+  readonly kind: 'file' | 'dir'
+  readonly mtimeMs: number
+  readonly size: number
+}
+
+export interface TrashedEntry {
+  /** Vault-relative path where the content now lives, under .campus/trash/. */
+  readonly trashedTo: string
+}
+
 export interface VaultAccess {
   /** Read a vault-relative note. Rejects if the path escapes the vault. */
   readNote(relative: string): Promise<LoadedNote>
@@ -42,4 +61,30 @@ export interface VaultAccess {
    * immediately before writing (VAULT-003).
    */
   writeNote(relative: string, contents: string, expectedMtimeMs: number | null): Promise<void>
+
+  /**
+   * List a directory. `.campus/` is omitted at the vault root: it is Campus's
+   * own state, and the explorer shows the student THEIR files.
+   */
+  listDir(relative: string): Promise<VaultEntry[]>
+
+  /** Create a folder (and parents). Idempotent. */
+  mkdir(relative: string): Promise<void>
+
+  /**
+   * Rename or move. REFUSES if the destination exists: POSIX rename replaces
+   * the target atomically, which for a student means "renaming a.md onto b.md
+   * deleted my b.md". The filesystem's default is the data-loss bug.
+   */
+  rename(from: string, to: string): Promise<void>
+
+  /**
+   * VAULT-005 — trash, not unlink. Moves into `.campus/trash/` with a metadata
+   * sidecar recording the original path, so restoring is possible by hand with
+   * any file manager. Trash is canonical student data, never silently emptied.
+   */
+  trash(relative: string): Promise<TrashedEntry>
+
+  /** Kind and mtime, or `null` when absent. Absence is an answer, not an error. */
+  stat(relative: string): Promise<VaultStat | null>
 }

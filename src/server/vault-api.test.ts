@@ -213,14 +213,49 @@ describe('the endpoint is not reachable by any page that happens to find it', ()
 // ------------------------------------------------------------- surface shape
 
 describe('the wire is VaultAccess, not a filesystem', () => {
-  it('refuses every operation that is not one of the two', async () => {
-    // These are not "blocked" — they do not exist. realpath, readdir and
-    // rename were on the old port-shaped wire and are gone with it.
-    for (const op of ['realpath', 'readdir', 'lstat', 'rename', 'remove', 'exec', 'readFile']) {
+  it('refuses every operation that is not in VaultAccess', async () => {
+    // These are not "blocked" — they do not exist. The raw port primitives
+    // (realpath, readdir, lstat, remove) never ride the wire: the semantic
+    // surface is listDir/stat/trash, each of which passes VaultRepository.
+    for (const op of ['realpath', 'readdir', 'lstat', 'remove', 'exec', 'readFile', 'unlink']) {
       const res = await post(`${PREFIX}/${vaultId}/op`, { op, path: 'Materias' })
       expect(res.status, `${op} was accepted`).toBe(400)
       expect(String(parse(res.body).error)).toMatch(/unsupported operation/i)
     }
+  })
+
+  it('the NEW operations are refused outside the vault, same as the old ones', async () => {
+    // Every mutation the explorer gained goes through the same single
+    // authority. One escaping would undo the whole redesign.
+    const hostile = [
+      { op: 'listDir', path: '../outside' },
+      { op: 'mkdir', path: '../outside/planted' },
+      { op: 'trash', path: '../outside/secret.txt' },
+      { op: 'stat', path: '/etc/passwd' },
+      { op: 'rename', path: 'Materias/nota.md', to: '../outside/stolen.md' },
+      { op: 'rename', path: '../outside/secret.txt', to: 'Materias/robada.md' },
+    ]
+    for (const body of hostile) {
+      const res = await post(`${PREFIX}/${vaultId}/op`, body)
+      expect(res.status, `${body.op} ${body.path} was accepted`).toBe(400)
+    }
+    expect(existsSync(join(outside, 'planted'))).toBe(false)
+    expect(existsSync(join(outside, 'stolen.md'))).toBe(false)
+  })
+
+  it('rename onto an existing file is a typed conflict over the wire', async () => {
+    await write('Materias/a.md', 'A')
+    await write('Materias/b.md', 'B')
+    const res = await post(`${PREFIX}/${vaultId}/op`, {
+      op: 'rename',
+      path: 'Materias/a.md',
+      to: 'Materias/b.md',
+    })
+    expect(res.status).toBe(400)
+    // Typed, so the explorer can offer "elegí otro nombre" instead of a
+    // generic failure toast.
+    expect(parse(res.body).conflict).toBe(true)
+    expect(readFileSync(join(root, 'Materias', 'b.md'), 'utf8')).toBe('B')
   })
 
   it('refuses a non-string path or contents', async () => {

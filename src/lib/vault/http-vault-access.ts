@@ -1,4 +1,10 @@
-import type { LoadedNote, VaultAccess } from './vault-access'
+import type {
+  LoadedNote,
+  TrashedEntry,
+  VaultAccess,
+  VaultEntry,
+  VaultStat,
+} from './vault-access'
 import { VaultConflictError } from './vault-repository'
 
 /**
@@ -63,6 +69,17 @@ export function httpVaultAccess(transport: VaultTransport): VaultAccess {
     writeNote: async (relative, contents, expectedMtimeMs) => {
       await call(transport, 'writeNote', { path: relative, contents, expectedMtimeMs })
     },
+    listDir: (relative) =>
+      call(transport, 'listDir', { path: relative }) as Promise<VaultEntry[]>,
+    mkdir: async (relative) => {
+      await call(transport, 'mkdir', { path: relative })
+    },
+    rename: async (from, to) => {
+      await call(transport, 'rename', { path: from, to })
+    },
+    trash: (relative) => call(transport, 'trash', { path: relative }) as Promise<TrashedEntry>,
+    stat: (relative) =>
+      call(transport, 'stat', { path: relative }) as Promise<VaultStat | null>,
   }
 }
 

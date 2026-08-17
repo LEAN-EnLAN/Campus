@@ -1,4 +1,5 @@
 import {
+  existsSync,
   mkdtempSync,
   mkdirSync,
   rmSync,
@@ -155,5 +156,89 @@ describe('writeNote — VAULT-002 atomic, VAULT-003 never silently overwrite', (
     await expect(
       repo.writeNote('Materias/nota.md', 'v2\n', Date.now() + 60_000),
     ).rejects.toBeInstanceOf(VaultConflictError)
+  })
+})
+
+// =============================================================================
+// Milestone B — FILES-*: the operations the explorer needs, and their safety.
+// =============================================================================
+
+describe('rename never silently overwrites (FILES-002)', () => {
+  it('refuses when the destination already exists', async () => {
+    // POSIX rename() replaces the target atomically — which for a student means
+    // "renaming nota.md onto resumen.md deleted my resumen". The filesystem's
+    // default is the data-loss bug here.
+    await repo.writeNote('Materias/a.md', 'contenido A\n', null)
+    await repo.writeNote('Materias/b.md', 'contenido B\n', null)
+
+    await expect(repo.rename('Materias/a.md', 'Materias/b.md')).rejects.toBeInstanceOf(
+      VaultConflictError,
+    )
+    // Both survive, untouched.
+    expect(readFileSync(join(root, 'Materias', 'a.md'), 'utf8')).toBe('contenido A\n')
+    expect(readFileSync(join(root, 'Materias', 'b.md'), 'utf8')).toBe('contenido B\n')
+  })
+
+  it('still renames onto a free name', async () => {
+    await repo.writeNote('Materias/a.md', 'x\n', null)
+    await repo.rename('Materias/a.md', 'Materias/renombrada.md')
+    expect(readFileSync(join(root, 'Materias', 'renombrada.md'), 'utf8')).toBe('x\n')
+  })
+})
+
+describe('listDir (FILES-001)', () => {
+  it('returns entries with kind, hiding .campus internals', async () => {
+    await repo.writeNote('Materias/nota.md', '# x\n', null)
+    await repo.mkdir('Materias/Arquitectura')
+    mkdirSync(join(root, '.campus'), { recursive: true })
+
+    const rootEntries = await repo.listDir('')
+    // .campus is Campus's own state, not the student's content. The explorer
+    // shows the student THEIR vault.
+    expect(rootEntries.map((e) => e.name)).not.toContain('.campus')
+
+    const entries = await repo.listDir('Materias')
+    expect(entries.find((e) => e.name === 'nota.md')?.kind).toBe('file')
+    expect(entries.find((e) => e.name === 'Arquitectura')?.kind).toBe('dir')
+    expect(entries.find((e) => e.name === 'nota.md')?.mtimeMs).toBeTypeOf('number')
+  })
+})
+
+describe('trash, not unlink (VAULT-005 / FILES-003)', () => {
+  it('moves the file into .campus/trash with its original path recorded', async () => {
+    await repo.writeNote('Materias/borrame.md', 'importante\n', null)
+    const trashed = await repo.trash('Materias/borrame.md')
+
+    expect(existsSync(join(root, 'Materias', 'borrame.md'))).toBe(false)
+    // The CONTENT survives inside the vault, restorable by hand with a file
+    // manager — the trash is canonical student data, not Campus magic.
+    const stored = readFileSync(join(root, trashed.trashedTo), 'utf8')
+    expect(stored).toBe('importante\n')
+    const meta = JSON.parse(readFileSync(join(root, trashed.trashedTo + '.meta.json'), 'utf8'))
+    expect(meta.originalPath).toBe('Materias/borrame.md')
+  })
+
+  it('two trashed files with the same name do not clobber each other', async () => {
+    await repo.writeNote('a/nota.md', 'primera\n', null)
+    await repo.trash('a/nota.md')
+    await repo.writeNote('a/nota.md', 'segunda\n', null)
+    const second = await repo.trash('a/nota.md')
+    // Both bodies exist somewhere under trash.
+    const stored = readFileSync(join(root, second.trashedTo), 'utf8')
+    expect(stored).toBe('segunda\n')
+  })
+
+  it('refuses to trash outside the vault, same as every other operation', async () => {
+    await expect(repo.trash('../outside/secret.txt')).rejects.toThrow(/traversal|outside/i)
+  })
+})
+
+describe('stat (FILES-004)', () => {
+  it('answers kind and mtime for a real entry, null for an absent one', async () => {
+    await repo.writeNote('Materias/nota.md', 'x\n', null)
+    const s = await repo.stat('Materias/nota.md')
+    expect(s?.kind).toBe('file')
+    expect(s?.mtimeMs).toBeTypeOf('number')
+    expect(await repo.stat('Materias/no-existe.md')).toBeNull()
   })
 })

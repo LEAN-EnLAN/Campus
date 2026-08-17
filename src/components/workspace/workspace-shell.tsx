@@ -256,7 +256,6 @@ function WorkspaceShellInner({ vaultKey }: { vaultKey: string }) {
               } ${isActivePane && state.panes.length > 1 ? 'bg-paper' : ''}`}
             >
               <div
-                role="tablist"
                 aria-label={`Pestañas del panel ${index + 1}`}
                 className="border-rule flex items-center gap-px overflow-x-auto border-b px-1"
               >
@@ -281,8 +280,7 @@ function WorkspaceShellInner({ vaultKey }: { vaultKey: string }) {
                   >
                     <button
                       type="button"
-                      role="tab"
-                      aria-selected={pane.activeTab === tab}
+                      aria-current={pane.activeTab === tab ? 'true' : undefined}
                       onClick={() =>
                         setState((s) => activateTab(activatePane(s, pane.id), pane.id, tab))
                       }
@@ -302,7 +300,7 @@ function WorkspaceShellInner({ vaultKey }: { vaultKey: string }) {
                   </div>
                 ))}
                 {pane.tabs.length === 0 && (
-                  <span className="text-ink-faint px-2 py-1.5 text-xs">Sin notas abiertas</span>
+                  <span className="text-ink-muted px-2 py-1.5 text-xs">Sin notas abiertas</span>
                 )}
               </div>
 

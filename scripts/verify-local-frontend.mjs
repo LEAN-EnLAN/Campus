@@ -95,6 +95,7 @@ const unrState = await seed(unrVault, [
 
 const SURFACES = [
   { name: 'startup-picker', path: '/', state: null, expect: 'Ruta de la carpeta' },
+  { name: 'vault-workspace', path: '/vault', state: utnState, expect: 'Nota de hoy' },
   { name: 'local-utn-today', path: '/today', state: utnState },
   { name: 'local-utn-plan', path: '/plan', state: utnState },
   {

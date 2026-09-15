@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
+import { Columns3, List } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
 import { EmptyState, ErrorState, LoadingRows } from '@/components/empty-state'
@@ -7,12 +8,14 @@ import { SubjectRow } from '@/components/subject-row'
 import { Button } from '@/components/ui/button'
 import type { SubjectStatus } from '@/domain/types'
 import { useAcademicPlan } from '@/features/academic/queries'
+import { SubjectBoardView } from '@/features/courses/subject-board-view'
 
 export const Route = createFileRoute('/_app/courses/')({
   component: CoursesScreen,
 })
 
 type Filter = 'cursando' | 'disponibles' | 'aprobadas' | 'todas'
+type View = 'list' | 'board'
 
 const FILTERS: { value: Filter; label: string; match: (s: SubjectStatus) => boolean }[] = [
   {
@@ -32,6 +35,11 @@ const FILTERS: { value: Filter; label: string; match: (s: SubjectStatus) => bool
 function CoursesScreen() {
   const plan = useAcademicPlan()
   const [filter, setFilter] = useState<Filter>('cursando')
+  const [view, setView] = useState<View>('list')
+
+  /* Forty cards side by side is a wall, not a board, so "Todas" stays a list
+     whatever the toggle says. */
+  const showBoard = view === 'board' && filter !== 'todas'
 
   const spec = FILTERS.find((f) => f.value === filter) ?? FILTERS[3]!
   const counts = useMemo(() => {
@@ -82,7 +90,7 @@ function CoursesScreen() {
           action={
             <Link
               to="/onboarding"
-              className="text-accent text-sm font-medium underline-offset-4 hover:underline"
+              className="text-accent-ink text-sm font-medium underline-offset-4 hover:underline"
             >
               {plan.isUnmapped ? 'Cambiar mi carrera' : 'Elegir mi carrera'}
             </Link>
@@ -100,30 +108,57 @@ function CoursesScreen() {
         description="Marcá en qué estás y Campus recalcula qué se te habilita."
       />
 
-      <div role="group" aria-label="Filtrar materias" className="flex flex-wrap gap-1.5">
-        {FILTERS.map((f) => (
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div role="group" aria-label="Filtrar materias" className="flex flex-wrap gap-1.5">
+          {FILTERS.map((f) => (
+            <Button
+              key={f.value}
+              size="sm"
+              variant={filter === f.value ? 'primary' : 'secondary'}
+              aria-pressed={filter === f.value}
+              onClick={() => setFilter(f.value)}
+            >
+              {f.label}
+              {/* No opacity at all. opacity-70 composited to 3.84:1 and failed; 90%
+                  measured ~5.3:1 yet still tripped axe at 390px, which means it was
+                  sitting close enough to the threshold to be decided by rounding.
+                  A value that passes at four viewports out of five is not passing. */}
+              <span className="text-xs" data-numeric>
+                {counts.get(f.value) ?? 0}
+              </span>
+            </Button>
+          ))}
+        </div>
+
+        <div role="group" aria-label="Cómo ver tus materias" className="flex gap-1.5">
           <Button
-            key={f.value}
             size="sm"
-            variant={filter === f.value ? 'primary' : 'secondary'}
-            aria-pressed={filter === f.value}
-            onClick={() => setFilter(f.value)}
+            variant={view === 'list' ? 'primary' : 'secondary'}
+            aria-pressed={view === 'list'}
+            onClick={() => setView('list')}
           >
-            {f.label}
-            {/* No opacity at all. opacity-70 composited to 3.84:1 and failed; 90%
-                measured ~5.3:1 yet still tripped axe at 390px, which means it was
-                sitting close enough to the threshold to be decided by rounding.
-                A value that passes at four viewports out of five is not passing. */}
-            <span className="text-xs" data-numeric>
-              {counts.get(f.value) ?? 0}
-            </span>
+            <List aria-hidden="true" />
+            Lista
           </Button>
-        ))}
+          <Button
+            size="sm"
+            variant={view === 'board' ? 'primary' : 'secondary'}
+            aria-pressed={view === 'board'}
+            onClick={() => setView('board')}
+          >
+            <Columns3 aria-hidden="true" />
+            Tablero
+          </Button>
+        </div>
       </div>
 
       <section aria-labelledby="listado" className="flex flex-col gap-1">
-        <SectionHeading id="listado">{spec.label}</SectionHeading>
-        {visible.length === 0 ? (
+        <SectionHeading id="listado">{showBoard ? 'Tablero' : spec.label}</SectionHeading>
+        {showBoard ? (
+          <div className="mt-2">
+            <SubjectBoardView />
+          </div>
+        ) : visible.length === 0 ? (
           <EmptyState
             className="mt-2"
             title={
@@ -138,7 +173,7 @@ function CoursesScreen() {
               filter === 'cursando' ? (
                 <Link
                   to="/plan"
-                  className="text-accent text-sm font-medium underline-offset-4 hover:underline"
+                  className="text-accent-ink text-sm font-medium underline-offset-4 hover:underline"
                 >
                   Ver tu plan
                 </Link>
@@ -155,6 +190,12 @@ function CoursesScreen() {
           </ul>
         )}
       </section>
+
+      {view === 'board' && filter === 'todas' ? (
+        <p className="text-ink-muted text-xs">
+          «Todas» se muestra siempre como lista: cuarenta tarjetas en fila no son un tablero.
+        </p>
+      ) : null}
     </div>
   )
 }

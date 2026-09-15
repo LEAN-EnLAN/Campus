@@ -191,3 +191,36 @@ describe('resolving is not needs-choice', () => {
     expect(await screen.findByText('backend: local')).toBeTruthy()
   })
 })
+
+/**
+ * The provider's last line of defence.
+ *
+ * `resolveCampusRuntime` is written to be total, but the provider must not
+ * DEPEND on that: a throw from anywhere in the resolve path — a capability
+ * constructed lazily, a future branch that forgets its try — would otherwise
+ * leave `state.status === 'resolving'` and the app on its loading indicator
+ * forever, with no retry and no message.
+ */
+describe('startup can never strand on the loading screen', () => {
+  it('leaves resolving even when resolution rejects outright', async () => {
+    const broken = {
+      ...caps({ store: memoryStore() }),
+      // A rejection the pure resolver cannot intercept, because it happens
+      // before any of its own try blocks.
+      get store(): never {
+        throw new Error('preferencias ilegibles')
+      },
+    } as unknown as RuntimeCapabilities
+
+    render(
+      <RuntimeProvider
+        capabilities={broken}
+        fallback={({ state }) => <p>estado: {state.status}</p>}
+      >
+        <App />
+      </RuntimeProvider>,
+    )
+
+    await waitFor(() => expect(screen.getByText(/estado:/)).not.toHaveTextContent('resolving'))
+  })
+})

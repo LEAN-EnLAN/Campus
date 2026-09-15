@@ -42,28 +42,56 @@ export async function resolveCampusRuntime(caps: RuntimeCapabilities): Promise<S
     const remembered =
       config.recentVaults.find((v) => v.path === last.path) ?? descriptorFor(last.path)
 
-    if (await caps.vaultExists(last.path)) {
-      return { status: 'ready', runtime: await caps.openLocal(remembered) }
+    // Every capability here crosses a boundary — an HTTP call to the vault API,
+    // a filesystem open — and any of them can fail for reasons that have
+    // nothing to do with the student. A rejection would propagate out of this
+    // function, past the provider's `.then`, and leave startup on its loading
+    // screen with no way forward. So the failure becomes an ANSWER.
+    let exists: boolean
+    try {
+      exists = await caps.vaultExists(last.path)
+    } catch (cause) {
+      return { status: 'vault-unavailable', vault: remembered, reason: reasonOf(cause) }
     }
 
-    // The folder moved, the drive is unplugged, the student renamed it. This is
-    // NOT "nothing configured", and it is emphatically not a reason to create a
-    // folder or to send them to login: their notes exist somewhere, and the only
-    // honest move is to say so and let them point at it.
-    return { status: 'vault-missing', vault: remembered }
+    if (!exists) {
+      // The folder moved, the drive is unplugged, the student renamed it. This
+      // is NOT "nothing configured", and it is emphatically not a reason to
+      // create a folder or to send them to login: their notes exist somewhere,
+      // and the only honest move is to say so and let them point at it.
+      return { status: 'vault-missing', vault: remembered }
+    }
+
+    try {
+      return { status: 'ready', runtime: await caps.openLocal(remembered) }
+    } catch (cause) {
+      return { status: 'vault-unavailable', vault: remembered, reason: reasonOf(cause) }
+    }
   }
 
   if (last?.mode === 'cloud') {
-    if (await caps.cloudSession()) {
-      return { status: 'ready', runtime: await caps.openCloud() }
-    }
     // An expired cloud session is the one case where login IS the answer — but
     // the picker owns that decision, not this function, so it reports the same
-    // "nothing usable" state and lets the student choose again.
+    // "nothing usable" state and lets the student choose again. An unreachable
+    // cloud lands in the same place: there is nothing to explain that choosing
+    // again does not already offer.
+    try {
+      if (await caps.cloudSession()) {
+        return { status: 'ready', runtime: await caps.openCloud() }
+      }
+    } catch {
+      return { status: 'needs-choice' }
+    }
     return { status: 'needs-choice' }
   }
 
   return { status: 'needs-choice' }
+}
+
+/** Whatever was thrown, as something a student can read. */
+function reasonOf(cause: unknown): string {
+  const message = cause instanceof Error ? cause.message : String(cause)
+  return message.trim().length > 0 ? message : 'no sabemos por qué'
 }
 
 /** A descriptor for a path we remember but have no stored name for. */

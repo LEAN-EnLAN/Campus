@@ -173,3 +173,103 @@ describe('descriptorFor', () => {
     expect(descriptorFor('C:\\Users\\est\\Campus').name).toBe('Campus')
   })
 })
+
+/**
+ * Startup is the one screen with no way out.
+ *
+ * Every other failure in Campus lands on a screen that offers a retry. If
+ * resolution REJECTS, the provider's `.then` never runs, the state stays
+ * `resolving`, and the student watches a loading indicator forever. So the
+ * contract is absolute: resolution answers with a state, always.
+ */
+describe('resolution always answers — a loading screen is not a destination', () => {
+  const withVault = (over: Partial<RuntimeCapabilities>) =>
+    caps({
+      store: memoryStore({
+        recentVaults: [VAULT],
+        lastRuntime: { mode: 'local', path: VAULT.path },
+      }),
+      ...over,
+    })
+
+  it('reports vault-unavailable when the existence check itself fails', async () => {
+    const state = await resolveCampusRuntime(
+      withVault({
+        vaultExists: async () => {
+          throw new Error('la API del Vault no respondió')
+        },
+      }),
+    )
+
+    // NOT vault-missing: we did not learn that the folder is gone, we learned
+    // nothing. Telling a student their folder moved when it did not sends them
+    // hunting through their disk for a problem that is not there.
+    expect(state.status).toBe('vault-unavailable')
+  })
+
+  it('reports vault-unavailable, with the reason, when the vault is there but will not open', async () => {
+    const state = await resolveCampusRuntime(
+      withVault({
+        vaultExists: async () => true,
+        openLocal: async () => {
+          throw new Error('permiso denegado')
+        },
+      }),
+    )
+
+    expect(state).toMatchObject({ status: 'vault-unavailable', vault: VAULT })
+    expect(state.status === 'vault-unavailable' && state.reason).toContain('permiso denegado')
+  })
+
+  it('still reports vault-missing when the check succeeds and says no', async () => {
+    // The existing distinction must survive: a definite "it is gone" is a
+    // different problem from "I could not ask".
+    const state = await resolveCampusRuntime(withVault({ vaultExists: async () => false }))
+
+    expect(state.status).toBe('vault-missing')
+  })
+
+  it('falls back to the picker when the cloud check throws', async () => {
+    const state = await resolveCampusRuntime(
+      caps({
+        store: memoryStore({ recentVaults: [], lastRuntime: { mode: 'cloud' } }),
+        cloudSession: async () => {
+          throw new Error('red caída')
+        },
+      }),
+    )
+
+    expect(state.status).toBe('needs-choice')
+  })
+
+  it('falls back to the picker when opening the cloud throws', async () => {
+    const state = await resolveCampusRuntime(
+      caps({
+        store: memoryStore({ recentVaults: [], lastRuntime: { mode: 'cloud' } }),
+        cloudSession: async () => true,
+        openCloud: async () => {
+          throw new Error('sin credenciales')
+        },
+      }),
+    )
+
+    expect(state.status).toBe('needs-choice')
+  })
+
+  it('never rejects, whatever every capability does', async () => {
+    const explode = () => {
+      throw new Error('boom')
+    }
+
+    await expect(
+      resolveCampusRuntime(
+        withVault({
+          vaultExists: explode as never,
+          openLocal: explode as never,
+          cloudSession: explode as never,
+          openCloud: explode as never,
+        }),
+      ),
+    ).resolves.toBeDefined()
+  })
+})

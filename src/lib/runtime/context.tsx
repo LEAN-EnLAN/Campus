@@ -59,9 +59,19 @@ export function RuntimeProvider({
 
   useEffect(() => {
     let cancelled = false
-    void resolveCampusRuntime(capabilities).then((next) => {
-      if (!cancelled) setState(next)
-    })
+    // The `catch` is not defensive noise: without it, a rejection anywhere in
+    // the resolve path skips `setState` entirely and startup stays on its
+    // loading indicator forever — no message, no retry, nothing to click. A
+    // loading screen must never be a destination, so an unexpected failure
+    // becomes the picker, which is at least somewhere the student can act.
+    void Promise.resolve()
+      .then(() => resolveCampusRuntime(capabilities))
+      .then((next) => {
+        if (!cancelled) setState(next)
+      })
+      .catch(() => {
+        if (!cancelled) setState({ status: 'needs-choice' })
+      })
     return () => {
       cancelled = true
     }

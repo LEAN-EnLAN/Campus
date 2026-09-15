@@ -58,3 +58,13 @@ export type StartupState =
    * recreated empty folder where their notes used to be.
    */
   | { status: 'vault-missing'; vault: VaultDescriptor }
+  /**
+   * A vault was remembered and we could not get to it — the check failed, or
+   * the folder is there and refused to open.
+   *
+   * Distinct from `vault-missing` for the same reason `prerequisitesKnown`
+   * exists: not knowing is not the same as knowing there is nothing. Telling a
+   * student their folder moved, when what actually happened is that a request
+   * failed, sends them searching their disk for a problem that is not there.
+   */
+  | { status: 'vault-unavailable'; vault: VaultDescriptor; reason: string }

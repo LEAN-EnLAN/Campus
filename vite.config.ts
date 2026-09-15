@@ -7,6 +7,7 @@ import { tanstackRouter } from '@tanstack/router-plugin/vite'
 import react from '@vitejs/plugin-react'
 import { defineConfig, type ServerOptions } from 'vite'
 
+import { campusCatalogPlugin } from './src/server/vite-catalog-plugin'
 import { campusVaultPlugin } from './src/server/vite-vault-plugin'
 
 /**
@@ -36,6 +37,11 @@ export default defineConfig({
     // Development only (`apply: 'serve'`). Mounts the Vault API so LOCAL mode
     // can reach a real folder; `campus serve` will mount the same handler.
     campusVaultPlugin(),
+    // Development only. Serves `public/academic-catalog/` from disk, because
+    // Vite's public-file list is built once at startup and `catalog:generate`
+    // deletes and recreates that directory — after which the catalog silently
+    // becomes index.html at status 200.
+    campusCatalogPlugin(),
   ],
   resolve: {
     alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },

@@ -6,6 +6,8 @@ import { browserDeviceStore } from '@/lib/runtime/device-config'
 import type { RuntimeCapabilities } from '@/lib/runtime/resolve'
 import { httpVaultAccess, openVaultSession, vaultExists } from '@/lib/vault/http-vault-access'
 
+import { fetchCatalogFile } from './catalog-fetch'
+
 /**
  * Everything the composition root needs to resolve a runtime, assembled here.
  *
@@ -27,18 +29,12 @@ let catalogPromise: Promise<PortableCatalog> | null = null
 
 function catalog(): Promise<PortableCatalog> {
   catalogPromise ??= loadPortableCatalog('/academic-catalog', {
-    readFile: async (path) => {
-      const response = await fetch(path)
-      if (!response.ok) throw new Error(`no pudimos cargar el catálogo (${response.status})`)
-      return response.text()
-    },
+    readFile: (path) => fetchCatalogFile(path),
     readDir: async () => {
       // The bundled catalog ships a manifest rather than a directory listing:
       // a browser cannot list a directory, and inventing an endpoint that could
       // would be a filesystem API by another name.
-      const response = await fetch('/academic-catalog/curricula.json')
-      if (!response.ok) throw new Error('no pudimos cargar el índice del catálogo')
-      return (await response.json()) as string[]
+      return JSON.parse(await fetchCatalogFile('/academic-catalog/curricula.json')) as string[]
     },
   })
   return catalogPromise

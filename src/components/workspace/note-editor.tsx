@@ -313,7 +313,8 @@ export function NoteEditor({
       )}
       <div ref={hostRef} className="min-h-0 flex-1 overflow-hidden" data-testid="note-editor" />
       <div
-        className="border-rule text-ink-muted flex items-center justify-between border-t px-4 py-1 text-xs"
+        // Shares the text axis with the ruled lines above it.
+        className="border-rule text-ink-muted flex items-center justify-between border-t px-4 py-1 text-xs md:pr-[var(--rule-gutter)] md:pl-[var(--rule-text-inset)]"
         aria-live="polite"
       >
         <span className="truncate">{path}</span>

@@ -241,7 +241,7 @@ function WorkspaceShellInner({ vaultKey }: { vaultKey: string }) {
         </>
       )}
 
-      <div className="flex min-w-0 flex-1">
+      <div className="bg-paper-sunken/45 flex min-w-0 flex-1 overflow-hidden">
         {state.panes.map((pane, index) => {
           const isActivePane = pane.id === state.activePaneId
           // Mobile: only the active pane exists. Desktop: both, split evenly.
@@ -253,7 +253,7 @@ function WorkspaceShellInner({ vaultKey }: { vaultKey: string }) {
               onFocusCapture={() => setState((s) => activatePane(s, pane.id))}
               className={`${hiddenOnMobile} min-w-0 flex-1 flex-col ${
                 index > 0 ? 'border-rule border-l' : ''
-              } ${isActivePane && state.panes.length > 1 ? 'bg-paper' : ''}`}
+              } ${isActivePane && state.panes.length > 1 ? 'bg-paper-sunken/45' : ''}`}
             >
               <div
                 aria-label={`Pestañas del panel ${index + 1}`}
@@ -306,7 +306,36 @@ function WorkspaceShellInner({ vaultKey }: { vaultKey: string }) {
 
               <div className="min-h-0 flex-1">
                 {pane.activeTab ? (
-                  <div className="flex h-full min-h-0 flex-col">
+                  /* The page is FULL BLEED inside its pane — no floating card,
+                     no drop shadow, no centred max-width. A sheet of paper in a
+                     notebook is flush with the binding; the only separation it
+                     needs from the chrome is the hairline the pane already
+                     draws. Centring the page here is what produced the dead
+                     gutters on either side of the note. */
+                  <div className="bg-paper-elevated flex h-full min-h-0 w-full flex-col overflow-hidden">
+                    {/* The masthead aligns to the text inset, not to an
+                        arbitrary px-4: the label, the first character of every
+                        ruled line and the filename below share one axis. */}
+                    <div className="border-rule-soft flex items-center justify-between gap-3 border-b px-4 py-2 md:pr-[var(--rule-gutter)] md:pl-[var(--rule-text-inset)]">
+                      <div className="min-w-0">
+                        <p className="text-2xs text-ink-muted tracking-[0.18em] uppercase">
+                          Cuaderno
+                        </p>
+                        <h2 className="text-ink truncate font-serif text-lg font-semibold">
+                          {(pane.activeTab.split('/').pop() ?? pane.activeTab).replace(
+                            /\.md$/,
+                            '',
+                          )}
+                        </h2>
+                      </div>
+                      <span className="text-2xs text-ink-muted hidden shrink-0 md:inline">
+                        {pane.activeTab}
+                      </span>
+                    </div>
+                    {/* The ruling itself lives in the editor theme, painted on
+                        the scroller — see editor-theme.ts. Painting it here,
+                        on a box the text scrolled inside, meant the lines and
+                        the words agreed only at scroll position zero. */}
                     <div className="min-h-0 flex-1">
                       <NoteEditor
                         // Key per pane+path: two panes showing the same note are

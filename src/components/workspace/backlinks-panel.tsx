@@ -30,7 +30,7 @@ export function BacklinksPanel({
         type="button"
         onClick={() => setOpen(!open)}
         aria-expanded={open}
-        className="text-ink-muted hover:text-ink flex w-full items-center gap-2 px-4 py-1.5 text-xs"
+        className="text-ink-muted hover:text-ink flex w-full items-center gap-2 px-4 py-1.5 text-xs md:pl-[var(--rule-text-inset)]"
       >
         <span aria-hidden>{open ? '▾' : '▸'}</span>
         <span>
@@ -38,7 +38,7 @@ export function BacklinksPanel({
         </span>
       </button>
       {open && (
-        <ul className="max-h-40 overflow-y-auto px-4 pb-2">
+        <ul className="max-h-40 overflow-y-auto px-4 pb-2 md:pl-[var(--rule-text-inset)]">
           {backlinks.length === 0 && (
             <li className="text-ink-faint py-1 text-xs">
               Ninguna otra nota enlaza a esta todavía.

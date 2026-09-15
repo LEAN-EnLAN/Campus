@@ -114,7 +114,7 @@ function LoginScreen() {
               setMode(mode === 'signup' ? 'signin' : 'signup')
               setError(null)
             }}
-            className="text-accent font-medium underline-offset-4 hover:underline"
+            className="text-accent-ink font-medium underline-offset-4 hover:underline"
           >
             {mode === 'signup' ? 'Entrá' : 'Creá una'}
           </button>
@@ -123,7 +123,7 @@ function LoginScreen() {
         <p className="text-ink-muted mt-10 text-xs">
           Campus no te pide las credenciales de tu autogestión universitaria, y nunca lo va a
           hacer.{' '}
-          <Link to="/settings" className="text-accent underline underline-offset-4">
+          <Link to="/settings" className="text-accent-ink underline underline-offset-4">
             Más info
           </Link>
         </p>

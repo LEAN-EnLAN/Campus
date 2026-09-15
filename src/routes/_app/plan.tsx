@@ -47,7 +47,7 @@ function PlanScreen() {
           action={
             <Link
               to="/onboarding"
-              className="text-accent text-sm font-medium underline-offset-4 hover:underline"
+              className="text-accent-ink text-sm font-medium underline-offset-4 hover:underline"
             >
               Elegir mi carrera
             </Link>
@@ -68,7 +68,7 @@ function PlanScreen() {
           action={
             <Link
               to="/onboarding"
-              className="text-accent text-sm font-medium underline-offset-4 hover:underline"
+              className="text-accent-ink text-sm font-medium underline-offset-4 hover:underline"
             >
               Cambiar mi carrera
             </Link>
@@ -135,7 +135,7 @@ function PlanScreen() {
             href={plan.curriculum.sourceUrl}
             target="_blank"
             rel="noreferrer noopener"
-            className="text-accent underline underline-offset-4"
+            className="text-accent-ink underline underline-offset-4"
           >
             la fuente oficial
           </a>

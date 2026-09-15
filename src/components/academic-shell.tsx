@@ -38,6 +38,19 @@ const NAV: NavItem[] = [
 const MOBILE_NAV = NAV.filter((item) => item.primary)
 
 /**
+ * Routes whose surface is a WORKSPACE, not a document.
+ *
+ * Every other screen is a column of prose that scrolls the page: capped at a
+ * readable measure, centred, padded, growing as tall as its content. A
+ * workspace is the opposite contract — it owns the viewport, its own panes do
+ * the scrolling, and its header and status bar stay put. Those two contracts
+ * need different height rules all the way up the tree: `min-h-dvh` gives the
+ * document surface room to grow, and by doing so it denies every descendant a
+ * definite height, so an editor inside it can never form a scroll box.
+ */
+const WORKSPACE_ROUTES = ['/vault', '/calendar']
+
+/**
  * The app shell — navigation, main notebook surface, optional context rail.
  *
  * Desktop: 220px nav · main surface capped at a readable measure · 260px rail.
@@ -63,13 +76,20 @@ export function AcademicShell({
       ? pathname === '/' || pathname.startsWith('/today')
       : pathname.startsWith(to)
 
+  const isWorkspace = WORKSPACE_ROUTES.some((to) => pathname.startsWith(to))
+
   return (
-    <div className="bg-paper min-h-dvh">
+    <div className={cn('bg-paper', isWorkspace ? 'h-dvh overflow-hidden' : 'min-h-dvh')}>
       <a href="#contenido" className="skip-link">
         Saltar al contenido
       </a>
 
-      <div className="mx-auto flex w-full max-w-[1440px]">
+      {/* The 1440 cap is a READING measure, and a workspace is not reading.
+          On a 2560px screen it leaves 560px of dead paper down each side while
+          the top stays pinned by `h-dvh` — which is why the calendar looked
+          like it shrank from three edges and not the fourth. Documents keep the
+          cap; the calendar and the vault take the whole window. */}
+      <div className={cn('flex w-full', isWorkspace ? 'h-full' : 'mx-auto max-w-[1440px]')}>
         {/* ---- Desktop navigation ---- */}
         <nav
           aria-label="Principal"
@@ -107,17 +127,34 @@ export function AcademicShell({
         </nav>
 
         {/* ---- Main + rail ---- */}
-        <div className="flex min-w-0 flex-1 flex-col">
+        <div className={cn('flex min-w-0 flex-1 flex-col', isWorkspace && 'min-h-0')}>
           <MobileTopBar onSearch={onSearch} />
 
-          <div className="flex min-w-0 flex-1 flex-col lg:flex-row lg:gap-8 lg:px-8">
+          <div
+            className={cn(
+              'flex min-w-0 flex-1 flex-col',
+              isWorkspace ? 'min-h-0 pb-16 md:pb-0' : 'lg:flex-row lg:gap-8 lg:px-8',
+            )}
+          >
             <main
               id="contenido"
               className={cn(
-                'lg:max-w-measure min-w-0 flex-1 px-4 pt-5 pb-28 sm:px-6 md:pt-8 lg:px-0 lg:pb-16',
+                'min-w-0 flex-1',
+                isWorkspace
+                  ? // Full bleed, viewport-bounded: the workspace is the frame.
+                    // No measure cap, no page padding, no centring — those are
+                    // what left a 189px dead gutter beside the explorer.
+                    //
+                    // `flex flex-col` is load-bearing, not tidiness. As a block
+                    // this passed no definite height to its child, so the
+                    // child's `flex-1` did nothing, and a grandchild asking for
+                    // `height: 100%` of an auto-height parent went circular —
+                    // the calendar measured 33554432px, the browser's ceiling.
+                    'flex min-h-0 flex-col overflow-hidden'
+                  : 'lg:max-w-measure px-4 pt-5 pb-28 sm:px-6 md:pt-8 lg:px-0 lg:pb-16',
                 // With no context rail the reserved 260px would read as dead space
                 // on a wide screen, so the notebook surface centres instead.
-                !rail && 'lg:mx-auto',
+                !rail && !isWorkspace && 'lg:mx-auto',
               )}
             >
               {children}
@@ -211,7 +248,7 @@ function MobileBottomNav({
               aria-current={current ? 'page' : undefined}
               className={cn(
                 'text-2xs flex min-h-14 flex-col items-center justify-center gap-1 transition-colors',
-                current ? 'text-accent' : 'text-ink-muted',
+                current ? 'text-accent-ink' : 'text-ink-muted',
               )}
             >
               <Icon aria-hidden="true" className="size-5" />

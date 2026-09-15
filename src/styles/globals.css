@@ -1,4 +1,21 @@
+/* Cascade order, declared before anything can imply one.
+ *
+ * DayFlow ships a COMPILED Tailwind build. Dropping it in unlayered would put a
+ * vendor's component CSS in the same bucket as ours and let load order decide
+ * the winner. Confining it to `dayflow` makes the contract explicit:
+ *
+ *   base  <  dayflow  <  components  <  utilities  <  unlayered
+ *
+ * Below our preflight, so the blanket `* { border-color }` reset cannot flatten
+ * the coloured event borders that carry which subject an item belongs to. Above
+ * nothing of ours, so every Campus class still wins. */
+@layer theme, base, dayflow, components, utilities;
+
 @import 'tailwindcss';
+
+/* Component styles ONLY. `styles.css` is the same build WITH a full Tailwind v4
+ * preflight — importing it would install a second global reset over ours. */
+@import '@dayflow/core/dist/styles.components.css' layer(dayflow);
 
 /* ---------------------------------------------------------------------------
  * Campus design tokens — see .claude/skills/campus-design-system/SKILL.md
@@ -8,31 +25,56 @@
  * ------------------------------------------------------------------------- */
 
 @theme {
-  /* Surfaces & ink */
-  --color-paper: #f7f5ef;
-  --color-paper-elevated: #fffefa;
-  --color-paper-sunken: #f1eee6;
-  --color-ink: #181816;
-  --color-ink-muted: #6a6862;
+  /* Surfaces & ink — Linen and Shadow Grey, with the steps between them.
+     Written in oklch because the whole system is: see lib/design/palette.ts. */
+  --color-paper: oklch(93% 0.016 68); /* Linen #efe6dd */
+  --color-paper-elevated: oklch(96.5% 0.012 68);
+  --color-paper-sunken: oklch(89% 0.018 68);
+  --color-ink: oklch(24% 0.006 20); /* Shadow Grey #231f20 */
+  --color-ink-muted: oklch(48% 0.008 40);
   /* NOT for text. No third text tier fits this palette at AA: anything readable on
      --paper collapses into --ink-muted. Use this for decorative glyphs, chevrons and
      placeholders only; body and metadata text uses --color-ink-muted. */
-  --color-ink-faint: #807d75;
-  --color-rule: #dedbd2;
-  --color-rule-soft: #ebe8df;
+  --color-ink-faint: oklch(62% 0.01 50);
+  --color-rule: oklch(85% 0.014 66);
+  --color-rule-soft: oklch(90% 0.012 66);
 
-  /* Accent — exactly one */
-  --color-accent: #3157d5;
-  --color-accent-soft: #e7ecfb;
-  --color-accent-ink: #23409e;
+  /* Accent — exactly one, and deliberately NOT Tomato Jam.
+     The accent is on every selected nav item, every primary button and the
+     today marker: it is the colour the app speaks in. Tomato sits at twice the
+     chroma of the rest of the set, and an app that loud everywhere reads as a
+     permanent alarm. Tropical Teal carries identity; Tomato is spent on danger,
+     where being loud is the point and being rare is what keeps it loud. */
+  --color-accent: oklch(72% 0.075 202); /* Tropical Teal #7ebdc2 */
+  --color-accent-soft: oklch(93% 0.03 202);
+  --color-accent-ink: oklch(42% 0.07 202);
+  /* The ink for anything painted with a FILLED palette colour — accent,
+     success, a subject's own hue. One token rather than a habit: every filled
+     colour in this system sits in the same lightness band, so they all take the
+     same ink, and the day the band moves there is exactly one place to fix it.
+     A literal white was the old habit, and it stopped reading the moment the
+     accent went from a dark blue to a light teal. */
+  --color-on-tint: oklch(24% 0.006 20);
 
-  /* Academic status */
-  --color-success: #36745b;
-  --color-success-soft: #e4efe9;
-  --color-warning: #9b6427;
-  --color-warning-soft: #f6ecdf;
-  --color-danger: #a3423d;
-  --color-danger-soft: #f6e5e3;
+  /* Academic status. Hues 32 / 92 / 160 / 202 — every pair at least 42° apart,
+     so no two states are ever a shade of each other. */
+  --color-success: oklch(70% 0.075 160);
+  --color-success-soft: oklch(93% 0.03 160);
+  --color-warning: oklch(50% 0.085 92); /* Vanilla Custard's hue, ink-dark to read as text */
+  --color-warning-soft: oklch(91% 0.06 92); /* Vanilla Custard #f3dfa2 */
+  --color-danger: oklch(50% 0.155 32); /* Tomato Jam #bb4430 — the one loud voice */
+  --color-danger-soft: oklch(93% 0.04 32);
+
+  /* Text selection, and the editor's search highlight. */
+  --color-selection: oklch(88% 0.04 202);
+
+  /* Shadows are a COLOUR decision, not a constant.
+     Ink-tinted and near-zero on paper; deeper and blacker on a dark surface,
+     where a faint warm shadow reads as smudge rather than as lift. */
+  --shadow-tint: 24 24 22;
+  --shadow-raised: 0 1px 2px rgb(var(--shadow-tint) / 0.06);
+  --shadow-floating: 0 10px 28px rgb(var(--shadow-tint) / 0.18);
+  --shadow-overlay: 0 12px 32px rgb(var(--shadow-tint) / 0.16);
 
   /* Typography */
   --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
@@ -68,6 +110,458 @@
   --spacing-nav: 13.75rem; /* 220px */
   --spacing-rail: 16.25rem; /* 260px */
   --spacing-measure: 52rem; /* ~832px main notebook surface */
+}
+
+/* ---------------------------------------------------------------------------
+ * Dark mode.
+ *
+ * Not a second design system — the SAME eighteen tokens with night values, so
+ * every screen, the CodeMirror theme and the vendored calendar follow without
+ * knowing a theme exists. `dark:` appears nowhere in this codebase and should
+ * stay that way: a component that names a mode has stopped going through the
+ * palette.
+ *
+ * Dark here is WARM. Campus is paper and ink, and a cold blue-grey night theme
+ * would be a different product wearing the same fonts. Surfaces keep their
+ * relationship: `elevated` is LIGHTER than `paper` in the dark, `sunken` is
+ * darker, which is why nothing had to be special-cased — a chip painted
+ * `--color-accent` with `--color-paper-elevated` text is light-on-dark in day
+ * and dark-on-light at night, for free.
+ *
+ * Written unlayered so it beats the `@theme` block, which Tailwind emits into
+ * `:root`. `[data-theme]` is set by the theme module; the media query only
+ * applies when no explicit choice has been made.
+ * ------------------------------------------------------------------------- */
+:root[data-theme='dark'] {
+  /* Shadow Grey is the floor rather than the ink, and Linen becomes the ink.
+     Same two seeds, swapped ends — which is why the night theme still looks
+     like the same palette rather than a different product. */
+  --color-paper: oklch(20% 0.007 30);
+  --color-paper-elevated: oklch(25% 0.008 35);
+  --color-paper-sunken: oklch(16% 0.006 30);
+  --color-ink: oklch(92% 0.014 68); /* Linen */
+  --color-ink-muted: oklch(70% 0.012 55);
+  --color-ink-faint: oklch(52% 0.01 45);
+  --color-rule: oklch(34% 0.01 40);
+  --color-rule-soft: oklch(28% 0.009 38);
+
+  /* Teal lifts off a dark floor instead of sinking into it; the pairing token
+     flips with it, so nothing that paints `bg-accent` has to know. */
+  --color-accent: oklch(76% 0.08 202);
+  --color-accent-soft: oklch(28% 0.035 202);
+  --color-accent-ink: oklch(84% 0.06 202);
+  --color-on-tint: oklch(18% 0.006 30);
+
+  --color-success: oklch(74% 0.08 160);
+  --color-success-soft: oklch(27% 0.035 160);
+  /* Warning inverts: dark-on-light by day, the custard itself by night. */
+  --color-warning: oklch(84% 0.085 92);
+  --color-warning-soft: oklch(28% 0.04 92);
+  --color-danger: oklch(68% 0.13 32); /* Tomato, lifted just enough to read */
+  --color-danger-soft: oklch(28% 0.05 32);
+
+  --color-selection: oklch(34% 0.05 202);
+
+  --shadow-tint: 0 0 0;
+  --shadow-raised: 0 1px 2px rgb(var(--shadow-tint) / 0.5);
+  --shadow-floating: 0 12px 32px rgb(var(--shadow-tint) / 0.55);
+  --shadow-overlay: 0 14px 36px rgb(var(--shadow-tint) / 0.5);
+
+  color-scheme: dark;
+}
+
+/* ---------------------------------------------------------------------------
+ * The notebook grid.
+ *
+ * Three numbers that MUST agree or the ruling stops being paper and becomes
+ * noise behind the text: the distance between rules, where the margin line
+ * falls, and how far past it the first character sits. They live here, once,
+ * because the editor theme, the page header and the status bar all read them
+ * — and a baseline grid maintained in three places is a baseline grid that
+ * drifts.
+ *
+ * --rule-height is used as a LENGTH line-height, never a ratio. A ratio is
+ * multiplied by the font size, so the moment a heading grows, the text walks
+ * off the ruling. A length is inherited as a computed length and stays put.
+ * ------------------------------------------------------------------------- */
+:root {
+  --rule-height: 1.75rem;
+  --rule-margin: 4rem;
+  --rule-gutter: 1.5rem;
+  /* Where text begins: past the margin line, never on it. */
+  --rule-text-inset: calc(var(--rule-margin) + var(--rule-gutter));
+  --font-editor: var(--font-serif);
+
+  /* The dot-matrix indicator's lit colour. Upstream points this at shadcn's
+     `--foreground`, which this project does not define; the one accent is the
+     right answer for something that means "working". */
+  --color-dot-on: var(--color-accent);
+}
+
+/* ---------------------------------------------------------------------------
+ * DayFlow, wearing Campus.
+ *
+ * The vendor declares these inside `@layer df-theme { :where(:root) { … } }` —
+ * a named layer at zero specificity — so this UNLAYERED block wins outright, no
+ * `!important` and no selector arms race. Every value is a Campus token: the
+ * calendar cannot drift from the rest of the app, and dark mode follows for
+ * free the day we ship it.
+ *
+ * Its vocabulary is shadcn's, ours is paper-and-ink, so the mapping is a
+ * judgement, not a rename. `card` is the elevated sheet, `muted` is sunken
+ * paper, and `primary` is the one accent — we do not have a second.
+ * ------------------------------------------------------------------------- */
+:root {
+  --df-color-background: var(--color-paper);
+  --df-color-foreground: var(--color-ink);
+  --df-color-card: var(--color-paper-elevated);
+  --df-color-card-foreground: var(--color-ink);
+  --df-color-border: var(--color-rule);
+  --df-color-hover: var(--color-paper-sunken);
+  --df-color-muted: var(--color-paper-sunken);
+  --df-color-muted-foreground: var(--color-ink-muted);
+  --df-color-primary: var(--color-accent);
+  --df-color-primary-foreground: var(--color-paper-elevated);
+  /* No second accent exists in this palette; quiet ink stands in. */
+  --df-color-secondary: var(--color-ink-muted);
+  --df-color-secondary-foreground: var(--color-paper-elevated);
+  --df-color-destructive: var(--color-danger);
+  --df-color-destructive-foreground: var(--color-paper-elevated);
+  --df-color-ring: var(--color-accent);
+
+  /* Density ramp (year view). Reads as ink soaking into paper rather than as a
+     heat map — a student's workload is not a temperature. */
+  --df-heat-1: var(--color-paper-sunken);
+  --df-heat-2: var(--color-accent-soft);
+  --df-heat-3: color-mix(in oklab, var(--color-accent) 28%, var(--color-paper));
+  --df-heat-4: color-mix(in oklab, var(--color-accent) 55%, var(--color-paper));
+  --df-heat-5: var(--color-accent);
+
+  --df-context-menu-background: var(--color-paper-elevated);
+  --df-context-menu-foreground: var(--color-ink);
+  --df-context-menu-border: var(--color-rule);
+  --df-context-menu-primary: var(--color-accent);
+  --df-context-menu-primary-foreground: var(--color-paper-elevated);
+  --df-context-menu-destructive: var(--color-danger);
+  --df-context-menu-destructive-foreground: var(--color-paper-elevated);
+  --df-context-menu-swatch-border: var(--color-rule);
+  --df-context-menu-swatch-ring: var(--color-accent);
+
+  --df-range-picker-background: var(--color-paper-elevated);
+  --df-range-picker-foreground: var(--color-ink);
+  --df-range-picker-border: var(--color-rule);
+  --df-range-picker-muted: var(--color-paper-sunken);
+  --df-range-picker-primary: var(--color-accent);
+  --df-range-picker-primary-foreground: var(--color-paper-elevated);
+  /* Shadows are near-zero in this design system; borders carry structure. */
+  --df-range-picker-shadow-sm: var(--shadow-raised);
+  --df-range-picker-shadow-lg: var(--shadow-overlay);
+  --df-range-picker-button-shadow: none;
+
+  --df-calendar-height: 100%;
+}
+
+/* Suppressed rather than configured: every view renders its own header with a
+   second month label and a second prev/today/next trio, and no view config
+   turns it off. Our `calendarHeader` slot is the one navigation surface, so the
+   duplicate goes. In `components`, which outranks the vendor's `dayflow`. */
+@layer components {
+  .df-view-header-container {
+    display: none;
+  }
+
+  /* The calendar fills its pane instead of sitting in an 800px box.
+   *
+   * `.df-calendar-container` declares `--df-calendar-height: 800px` ON ITSELF
+   * and then `height: var(--df-calendar-height)`. A declaration on the element
+   * beats the same variable set on `:root`, which is why our token never
+   * applied. The fix is to override the VARIABLE here, on the same element —
+   * not to force `height` down the container chain, which is what an earlier
+   * attempt did: the month view derives its virtual scroller from its own
+   * measured height, and that override sent it to a height in the tens of
+   * millions of pixels.
+   *
+   * Also undone here: a 10px drop shadow and Arial. Both arrive from the
+   * vendor's own rule and neither belongs to a surface that is flush with the
+   * app frame. */
+  .df-calendar-container {
+    --df-calendar-height: 100%;
+    box-shadow: none;
+    border: 0;
+    border-radius: 0;
+    font-family: inherit;
+  }
+
+  /* An agenda of empty days is a list of nothing. Hiding the days with no
+     obligations makes it answer the question it is for — "what is coming?" —
+     and it also removes the vendor's hardcoded English "No events", which is
+     written directly into its JSX and never reaches the locale dictionary. */
+  .df-agenda-day-section:has(.df-agenda-empty-row) {
+    display: none;
+  }
+
+  /* The other hardcoded string: shown only when the whole range is empty.
+     Replaced rather than translated, for the same reason. The underlying text
+     node stays English for assistive technology — a real limitation, and the
+     alternative is dropping an otherwise useful view. */
+  .df-agenda-empty {
+    font-size: 0;
+  }
+
+  .df-agenda-empty::after {
+    content: 'Nada anotado en este tramo.';
+    font-size: var(--text-sm);
+    color: var(--color-ink-muted);
+  }
+
+  /* ------------------------------------------------------------------------
+   * Month chips: one line at rest, the whole item on hover.
+   *
+   * At rest the chip is 22px (set via the view's `eventHeight`, because that
+   * height is written as an inline style). The line-height MATCHES that box
+   * exactly, so a single line is optically centred instead of clipped — the
+   * inherited 23.25px reading line-height in a 16px box was cropping every
+   * ascender and descender.
+   *
+   * On hover the content layer leaves the flow and floats above the grid. It
+   * is absolute rather than `height: auto` on purpose: growing the chip in
+   * flow would shove every event below it down the cell, so pointing at one
+   * item would rearrange the month.
+   * --------------------------------------------------------------------- */
+  .df-campus-chip {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    width: 100%;
+    min-width: 0;
+    height: 100%;
+    padding-inline: 0.25rem;
+    font-size: var(--text-xs);
+    line-height: var(--df-month-event-height, 22px);
+    border-radius: var(--radius-sm);
+    transition:
+      box-shadow 160ms var(--ease-out-quiet),
+      padding 160ms var(--ease-out-quiet);
+  }
+
+  .df-campus-chip-line {
+    display: flex;
+    min-width: 0;
+    align-items: baseline;
+    gap: 0.25rem;
+  }
+
+  .df-campus-chip-time {
+    flex-shrink: 0;
+    font-variant-numeric: tabular-nums;
+    opacity: 0.75;
+  }
+
+  .df-campus-chip-title {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Rendered always, out of reach until the chip opens. */
+  .df-campus-chip-detail {
+    display: none;
+    font-size: var(--text-2xs);
+    opacity: 0.8;
+  }
+
+  /* Both clips have to go, or the expanded chip is cut at the chip edge and
+     then again at the cell edge. */
+  .df-month-day-cell-content:hover,
+  .df-month-event:hover {
+    overflow: visible;
+  }
+
+  .df-month-event {
+    position: relative;
+  }
+
+  /* Inline `z-index: 1` on every event is why this one needs !important: an
+     opened chip must sit above its neighbours, and inline wins otherwise. */
+  .df-month-event:hover {
+    z-index: 40 !important;
+  }
+
+  /* Raising the event alone is not enough: an opened chip is wider than its
+     day, so it reaches into the NEXT cell, whose own chips paint later. The
+     cell holding the pointer has to come forward with it. */
+  .df-month-day-cell:has(.df-month-event:hover),
+  .df-month-day-cell-content:has(.df-month-event:hover) {
+    z-index: 40;
+  }
+
+  .df-month-event:hover .df-campus-chip {
+    position: absolute;
+    inset-block-start: 0;
+    inset-inline-start: 0;
+    z-index: 1;
+    width: max-content;
+    min-width: 100%;
+    max-width: 17rem;
+    height: auto;
+    padding: 0.375rem 0.5rem;
+    line-height: 1.35;
+    /* The chip's fill is an inline style on the event; `inherit` carries it
+       onto the floating layer so an opened chip keeps its kind colour. */
+    background: inherit;
+    color: inherit;
+    box-shadow: var(--shadow-floating);
+  }
+
+  .df-month-event:hover .df-campus-chip-title {
+    overflow: visible;
+    white-space: normal;
+  }
+
+  .df-month-event:hover .df-campus-chip-detail {
+    display: block;
+  }
+
+  /* ------------------------------------------------------------------------
+   * One calendar, not three.
+   *
+   * The week and day grids drew bare square blocks while the month drew
+   * rounded, lifted chips — the same events looking like two different
+   * products depending on which tab you were on. They now share the chip
+   * family; only the box model differs, because a month cell is one line tall
+   * and a week block is as tall as the event is long.
+   * --------------------------------------------------------------------- */
+  .df-campus-chip-block {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    gap: 0.125rem;
+    height: 100%;
+    padding: 0.25rem 0.375rem;
+    line-height: 1.3;
+    border: 1px solid;
+    overflow: hidden;
+  }
+
+  .df-campus-chip-block .df-campus-chip-title {
+    white-space: normal;
+    font-weight: 500;
+  }
+
+  .df-campus-chip-block .df-campus-chip-detail {
+    display: block;
+    opacity: 0.75;
+  }
+
+  /* The vendor's own event box is square and carries its own fill. Ours sits
+     inside it, so the box has to get out of the way in every view. */
+  .df-event {
+    background: transparent !important;
+    border: 0 !important;
+    border-radius: var(--radius-sm);
+    overflow: visible;
+  }
+
+  /* Lift on hover, everywhere — the month already did this and the other views
+     did not. Not `transform: scale`: the vendor writes `transform` as an inline
+     style on every event, so a stylesheet cannot win it without `!important`,
+     and scaling a block in a time grid would misalign it against the hour
+     rules it is measured by. The shadow and the edge carry the lift instead. */
+  .df-event:hover .df-campus-chip-block {
+    box-shadow: var(--shadow-floating);
+    filter: brightness(1.04);
+  }
+
+  /* ------------------------------------------------------------------------
+   * Where one month ends.
+   *
+   * The month view scrolls continuously through months, and the only marker
+   * was a ghost label behind the grid — so a row could hold two months with
+   * nothing between them. Days outside the month being read recede, and the
+   * boundary itself gets a real rule.
+   * --------------------------------------------------------------------- */
+  .df-month-day-cell[data-other-month='true'] .df-month-day-cell-surface {
+    background: var(--color-paper-sunken);
+  }
+
+  .df-month-day-cell[data-other-month='true'] {
+    opacity: 0.62;
+  }
+
+  /* The first of a month starts the new month's block, and a rule in ink reads
+     as a division rather than as one more gridline.
+     Selected on `data-date` ending in -01 because that attribute exists — the
+     obvious `data-first-of-month` does not, and a rule written against an
+     attribute the vendor never emits is dead CSS that looks like a feature. */
+  .df-month-day-cell[data-date$='-01'] {
+    border-top: 2px solid var(--color-ink-muted);
+  }
+
+  /* The month label rides the right edge, where the scrollbar is.
+   *
+   * Google Photos' move: the period you are looking at is written next to the
+   * thing you are dragging, so your eye is already there. On the left it sat
+   * under the first week's dates and competed with them for the same corner;
+   * on the right it has empty margin to itself and reads as a marker on the
+   * scroll rather than as a heading inside the grid. */
+  /* The vendor pins this box to the LEFT — `inset: 40px 1186px 62px 0px`, so
+     `left: 0` with a huge right offset. Right-aligning the text inside it only
+     moved the words within those first 184px; the BOX has to flip sides. */
+  .df-month-title {
+    left: auto;
+    right: 0;
+    display: flex;
+    justify-content: flex-end;
+    /* Clear of the scrollbar itself rather than under it. */
+    padding-inline-end: 0.75rem;
+    pointer-events: none;
+  }
+
+  .df-month-title-label {
+    text-align: end;
+    /* Quieter than a heading: it marks where you are, it does not announce a
+       section. The grid below it is the content. */
+    font-size: var(--text-lg);
+    font-weight: 500;
+    color: var(--color-ink-muted);
+  }
+
+  /* Only the first letter. `text-transform: capitalize` touches every word and
+     turns "diciembre de 2026" into "Diciembre De 2026" — Spanish does not
+     capitalise the preposition, and neither does the rest of this app. */
+  .df-month-title-label::first-letter {
+    text-transform: uppercase;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .df-campus-chip {
+      transition: none;
+    }
+
+    .df-event:hover .df-campus-chip-block {
+      filter: none;
+    }
+  }
+}
+
+/* The parts of DayFlow's chrome that no variable reaches. Layered so a Campus
+   utility on the same element still wins. */
+@layer dayflow {
+  .df-calendar-container,
+  .df-week-view,
+  .df-month-view,
+  .df-day-view,
+  .df-agenda-view {
+    font-family: var(--font-sans);
+  }
+
+  /* Radius: md for controls, lg for containers — nothing pill-shaped. */
+  .df-event,
+  .df-month-event,
+  .df-agenda-event {
+    border-radius: var(--radius-sm);
+  }
 }
 
 @layer base {
@@ -166,7 +660,7 @@
     padding: 0.5rem 0.875rem;
     font-size: var(--text-sm);
     font-weight: 500;
-    box-shadow: 0 1px 2px rgb(24 24 22 / 0.12);
+    box-shadow: var(--shadow-raised);
     transition: top 140ms var(--ease-out-quiet);
   }
   .skip-link:focus {

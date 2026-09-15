@@ -80,7 +80,7 @@ export function ErrorState({
         <button
           type="button"
           onClick={onRetry}
-          className="text-accent mt-2 text-sm font-medium underline-offset-4 hover:underline"
+          className="text-accent-ink mt-2 text-sm font-medium underline-offset-4 hover:underline"
         >
           Reintentar
         </button>

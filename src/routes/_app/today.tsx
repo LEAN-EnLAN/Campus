@@ -129,7 +129,7 @@ function TodayScreen() {
               </div>
               <Link
                 to="/calendar"
-                className="text-accent mt-2 self-start text-sm font-medium underline-offset-4 hover:underline"
+                className="text-accent-ink mt-2 self-start text-sm font-medium underline-offset-4 hover:underline"
               >
                 Ver el calendario
               </Link>
@@ -170,7 +170,7 @@ function TodayScreen() {
               />
               <Link
                 to="/plan"
-                className="text-accent self-start text-sm font-medium underline-offset-4 hover:underline"
+                className="text-accent-ink self-start text-sm font-medium underline-offset-4 hover:underline"
               >
                 Ver tu plan
               </Link>
@@ -195,7 +195,7 @@ function TodayScreen() {
               action={
                 <Link
                   to="/onboarding"
-                  className="text-accent text-sm font-medium underline-offset-4 hover:underline"
+                  className="text-accent-ink text-sm font-medium underline-offset-4 hover:underline"
                 >
                   Elegir mi carrera
                 </Link>

@@ -18,12 +18,12 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        primary: 'bg-accent text-white hover:bg-accent-ink',
+        primary: 'bg-accent text-on-tint hover:bg-accent-ink',
         secondary:
           'border border-rule bg-paper-elevated text-ink hover:border-ink-faint hover:bg-paper-sunken',
         ghost: 'text-ink-muted hover:bg-paper-sunken hover:text-ink',
         danger: 'border border-danger/30 bg-danger-soft text-danger hover:bg-danger/15',
-        link: 'text-accent underline-offset-4 hover:underline',
+        link: 'text-accent-ink underline-offset-4 hover:underline',
       },
       size: {
         // Tap targets stay >=44px on touch; the compact sizes are pointer-only surfaces.

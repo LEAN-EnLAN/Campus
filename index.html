@@ -3,8 +3,38 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="color-scheme" content="light" />
-    <meta name="theme-color" content="#f7f5ef" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#f7f5ef" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#171613" media="(prefers-color-scheme: dark)" />
+
+    <!--
+      Resolve the palette BEFORE the first paint.
+
+      This cannot import `src/lib/theme/theme.ts` — it runs ahead of any bundle
+      — so the storage key and the attribute are repeated here by hand, and
+      `theme.test.ts` pins both strings so the duplication cannot drift. Without
+      this script the first frame is light and the app then repaints dark, which
+      is the flash every dark mode gets judged by.
+    -->
+    <script>
+      ;(function () {
+        try {
+          var stored = localStorage.getItem('campus.theme')
+          var preference =
+            stored === 'light' || stored === 'dark' || stored === 'system' ? stored : 'system'
+          var theme =
+            preference === 'system'
+              ? window.matchMedia('(prefers-color-scheme: dark)').matches
+                ? 'dark'
+                : 'light'
+              : preference
+          document.documentElement.setAttribute('data-theme', theme)
+        } catch (_) {
+          // No storage, no matchMedia, a locked-down browser. Light is the
+          // documented default and the stylesheet already renders it.
+        }
+      })()
+    </script>
     <meta
       name="description"
       content="Campus — tu cursada, ordenada. Plan de estudios, materias, entregas y correlativas en un solo lugar."

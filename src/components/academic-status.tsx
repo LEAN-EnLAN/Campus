@@ -19,8 +19,8 @@ interface StatusSpec {
 const STATUS: Record<SubjectStatus, StatusSpec> = {
   passed: { glyph: '✓', label: 'Aprobada', className: 'text-success' },
   equivalent: { glyph: '≡', label: 'Equivalencia', className: 'text-success' },
-  in_progress: { glyph: '●', label: 'Cursando', className: 'text-accent' },
-  regularized: { glyph: '◐', label: 'Regularizada', className: 'text-accent' },
+  in_progress: { glyph: '●', label: 'Cursando', className: 'text-accent-ink' },
+  regularized: { glyph: '◐', label: 'Regularizada', className: 'text-accent-ink' },
   available: { glyph: '○', label: 'Disponible', className: 'text-ink' },
   pending: { glyph: '◌', label: 'Pendiente', className: 'text-ink-muted' },
   blocked: { glyph: '', label: 'Bloqueada', className: 'text-ink-muted' },

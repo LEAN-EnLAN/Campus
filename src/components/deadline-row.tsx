@@ -73,7 +73,7 @@ export function DeadlineRow({
             // most-tapped control in the app and it is used with a thumb.
             "before:absolute before:-inset-3 before:content-['']",
             done
-              ? 'border-success bg-success text-white'
+              ? 'border-success bg-success text-on-tint'
               : 'border-rule hover:border-ink-faint text-transparent',
           )}
         >

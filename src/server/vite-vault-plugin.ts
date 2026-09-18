@@ -4,6 +4,7 @@ import type { Plugin } from 'vite'
 
 import { assertLoopbackBind } from './bind-guard'
 import { handleVaultRequest, mintToken, PREFIX, VaultSessions } from './vault-api'
+import { ALLOWED_ORIGINS_ENV, vaultAllowedOrigins } from './vault-origins'
 
 /**
  * Mounts the Vault API during development. Nothing more.
@@ -46,10 +47,11 @@ export function campusVaultPlugin(): Plugin {
       assertLoopbackBind(host)
 
       const scheme = https ? 'https' : 'http'
-      // Only loopback origins, because only a loopback bind reached this line.
-      allowedOrigins = ['localhost', '127.0.0.1', '[::1]'].map(
-        (h) => `${scheme}://${h}:${port}`,
-      )
+      // Loopback origins, because only a loopback bind reached this line —
+      // plus any origin written down by hand in CAMPUS_VAULT_ALLOWED_ORIGINS.
+      // That is how a tailnet device gets in: a reverse proxy in front of this
+      // loopback bind, and an explicit line saying which origin it presents.
+      allowedOrigins = vaultAllowedOrigins(scheme, port, process.env[ALLOWED_ORIGINS_ENV])
     },
 
     configureServer(server) {

@@ -116,6 +116,39 @@ una, con las llamadas a la API saliendo por el mismo origen desde el que se abri
 **Sólo tailnet.** No usa `tailscale funnel`, que publicaría el dev server en la internet
 pública.
 
+### El Vault local por tailnet: `origin not allowed`
+
+`pnpm dev:tailnet` corre **sólo en modo Cloud**: apaga la API del Vault (`CAMPUS_VAULT_API=off`)
+porque esa API lee y escribe los archivos del estudiante y la regla de la arquitectura es que
+nunca sea alcanzable desde otra máquina. Por eso exige Supabase.
+
+Si en cambio proxeás el dev server de loopback con `tailscale serve`, el bind sigue siendo
+loopback y el guardia de bind pasa — pero el browser manda `Origin: https://<host>.ts.net`, y
+la API responde **403 `origin not allowed`** aunque el token sea válido. Son dos guardias
+distintos, a propósito: uno mira dónde escucha el servidor, el otro mira desde qué página le
+hablan. El token no reemplaza a ninguno.
+
+La excepción es explícita y por origen, sin comodines:
+
+```bash
+tailscale serve --bg --https=443 http://127.0.0.1:5173
+CAMPUS_VAULT_ALLOWED_ORIGINS=https://casa.tail61165e.ts.net pnpm exec vite --host 127.0.0.1
+```
+
+Dos detalles que cuestan una hora si no los sabés:
+
+- `--host 127.0.0.1` porque Vite por defecto escucha **sólo en `[::1]`**, y `tailscale serve`
+  no acepta destinos IPv6 — con `http://[::1]:5173` le saca los corchetes y responde 500
+  `unknown proxy destination`; con el default de Vite responde 502.
+- La variable acepta una lista separada por comas, pero **tira** cualquier entrada que no sea
+  un origen completo (`https://host`): sin esquema, con path, con `*`. Un valor que se ve
+  "seteado" y nunca coincide con el header es el peor fallo posible de una perilla de
+  seguridad, así que se rechaza en vez de guardarse.
+
+Lo que estás aceptando al setearla: por primera vez la API de archivos responde a un origen
+que no es la propia máquina. Un dispositivo tuyo comprometido en el tailnet puede leer y
+escribir tu Vault. Sigue sin ser `funnel`.
+
 ## Barrido automático de todo el frontend
 
 ```bash

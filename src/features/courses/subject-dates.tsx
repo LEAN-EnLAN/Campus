@@ -3,6 +3,7 @@ import { Check } from 'lucide-react'
 import { itemKindLabel } from '@/components/deadline-row'
 import { describeItemDate } from '@/domain/item-dates'
 import type { AcademicItem } from '@/domain/types'
+import { dueTimeLabel } from '@/features/items/due'
 import { cn } from '@/lib/utils'
 
 /**
@@ -19,7 +20,8 @@ export function SubjectDateRow({
   item: AcademicItem
   onToggle: (done: boolean) => void
 }) {
-  const { date, time } = describeItemDate(item)
+  const date = describeItemDate(item)
+  const time = dueTimeLabel(item)
   const done = item.status === 'done'
   const undated = date === 'Sin fecha'
 

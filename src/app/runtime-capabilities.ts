@@ -2,6 +2,7 @@ import { supabase } from '@/lib/supabase'
 import { loadPortableCatalog, type PortableCatalog } from '@/lib/backends/local/catalog'
 import { LocalBackend } from '@/lib/backends/local/local-backend'
 import { createSupabaseBackend } from '@/lib/backends/supabase-backend'
+import { isVaultAvailable, type BuildEnv } from '@/lib/runtime/build-flags'
 import { browserDeviceStore } from '@/lib/runtime/device-config'
 import type { RuntimeCapabilities } from '@/lib/runtime/resolve'
 import { httpVaultAccess, openVaultSession, vaultExists } from '@/lib/vault/http-vault-access'
@@ -40,11 +41,16 @@ function catalog(): Promise<PortableCatalog> {
   return catalogPromise
 }
 
-export function resolveRuntimeCapabilities(): RuntimeCapabilities {
+export function resolveRuntimeCapabilities(
+  env: BuildEnv = import.meta.env,
+): RuntimeCapabilities {
   const baseUrl = window.location.origin
   const token = window.__CAMPUS_VAULT_TOKEN__ ?? ''
 
   return {
+    // The one place the build flag is read; everything else is told.
+    vaultAvailable: isVaultAvailable(env),
+
     store: browserDeviceStore(),
 
     vaultExists: (path) => vaultExists(baseUrl, token, path),

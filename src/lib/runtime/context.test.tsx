@@ -1,5 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { useState } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 
 import { useBackend } from '@/lib/backends/context'
@@ -32,6 +33,7 @@ function caps(
   over: Partial<RuntimeCapabilities> & { store: DeviceStore },
 ): RuntimeCapabilities {
   return {
+    vaultAvailable: true,
     vaultExists: async () => true,
     openLocal: async (vault) => ({ mode: 'local', vault, backend: local }) as CampusRuntime,
     cloudSession: async () => false,
@@ -222,5 +224,58 @@ describe('startup can never strand on the loading screen', () => {
     )
 
     await waitFor(() => expect(screen.getByText(/estado:/)).not.toHaveTextContent('resolving'))
+  })
+})
+
+describe('a hosted build (no Vault API)', () => {
+  function HostedProbe() {
+    const { state, chooseVault, recent, vaultAvailable } = useRuntime()
+    const [error, setError] = useState('')
+    if (state.status === 'resolving') return <p>resolviendo…</p>
+    return (
+      <div>
+        <p>vaultAvailable: {String(vaultAvailable)}</p>
+        <p>estado: {state.status}</p>
+        <p>recientes: {recent().length}</p>
+        <button onClick={() => chooseVault(VAULT).catch((e: Error) => setError(e.message))}>
+          Abrir Vault
+        </button>
+        <p>error: {error}</p>
+      </div>
+    )
+  }
+
+  const mountHosted = (store: DeviceStore, openLocal = vi.fn()) =>
+    render(
+      <RuntimeProvider
+        capabilities={caps({ store, vaultAvailable: false, openLocal })}
+        fallback={() => <HostedProbe />}
+      >
+        <App />
+      </RuntimeProvider>,
+    )
+
+  it('a device that remembered a vault lands on the picker with vaultAvailable=false', async () => {
+    const store = memoryStore(rememberVault({ recentVaults: [], lastRuntime: null }, VAULT))
+    mountHosted(store)
+
+    expect(await screen.findByText('estado: needs-choice')).toBeTruthy()
+    expect(screen.getByText('vaultAvailable: false')).toBeTruthy()
+    // Remembered, not erased.
+    expect(screen.getByText('recientes: 1')).toBeTruthy()
+  })
+
+  it('refuses to open a vault and records nothing', async () => {
+    const store = memoryStore()
+    const openLocal = vi.fn()
+    const user = userEvent.setup()
+    mountHosted(store, openLocal)
+
+    await screen.findByText('estado: needs-choice')
+    await user.click(screen.getByRole('button', { name: 'Abrir Vault' }))
+
+    expect(await screen.findByText(/error: .*computadora/)).toBeTruthy()
+    expect(openLocal).not.toHaveBeenCalled()
+    expect(screen.getByText('recientes: 0')).toBeTruthy()
   })
 })

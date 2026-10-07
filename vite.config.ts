@@ -5,7 +5,9 @@ import { fileURLToPath, URL } from 'node:url'
 import tailwindcss from '@tailwindcss/vite'
 import { tanstackRouter } from '@tanstack/router-plugin/vite'
 import react from '@vitejs/plugin-react'
-import { defineConfig, type ServerOptions } from 'vite'
+import { defineConfig, loadEnv, type ServerOptions } from 'vite'
+
+import { isTesterEnabled } from './src/lib/runtime/build-flags'
 
 import { campusCatalogPlugin } from './src/server/vite-catalog-plugin'
 import { campusVaultPlugin } from './src/server/vite-vault-plugin'
@@ -29,7 +31,14 @@ const hmrHost = process.env.CAMPUS_HMR_HOST
 const https: ServerOptions['https'] =
   certFile && keyFile ? { cert: readFileSync(certFile), key: readFileSync(keyFile) } : undefined
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
+  // Tester tooling is decided HERE, once, from the same predicate the tests
+  // cover. Vite substitutes the literal, so on a hosted build the `/dev` screen
+  // and the published tester password it imports are dead code and never reach
+  // the bundle; a runtime `if` would still ship them.
+  define: {
+    __CAMPUS_TESTER__: JSON.stringify(isTesterEnabled(loadEnv(mode, process.cwd(), 'VITE_'))),
+  },
   plugins: [
     tanstackRouter({ target: 'react', autoCodeSplitting: true }),
     react(),
@@ -70,4 +79,4 @@ export default defineConfig({
       : {}),
   },
   preview: { port: 4173, strictPort: true },
-})
+}))

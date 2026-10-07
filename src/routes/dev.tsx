@@ -10,8 +10,8 @@
  * otherwise unreachable — a brand-new account, a plan Campus does not have, and
  * the UNR plan whose correlativas the university has not published.
  *
- * Gated on `VITE_CAMPUS_TESTER`. Without that flag it renders a refusal, so an
- * accidental production build exposes nothing.
+ * Gated on `VITE_CAMPUS_TESTER`, and forced off on a hosted build. Without the
+ * flag it renders a refusal, so an accidental production build exposes nothing.
  */
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
@@ -27,7 +27,10 @@ export const Route = createFileRoute('/dev')({
   component: DevScreen,
 })
 
-const ENABLED = import.meta.env.VITE_CAMPUS_TESTER === '1'
+// A build-time literal injected by vite.config.ts from `isTesterEnabled`: off on
+// a hosted build (`VITE_CAMPUS_VAULT=off`) whatever the tester flag says, and
+// folded away so the scenarios JSON and its password are not bundled.
+const ENABLED = __CAMPUS_TESTER__
 
 function DevScreen() {
   const { signIn, signOut, session } = useAuth()

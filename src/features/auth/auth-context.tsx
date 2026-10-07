@@ -13,7 +13,7 @@ interface AuthValue {
     email: string,
     password: string,
     displayName: string,
-  ) => Promise<{ error: string | null }>
+  ) => Promise<{ error: string | null; needsConfirmation: boolean }>
   signOut: () => Promise<void>
 }
 
@@ -27,7 +27,14 @@ function translateAuthError(message: string): string {
   if (m.includes('password should be at least'))
     return 'La contraseña tiene que tener al menos 6 caracteres.'
   if (m.includes('unable to validate email')) return 'Revisá el email, no parece válido.'
-  if (m.includes('email rate limit')) return 'Demasiados intentos. Probá de nuevo en un rato.'
+  if (
+    m.includes('email rate limit') ||
+    m.includes('rate limit') ||
+    m.includes('for security purposes')
+  )
+    return 'Demasiados intentos. Probá de nuevo en un rato.'
+  if (m.includes('signups not allowed') || m.includes('signup is disabled'))
+    return 'El registro de cuentas está deshabilitado por ahora.'
   if (m.includes('failed to fetch') || m.includes('network'))
     return 'No pudimos conectarnos. Revisá tu conexión.'
   return 'No pudimos completar la operación. Probá de nuevo.'
@@ -66,12 +73,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { error: error ? translateAuthError(error.message) : null }
       },
       signUp: async (email, password, displayName) => {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
-          options: { data: { display_name: displayName } },
+          options: {
+            data: { display_name: displayName },
+            // The confirmation link must come back to wherever Campus is served
+            // from, not to the project's configured Site URL (a localhost
+            // default until someone edits it). The origin must also be listed in
+            // the project's Redirect URLs — see docs/DEPLOY.md.
+            emailRedirectTo: `${window.location.origin}/login`,
+          },
         })
-        return { error: error ? translateAuthError(error.message) : null }
+        if (error) return { error: translateAuthError(error.message), needsConfirmation: false }
+        // With "Confirm email" on, the account exists but there is no session
+        // until the link is followed.
+        return { error: null, needsConfirmation: data.session === null }
       },
       signOut: async () => {
         await supabase.auth.signOut()

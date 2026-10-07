@@ -15,6 +15,12 @@ import type { CampusRuntime, StartupState, VaultDescriptor } from './types'
  */
 
 export interface RuntimeCapabilities {
+  /**
+   * Can this build reach a Vault API at all? False on a hosted (static) build,
+   * where the Vite plugin that serves it does not exist. Decided once, at the
+   * composition root; nothing below asks the environment again.
+   */
+  vaultAvailable: boolean
   /** Device-scoped preferences: recent vaults, last runtime. */
   store: DeviceStore
   /** Is this vault still on disk, and does it look like a vault? */
@@ -37,6 +43,14 @@ export interface RuntimeCapabilities {
 export async function resolveCampusRuntime(caps: RuntimeCapabilities): Promise<StartupState> {
   const config = readDeviceConfig(caps.store)
   const last = config.lastRuntime
+
+  if (last?.mode === 'local' && !caps.vaultAvailable) {
+    // This device remembered a vault, but this build cannot serve one. Probing
+    // would only produce `vault-unavailable` — an alert about a folder that is
+    // fine — so it is the plain picker. The memory stays in the device config:
+    // the same browser profile may well run Campus locally tomorrow.
+    return { status: 'needs-choice' }
+  }
 
   if (last?.mode === 'local') {
     const remembered =

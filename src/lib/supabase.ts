@@ -35,6 +35,8 @@ export const supabase = createClient(supabaseUrl, anonKey, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
-    detectSessionInUrl: false,
+    // The e-mail confirmation link lands on /login#access_token=…; consuming it
+    // signs the student in, and the login screen then forwards them to /today.
+    detectSessionInUrl: true,
   },
 })

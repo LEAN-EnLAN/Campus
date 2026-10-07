@@ -1,41 +1,19 @@
 import { Link, useRouterState } from '@tanstack/react-router'
-import {
-  BookMarked,
-  CalendarDays,
-  GraduationCap,
-  Library,
-  Plus,
-  Search,
-  Settings,
-  Sun,
-  NotebookPen,
-} from 'lucide-react'
-import type { LucideIcon } from 'lucide-react'
-import type { ReactNode } from 'react'
+import { Ellipsis, Plus, Search } from 'lucide-react'
+import { useEffect, useState, type ReactNode } from 'react'
 
 import { cn } from '@/lib/utils'
 
+import {
+  isCurrentSection,
+  isInMore,
+  MORE_ITEMS,
+  NAV,
+  showsFloatingAdd,
+  TAB_ITEMS,
+  type NavItem,
+} from './nav-model'
 import { Button } from './ui/button'
-
-interface NavItem {
-  to: string
-  label: string
-  icon: LucideIcon
-  /** Shown in the mobile bottom bar. Only four fit comfortably at 360px. */
-  primary?: boolean
-}
-
-const NAV: NavItem[] = [
-  { to: '/today', label: 'Hoy', icon: Sun, primary: true },
-  { to: '/plan', label: 'Plan', icon: GraduationCap, primary: true },
-  { to: '/courses', label: 'Materias', icon: BookMarked, primary: true },
-  { to: '/calendar', label: 'Calendario', icon: CalendarDays, primary: true },
-  { to: '/vault', label: 'Vault', icon: NotebookPen },
-  { to: '/library', label: 'Material', icon: Library },
-  { to: '/settings', label: 'Ajustes', icon: Settings },
-]
-
-const MOBILE_NAV = NAV.filter((item) => item.primary)
 
 /**
  * Routes whose surface is a WORKSPACE, not a document.
@@ -71,10 +49,8 @@ export function AcademicShell({
 }) {
   const pathname = useRouterState({ select: (state) => state.location.pathname })
 
-  const isCurrent = (to: string) =>
-    to === '/today'
-      ? pathname === '/' || pathname.startsWith('/today')
-      : pathname.startsWith(to)
+  const isCurrent = (to: string) => isCurrentSection(pathname, to)
+  const floatingAdd = showsFloatingAdd(pathname)
 
   const isWorkspace = WORKSPACE_ROUTES.some((to) => pathname.startsWith(to))
 
@@ -151,7 +127,13 @@ export function AcademicShell({
                     // `height: 100%` of an auto-height parent went circular —
                     // the calendar measured 33554432px, the browser's ceiling.
                     'flex min-h-0 flex-col overflow-hidden'
-                  : 'lg:max-w-measure px-4 pt-5 pb-28 sm:px-6 md:pt-8 lg:px-0 lg:pb-16',
+                  : cn(
+                      'lg:max-w-measure px-4 pt-5 sm:px-6 md:pt-8 lg:px-0 lg:pb-16',
+                      // Room for the tab bar, and for the floating "+" only when
+                      // there is one: padding for a button that is not there is
+                      // dead paper, and a button with no padding covers rows.
+                      floatingAdd ? 'pb-36' : 'pb-24',
+                    ),
                 // With no context rail the reserved 260px would read as dead space
                 // on a wide screen, so the notebook surface centres instead.
                 !rail && !isWorkspace && 'lg:mx-auto',
@@ -163,7 +145,10 @@ export function AcademicShell({
             {rail ? (
               <aside
                 aria-label="Contexto"
-                className="lg:w-rail w-full shrink-0 px-4 pb-28 sm:px-6 lg:px-0 lg:pt-8 lg:pb-16"
+                className={cn(
+                  'lg:w-rail w-full shrink-0 px-4 sm:px-6 lg:px-0 lg:pt-8 lg:pb-16',
+                  floatingAdd ? 'pb-36' : 'pb-24',
+                )}
               >
                 {rail}
               </aside>
@@ -172,7 +157,12 @@ export function AcademicShell({
         </div>
       </div>
 
-      <MobileBottomNav isCurrent={isCurrent} onQuickCapture={onQuickCapture} />
+      <MobileBottomNav
+        pathname={pathname}
+        isCurrent={isCurrent}
+        floatingAdd={floatingAdd}
+        onQuickCapture={onQuickCapture}
+      />
     </div>
   )
 }
@@ -215,30 +205,79 @@ function MobileTopBar({ onSearch }: { onSearch: () => void }) {
 }
 
 function MobileBottomNav({
+  pathname,
   isCurrent,
+  floatingAdd,
   onQuickCapture,
 }: {
+  pathname: string
   isCurrent: (to: string) => boolean
+  floatingAdd: boolean
   onQuickCapture: () => void
 }) {
+  const [moreOpen, setMoreOpen] = useState(false)
+
+  // Following a link is the end of the menu; so is leaving the page any other way.
+  useEffect(() => setMoreOpen(false), [pathname])
+
+  useEffect(() => {
+    if (!moreOpen) return
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setMoreOpen(false)
+    }
+    document.addEventListener('keydown', onKeyDown)
+    return () => document.removeEventListener('keydown', onKeyDown)
+  }, [moreOpen])
+
+  const moreCurrent = isInMore(pathname)
+
   return (
     <>
-      {/* Quick capture floats above the bar so it stays reachable with a thumb. */}
-      <Button
-        variant="primary"
-        onClick={onQuickCapture}
-        aria-label="Agregar entrega"
-        className="fixed right-4 bottom-[4.75rem] z-40 size-13 rounded-full shadow-lg md:hidden"
-      >
-        <Plus aria-hidden="true" className="size-5" />
-      </Button>
+      {/* Quick capture floats above the bar so it stays reachable with a thumb.
+          Not rendered where the page already has its own add control or where
+          it would sit on top of the content (see `showsFloatingAdd`). */}
+      {floatingAdd ? (
+        <Button
+          variant="primary"
+          onClick={onQuickCapture}
+          aria-label="Agregar entrega"
+          className="fixed right-4 bottom-[4.75rem] z-40 size-13 rounded-full shadow-lg md:hidden"
+        >
+          <Plus aria-hidden="true" className="size-5" />
+        </Button>
+      ) : null}
+
+      {moreOpen ? (
+        <>
+          <button
+            type="button"
+            tabIndex={-1}
+            aria-label="Cerrar"
+            onClick={() => setMoreOpen(false)}
+            className="fixed inset-0 z-40 cursor-default md:hidden"
+          />
+          <nav
+            id="mas-secciones"
+            aria-label="Más secciones"
+            className="border-rule bg-paper-elevated fixed right-2 bottom-[calc(3.5rem+env(safe-area-inset-bottom)+0.5rem)] z-50 w-56 rounded-lg border p-1 shadow-lg md:hidden"
+          >
+            <ul>
+              {MORE_ITEMS.map((item) => (
+                <li key={item.to}>
+                  <MoreLink item={item} current={isCurrent(item.to)} />
+                </li>
+              ))}
+            </ul>
+          </nav>
+        </>
+      ) : null}
 
       {/* A distinct label: two landmarks named the same thing is a real a11y defect. */}
       <nav
         aria-label="Secciones"
-        className="border-rule bg-paper-elevated fixed inset-x-0 bottom-0 z-40 grid grid-cols-4 border-t pb-[env(safe-area-inset-bottom)] md:hidden"
+        className="border-rule bg-paper-elevated fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t pb-[env(safe-area-inset-bottom)] md:hidden"
       >
-        {MOBILE_NAV.map((item) => {
+        {TAB_ITEMS.map((item) => {
           const Icon = item.icon
           const current = isCurrent(item.to)
           return (
@@ -256,7 +295,41 @@ function MobileBottomNav({
             </Link>
           )
         })}
+
+        <button
+          type="button"
+          aria-expanded={moreOpen}
+          aria-controls="mas-secciones"
+          aria-current={moreCurrent ? 'page' : undefined}
+          onClick={() => setMoreOpen((open) => !open)}
+          className={cn(
+            'text-2xs flex min-h-14 flex-col items-center justify-center gap-1 transition-colors',
+            moreCurrent || moreOpen ? 'text-accent-ink' : 'text-ink-muted',
+          )}
+        >
+          <Ellipsis aria-hidden="true" className="size-5" />
+          Más
+        </button>
       </nav>
     </>
+  )
+}
+
+function MoreLink({ item, current }: { item: NavItem; current: boolean }) {
+  const Icon = item.icon
+  return (
+    <Link
+      to={item.to}
+      aria-current={current ? 'page' : undefined}
+      className={cn(
+        'flex min-h-11 items-center gap-3 rounded-md px-3 text-sm transition-colors',
+        current
+          ? 'bg-accent-soft text-accent-ink font-medium'
+          : 'text-ink hover:bg-paper-sunken',
+      )}
+    >
+      <Icon aria-hidden="true" className="size-4 shrink-0" />
+      {item.label}
+    </Link>
   )
 }

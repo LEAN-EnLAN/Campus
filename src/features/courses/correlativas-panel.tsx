@@ -53,3 +53,19 @@ export function CorrelativasPanel({ subject }: { subject: SubjectView }) {
     </>
   )
 }
+
+/**
+ * What to say when a subject has no requirements to list.
+ *
+ * Silence would read as "nothing blocks you", and for a plan whose correlativas
+ * we never had that is a claim Campus cannot make. A subject the student typed
+ * in is a different case again: nobody published anything, and we do not guess.
+ */
+export function correlativasNote(subject: SubjectView, prerequisitesKnown: boolean): string {
+  if (subject.manual) {
+    return 'Cargaste esta materia a mano, así que no tenemos sus correlativas ni calculamos si la podés cursar.'
+  }
+  return prerequisitesKnown
+    ? 'No te falta ninguna correlativa para cursar esta materia.'
+    : 'Esta facultad todavía no publicó las correlatividades de este plan. No sabemos qué te piden para cursarla, y no lo vamos a inventar.'
+}

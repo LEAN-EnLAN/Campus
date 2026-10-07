@@ -4,7 +4,15 @@ import { EmptyState, ErrorState, LoadingRows } from '@/components/empty-state'
 import { PageHeader, SectionHeading } from '@/components/page-header'
 import { ProgressLine } from '@/components/progress-line'
 import { SubjectRow } from '@/components/subject-row'
+import { buttonVariants } from '@/components/ui/button'
+import {
+  AddManualSubjectForm,
+  RemoveManualSubjectButton,
+  manualSubjectsBanner,
+} from '@/features/academic/manual-subjects'
 import { useAcademicPlan } from '@/features/academic/queries'
+import { SubjectStatusControl } from '@/features/academic/subject-status-control'
+import { cn } from '@/lib/utils'
 
 export const Route = createFileRoute('/_app/plan')({
   component: PlanScreen,
@@ -57,23 +65,85 @@ function PlanScreen() {
     )
   }
 
-  // CAP-ONBOARD-002 — an honest gap, not an empty grid pretending to be a plan.
+  // CAP-ONBOARD-002 — a carrera that is not in Campus. The student builds their own
+  // list; Campus keeps what they say and claims nothing else (no availability, no
+  // correlativas, no "te falta").
   if (plan.isUnmapped) {
+    const manualEarned = plan.progress.passed + plan.progress.equivalent
     return (
       <div className="flex flex-col gap-8">
-        <PageHeader title="Tu plan" eyebrow={plan.context?.unmappedLabel ?? undefined} />
-        <EmptyState
-          title="Todavía no tenemos tu plan de estudios"
-          description="Anotamos que falta. Mientras tanto podés usar Hoy, el calendario y el material sin problema — no vamos a inventar materias ni correlativas que no pudimos verificar."
-          action={
-            <Link
-              to="/onboarding"
-              className="text-accent-ink text-sm font-medium underline-offset-4 hover:underline"
-            >
-              Cambiar mi carrera
-            </Link>
+        <PageHeader
+          eyebrow={plan.context?.unmappedLabel ?? undefined}
+          title="Tu plan"
+          actions={
+            plan.views.length > 0 ? (
+              <Link
+                to="/plan/progress"
+                className={cn(buttonVariants({ variant: 'secondary' }))}
+              >
+                Cargar mi avance
+              </Link>
+            ) : undefined
           }
         />
+
+        <p className="border-rule bg-paper-elevated text-ink-muted -mt-4 rounded-lg border border-dashed px-4 py-3 text-sm">
+          {manualSubjectsBanner}{' '}
+          <Link
+            to="/onboarding"
+            className="text-accent-ink font-medium underline underline-offset-4"
+          >
+            Cambiar mi carrera
+          </Link>
+        </p>
+
+        {plan.views.length > 0 ? (
+          <ProgressLine
+            value={manualEarned}
+            total={plan.progress.total}
+            label="materias que cargaste"
+          />
+        ) : null}
+
+        {plan.byYear.map((group) => (
+          <section
+            key={group.yearLevel}
+            aria-labelledby={`anio-${group.yearLevel}`}
+            className="flex flex-col gap-1"
+          >
+            <SectionHeading
+              id={`anio-${group.yearLevel}`}
+              aside={`${group.subjects.length} ${group.subjects.length === 1 ? 'materia' : 'materias'}`}
+            >
+              {group.yearLevel}° año
+            </SectionHeading>
+            <ul>
+              {group.subjects.map((subject) => (
+                <li key={subject.id}>
+                  <SubjectRow
+                    subject={subject}
+                    control={
+                      <span className="flex items-center gap-1">
+                        <SubjectStatusControl subject={subject} />
+                        <RemoveManualSubjectButton subject={subject} />
+                      </span>
+                    }
+                  />
+                </li>
+              ))}
+            </ul>
+          </section>
+        ))}
+
+        <section aria-labelledby="agregar-materia" className="flex flex-col gap-3">
+          <SectionHeading id="agregar-materia">Agregar una materia</SectionHeading>
+          {plan.views.length === 0 ? (
+            <p className="text-ink-muted text-sm">
+              Todavía no cargaste ninguna. Agregá la primera y después marcá en qué estás.
+            </p>
+          ) : null}
+          <AddManualSubjectForm />
+        </section>
       </div>
     )
   }
@@ -82,7 +152,15 @@ function PlanScreen() {
 
   return (
     <div className="flex flex-col gap-8">
-      <PageHeader eyebrow={plan.curriculum?.version} title={plan.programName ?? 'Tu plan'} />
+      <PageHeader
+        eyebrow={plan.curriculum?.version}
+        title={plan.programName ?? 'Tu plan'}
+        actions={
+          <Link to="/plan/progress" className={cn(buttonVariants({ variant: 'secondary' }))}>
+            Cargar mi avance
+          </Link>
+        }
+      />
 
       {/* Where this plan comes from and when we read it, before the student relies on
           it to decide an enrolment. Same data as ever: ordinance, official source, date. */}

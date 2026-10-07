@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { computeSubjectViews } from './availability'
-import { computeProgress } from './progress'
+import { activeSubjects, computeProgress } from './progress'
 import {
   manualProblem,
   manualStates,
@@ -131,5 +131,24 @@ describe('manualProblem', () => {
     expect(manualProblem({ name: 'A', yearLevel: 1, term: 'verano' as never })).toMatch(
       /cuatrimestre/i,
     )
+  })
+})
+
+describe('manual subjects in Hoy', () => {
+  it('a manual subject marked Cursando is an active subject, one marked Aprobada is not', () => {
+    const views = computeSubjectViews({
+      subjects: [
+        manualToCurriculumSubject(manual({ id: 'a', name: 'A' }), 0),
+        manualToCurriculumSubject(manual({ id: 'b', name: 'B' }), 1),
+        manualToCurriculumSubject(manual({ id: 'c', name: 'C' }), 2),
+      ],
+      prerequisites: [],
+      states: manualStates([
+        manual({ id: 'a', status: 'in_progress' }),
+        manual({ id: 'b', status: 'passed' }),
+      ]),
+      prerequisitesKnown: false,
+    })
+    expect(activeSubjects(views).map((v) => v.name)).toEqual(['A'])
   })
 })

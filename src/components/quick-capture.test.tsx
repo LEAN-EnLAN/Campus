@@ -137,3 +137,75 @@ describe('validation', () => {
     expect(screen.getByRole('dialog').querySelector('form')).toHaveAttribute('novalidate')
   })
 })
+
+describe('modal behaviour', () => {
+  it('closes with Escape and focuses the first field', async () => {
+    const onOpenChange = vi.fn()
+    const { user } = mount({ onOpenChange })
+
+    await vi.waitFor(() => expect(screen.getByLabelText(/¿Qué es\?/)).toHaveFocus())
+    await user.keyboard('{Escape}')
+
+    expect(onOpenChange).toHaveBeenCalledWith(false)
+  })
+})
+
+describe('scheduling a Final', () => {
+  const withPrerequisite = [
+    { id: 'am1', name: 'Análisis I', missingRequirements: [] },
+    {
+      id: 'am2',
+      name: 'Análisis II',
+      missingRequirements: [
+        { curriculumSubjectId: 'am1', name: 'Análisis I', kind: 'to_pass', needs: 'aprobar' },
+      ],
+    },
+  ] as unknown as SubjectView[]
+
+  async function scheduleFinal(user: ReturnType<typeof userEvent.setup>, date = '10/12/2026') {
+    await user.type(screen.getByLabelText(/¿Qué es\?/), 'Final de Análisis II')
+    await user.selectOptions(screen.getByLabelText('Tipo'), 'final')
+    await user.selectOptions(screen.getByLabelText('Materia'), 'am2')
+    await user.type(screen.getByLabelText('Fecha'), date)
+  }
+
+  it('shows a non-blocking note when the prerequisite is not passed nor scheduled earlier', async () => {
+    const { user, onSubmit } = mount({ subjects: withPrerequisite, items: [] })
+
+    await scheduleFinal(user)
+
+    expect(screen.getByText(/El plan pide tener aprobada Análisis I/)).toBeInTheDocument()
+    // Not a modal, not a block: saving still works.
+    await user.click(screen.getByRole('button', { name: 'Guardar' }))
+    expect(onSubmit).toHaveBeenCalledOnce()
+  })
+
+  it('drops the note once the prerequisite has an earlier final', async () => {
+    const earlier = [
+      {
+        id: 'f1',
+        curriculumSubjectId: 'am1',
+        kind: 'final',
+        title: 'Final AM I',
+        startsAt: null,
+        dueAt: new Date(2026, 11, 3, 9, 0).toISOString(),
+        status: 'open',
+        notes: null,
+      },
+    ]
+    const { user } = mount({ subjects: withPrerequisite, items: earlier as never })
+
+    await scheduleFinal(user)
+
+    expect(screen.queryByText(/El plan pide tener aprobada/)).toBeNull()
+  })
+
+  it('says nothing for other kinds of item', async () => {
+    const { user } = mount({ subjects: withPrerequisite, items: [] })
+
+    await user.selectOptions(screen.getByLabelText('Materia'), 'am2')
+    await user.type(screen.getByLabelText('Fecha'), '10/12/2026')
+
+    expect(screen.queryByText(/El plan pide tener aprobada/)).toBeNull()
+  })
+})

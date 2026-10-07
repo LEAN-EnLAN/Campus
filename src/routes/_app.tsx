@@ -140,6 +140,7 @@ function AppFrame() {
         open={captureOpen}
         onOpenChange={setCaptureOpen}
         subjects={plan.views}
+        items={itemsQuery.data ?? []}
         // Opened from a course, the dialog stays about that course.
         defaultSubjectId={courseIdOf(pathname)}
         onSubmit={handleCapture}

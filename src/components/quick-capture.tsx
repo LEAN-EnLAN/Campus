@@ -1,10 +1,10 @@
 import { useEffect, useId, useRef, useState } from 'react'
 
-import type { AcademicItemKind, SubjectView } from '@/domain/types'
+import type { AcademicItem, AcademicItemKind, SubjectView } from '@/domain/types'
+import { finalNoteSentence, finalPrerequisiteNote } from '@/features/items/final-check'
 import { combineDue, parseDateInput, parseTimeInput } from '@/features/items/date-input'
-import { cn } from '@/lib/utils'
-
 import { Button } from './ui/button'
+import { Modal } from './ui/modal'
 import { SelectField, TextField } from './ui/field'
 
 /**
@@ -45,14 +45,12 @@ export interface QuickCaptureValues {
   dueAt: string | null
 }
 
-const FOCUSABLE =
-  'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
-
 export function QuickCapture({
   open,
   onOpenChange,
   subjects,
   defaultSubjectId = null,
+  items = [],
   onSubmit,
   isPending = false,
   error = null,
@@ -61,14 +59,14 @@ export function QuickCapture({
   onOpenChange: (open: boolean) => void
   subjects: readonly SubjectView[]
   defaultSubjectId?: string | null
+  /** Items already saved: a Final is checked against the finals already booked. */
+  items?: readonly AcademicItem[]
   onSubmit: (values: QuickCaptureValues) => Promise<void> | void
   isPending?: boolean
   error?: string | null
 }) {
   const titleId = useId()
-  const panelRef = useRef<HTMLDivElement>(null)
   const firstFieldRef = useRef<HTMLInputElement>(null)
-  const restoreFocusTo = useRef<HTMLElement | null>(null)
 
   const [title, setTitle] = useState('')
   const [kind, setKind] = useState<AcademicItemKind>('assignment')
@@ -85,7 +83,6 @@ export function QuickCapture({
   // Reset on open so a previous capture never leaks into the next one.
   useEffect(() => {
     if (!open) return
-    restoreFocusTo.current = document.activeElement as HTMLElement | null
     setTitle('')
     setKind('assignment')
     setSubjectId(defaultSubjectId ?? '')
@@ -96,43 +93,6 @@ export function QuickCapture({
     const timer = window.setTimeout(() => firstFieldRef.current?.focus(), 20)
     return () => window.clearTimeout(timer)
   }, [open, defaultSubjectId])
-
-  // Escape closes; Tab cycles inside the panel.
-  useEffect(() => {
-    if (!open) return
-
-    function onKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Escape') {
-        event.preventDefault()
-        onOpenChange(false)
-        return
-      }
-      if (event.key !== 'Tab' || !panelRef.current) return
-
-      const focusable = [...panelRef.current.querySelectorAll<HTMLElement>(FOCUSABLE)]
-      if (focusable.length === 0) return
-      const first = focusable[0]!
-      const last = focusable[focusable.length - 1]!
-
-      if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault()
-        last.focus()
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault()
-        first.focus()
-      }
-    }
-
-    document.addEventListener('keydown', onKeyDown)
-    const previousOverflow = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-
-    return () => {
-      document.removeEventListener('keydown', onKeyDown)
-      document.body.style.overflow = previousOverflow
-      restoreFocusTo.current?.focus()
-    }
-  }, [open, onOpenChange])
 
   if (!open) return null
 
@@ -151,9 +111,21 @@ export function QuickCapture({
         ? 'Elegí también el día.'
         : null
   const timeError =
-    touched && dueTime.trim() !== '' && !time
+    submitted && dueTime.trim() !== '' && !time
       ? 'Escribí la hora como hh:mm, por ejemplo 18:30.'
       : null
+
+  // Informational and never blocking: see `final-check.ts`.
+  const finalNote = finalPrerequisiteNote(
+    {
+      kind,
+      curriculumSubjectId: subjectId || null,
+      dueAt: combineDue(date, time),
+      startsAt: null,
+    },
+    subjects,
+    items,
+  )
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault()
@@ -185,112 +157,104 @@ export function QuickCapture({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-start sm:pt-[12vh]">
-      <button
-        type="button"
-        aria-label="Cerrar"
-        onClick={() => onOpenChange(false)}
-        className="bg-ink/25 absolute inset-0 motion-safe:animate-[fade-in_160ms_ease-out]"
-      />
+    <Modal
+      open={open}
+      onClose={() => onOpenChange(false)}
+      labelledBy={titleId}
+      initialFocus={firstFieldRef}
+    >
+      <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4 p-5 pb-6">
+        <h2 id={titleId} className="text-ink font-serif text-lg">
+          {TITLE_BY_KIND[kind]}
+        </h2>
 
-      <div
-        ref={panelRef}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={titleId}
-        className={cn(
-          'border-rule bg-paper-elevated relative w-full max-w-lg border shadow-lg',
-          'rounded-t-xl sm:rounded-xl',
-          'max-h-[88dvh] overflow-y-auto',
-        )}
-      >
-        <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4 p-5 pb-6">
-          <h2 id={titleId} className="text-ink font-serif text-lg">
-            {TITLE_BY_KIND[kind]}
-          </h2>
+        <TextField
+          ref={firstFieldRef}
+          label="¿Qué es?"
+          placeholder="TP 4 de Análisis Matemático II"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          onBlur={() => setTouched(true)}
+          error={titleError}
+          autoComplete="off"
+          required
+        />
 
+        <div className="grid gap-4 sm:grid-cols-2">
+          <SelectField
+            label="Tipo"
+            value={kind}
+            onChange={(e) => setKind(e.target.value as AcademicItemKind)}
+          >
+            {KINDS.map((k) => (
+              <option key={k.value} value={k.value}>
+                {k.label}
+              </option>
+            ))}
+          </SelectField>
+
+          <SelectField
+            label="Materia"
+            value={subjectId}
+            onChange={(e) => setSubjectId(e.target.value)}
+            hint={subjects.length === 0 ? 'Todavía no tenés materias cargadas.' : undefined}
+          >
+            <option value="">Sin materia</option>
+            {subjects.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
+            ))}
+          </SelectField>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2">
           <TextField
-            ref={firstFieldRef}
-            label="¿Qué es?"
-            placeholder="TP 4 de Análisis Matemático II"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            onBlur={() => setTouched(true)}
-            error={titleError}
+            ref={dateRef}
+            label="Fecha"
+            placeholder="dd/mm/aaaa"
+            inputMode="numeric"
             autoComplete="off"
-            required
+            value={dueDate}
+            onChange={(e) => setDueDate(e.target.value)}
+            onBlur={() => dueDate.trim() !== '' && setSubmitted(true)}
+            error={dateError}
           />
+          <TextField
+            ref={timeRef}
+            label="Hora"
+            placeholder="hh:mm"
+            inputMode="numeric"
+            autoComplete="off"
+            value={dueTime}
+            onChange={(e) => setDueTime(e.target.value)}
+            onBlur={() => dueTime.trim() !== '' && setSubmitted(true)}
+            error={timeError}
+            hint="Sin hora, queda para todo el día."
+          />
+        </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <SelectField
-              label="Tipo"
-              value={kind}
-              onChange={(e) => setKind(e.target.value as AcademicItemKind)}
-            >
-              {KINDS.map((k) => (
-                <option key={k.value} value={k.value}>
-                  {k.label}
-                </option>
-              ))}
-            </SelectField>
+        {finalNote ? (
+          <p role="status" className="border-warning text-ink-muted border-l-2 pl-3 text-xs">
+            {finalNoteSentence(finalNote)}
+          </p>
+        ) : null}
 
-            <SelectField
-              label="Materia"
-              value={subjectId}
-              onChange={(e) => setSubjectId(e.target.value)}
-              hint={subjects.length === 0 ? 'Todavía no tenés materias cargadas.' : undefined}
-            >
-              <option value="">Sin materia</option>
-              {subjects.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name}
-                </option>
-              ))}
-            </SelectField>
-          </div>
+        {error ? (
+          <p role="alert" className="text-danger text-sm font-medium">
+            {error}
+          </p>
+        ) : null}
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <TextField
-              ref={dateRef}
-              label="Fecha"
-              placeholder="dd/mm/aaaa"
-              inputMode="numeric"
-              autoComplete="off"
-              value={dueDate}
-              onChange={(e) => setDueDate(e.target.value)}
-              onBlur={() => dueDate.trim() !== '' && setSubmitted(true)}
-              error={dateError}
-            />
-            <TextField
-              ref={timeRef}
-              label="Hora"
-              placeholder="hh:mm"
-              inputMode="numeric"
-              autoComplete="off"
-              value={dueTime}
-              onChange={(e) => setDueTime(e.target.value)}
-              onBlur={() => dueTime.trim() !== '' && setSubmitted(true)}
-              error={timeError}
-              hint="Sin hora, queda para todo el día."
-            />
-          </div>
-
-          {error ? (
-            <p role="alert" className="text-danger text-sm font-medium">
-              {error}
-            </p>
-          ) : null}
-
-          <div className="mt-1 flex justify-end gap-2">
-            <Button variant="ghost" onClick={() => onOpenChange(false)}>
-              Cancelar
-            </Button>
-            <Button type="submit" variant="primary" disabled={isPending}>
-              {isPending ? 'Guardando…' : 'Guardar'}
-            </Button>
-          </div>
-        </form>
-      </div>
-    </div>
+        <div className="mt-1 flex justify-end gap-2">
+          <Button variant="ghost" onClick={() => onOpenChange(false)}>
+            Cancelar
+          </Button>
+          <Button type="submit" variant="primary" disabled={isPending}>
+            {isPending ? 'Guardando…' : 'Guardar'}
+          </Button>
+        </div>
+      </form>
+    </Modal>
   )
 }

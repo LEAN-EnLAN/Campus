@@ -14,6 +14,7 @@ const state = vi.hoisted(() => ({
   items: [] as AcademicItem[],
   views: [] as { id: string; name: string; status: string; yearLevel: number }[],
   toggle: vi.fn(),
+  setStatus: vi.fn(),
 }))
 
 vi.mock('@/features/items/queries', () => ({
@@ -26,6 +27,7 @@ vi.mock('@/features/items/queries', () => ({
   useToggleAcademicItem: () => ({ mutate: state.toggle }),
 }))
 vi.mock('@/features/academic/queries', () => ({
+  useSetSubjectStatus: () => ({ mutate: state.setStatus }),
   useAcademicPlan: () => ({
     views: state.views,
     subjectById: new Map(state.views.map((v) => [v.id, v])),
@@ -66,6 +68,7 @@ beforeEach(() => {
   state.items = []
   state.views = []
   state.toggle = vi.fn()
+  state.setStatus = vi.fn()
 })
 
 describe('Hoy', () => {
@@ -144,5 +147,67 @@ describe('Hoy', () => {
       .getByRole('heading', { name: 'Final pendiente' })
       .closest('section')!
     expect(within(pendiente).getByText('Física I')).toBeInTheDocument()
+  })
+})
+
+describe('Hoy: completing a Final', () => {
+  const am2 = { id: 'am2', name: 'Análisis II', status: 'in_progress', yearLevel: 2 }
+
+  it('asks how it went before marking anything done', async () => {
+    const user = userEvent.setup()
+    state.views = [am2]
+    state.items = [
+      item('Final AM II', { kind: 'final', curriculumSubjectId: 'am2', dueAt: at(0, 23) }),
+    ]
+    mount()
+
+    await user.click(
+      await screen.findByRole('button', { name: 'Marcar Final AM II como hecho' }),
+    )
+
+    expect(
+      await screen.findByRole('dialog', { name: /¿Cómo te fue en Final AM II\?/ }),
+    ).toBeInTheDocument()
+    expect(state.toggle).not.toHaveBeenCalled()
+  })
+
+  it('marks it done and offers the new state once the student answers', async () => {
+    const user = userEvent.setup()
+    state.views = [am2]
+    state.items = [
+      item('Final AM II', { kind: 'final', curriculumSubjectId: 'am2', dueAt: at(0, 23) }),
+    ]
+    mount()
+
+    await user.click(
+      await screen.findByRole('button', { name: 'Marcar Final AM II como hecho' }),
+    )
+    await user.click(await screen.findByRole('radio', { name: 'Aprobé' }))
+    await user.type(screen.getByLabelText('Nota (opcional)'), '7')
+    await user.click(screen.getByRole('button', { name: 'Guardar' }))
+
+    expect(state.toggle).toHaveBeenCalledWith({ id: 'Final AM II', done: true })
+    expect(state.setStatus).toHaveBeenCalledWith({
+      curriculumSubjectId: 'am2',
+      status: 'passed',
+      grade: 7,
+    })
+  })
+
+  it('changes nothing when the student cancels', async () => {
+    const user = userEvent.setup()
+    state.views = [am2]
+    state.items = [
+      item('Final AM II', { kind: 'final', curriculumSubjectId: 'am2', dueAt: at(0, 23) }),
+    ]
+    mount()
+
+    await user.click(
+      await screen.findByRole('button', { name: 'Marcar Final AM II como hecho' }),
+    )
+    await user.click(await screen.findByRole('button', { name: 'Cancelar' }))
+
+    expect(state.toggle).not.toHaveBeenCalled()
+    expect(state.setStatus).not.toHaveBeenCalled()
   })
 })

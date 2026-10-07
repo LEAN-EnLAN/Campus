@@ -6,11 +6,11 @@ import { EmptyState, ErrorState, LoadingRows } from '@/components/empty-state'
 import { PageHeader, SectionHeading } from '@/components/page-header'
 import { ProgressLine } from '@/components/progress-line'
 import { StatusGlyph } from '@/components/academic-status'
-import { useToast } from '@/components/toast'
 import type { AgendaEntry } from '@/domain/agenda'
 import type { SubjectView } from '@/domain/types'
 import { useAcademicPlan } from '@/features/academic/queries'
-import { useAcademicItems, useToggleAcademicItem } from '@/features/items/queries'
+import { useAcademicItems } from '@/features/items/queries'
+import { useCompleteItem } from '@/features/items/use-complete-item'
 import { buildToday, daysLeftLabel, todayHeadline } from '@/features/items/today-model'
 
 export const Route = createFileRoute('/_app/today')({
@@ -43,8 +43,6 @@ function capitalize(text: string): string {
 function TodayScreen() {
   const plan = useAcademicPlan()
   const itemsQuery = useAcademicItems()
-  const toggleItem = useToggleAcademicItem()
-  const toast = useToast()
 
   // One clock read per render, passed into the pure domain function.
   const now = useMemo(() => new Date(), [])
@@ -72,17 +70,7 @@ function TodayScreen() {
   const subjectName = (id: string | null) =>
     id ? (plan.subjectById.get(id)?.name ?? null) : null
 
-  const complete = (id: string, done: boolean) => {
-    toggleItem.mutate({ id, done })
-    // Finishing something used to make the row vanish and the headline flip with
-    // no word. The way back is the confirmation.
-    if (done) {
-      toast.show({
-        message: 'Hecho',
-        action: { label: 'Deshacer', onAction: () => toggleItem.mutate({ id, done: false }) },
-      })
-    }
-  }
+  const { complete, dialog } = useCompleteItem(subjectName)
 
   const renderRows = (entries: (AgendaEntry & { daysLeft?: number })[], overdue = false) =>
     entries.map((entry) => (
@@ -93,12 +81,13 @@ function TodayScreen() {
         dayLabel={whenLabel(entry)}
         subjectName={subjectName(entry.item.curriculumSubjectId)}
         subjectId={entry.item.curriculumSubjectId}
-        onToggle={(done) => complete(entry.item.id, done)}
+        onToggle={(done) => complete(entry.item, done)}
       />
     ))
 
   return (
     <div className="flex flex-col gap-9">
+      {dialog}
       <PageHeader
         eyebrow={capitalize(DATE_FORMAT.format(now))}
         title={isLoading ? '¿Qué tenés para hoy?' : headline.title}

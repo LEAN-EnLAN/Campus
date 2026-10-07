@@ -19,7 +19,8 @@ import { Button } from '@/components/ui/button'
 import type { AcademicItem } from '@/domain/types'
 import { useAcademicPlan } from '@/features/academic/queries'
 import { dueTimeLabel } from '@/features/items/due'
-import { useAcademicItems, useToggleAcademicItem } from '@/features/items/queries'
+import { useAcademicItems } from '@/features/items/queries'
+import { useCompleteItem } from '@/features/items/use-complete-item'
 import type { PaletteTheme } from '@/lib/design/palette'
 import { useTheme } from '@/lib/theme/theme-context'
 import { cn } from '@/lib/utils'
@@ -162,7 +163,6 @@ const timeLabel = dueTimeLabel
 export function CampusCalendar() {
   const plan = useAcademicPlan()
   const itemsQuery = useAcademicItems()
-  const toggleItem = useToggleAcademicItem()
   const { theme } = useTheme()
 
   // The ORDER is the colour assignment, so it has to be the plan's own order —
@@ -231,6 +231,10 @@ export function CampusCalendar() {
       ? (plan.subjectById.get(item.curriculumSubjectId)?.name ?? null)
       : null
 
+  const { complete, dialog } = useCompleteItem((id) =>
+    id ? (plan.subjectById.get(id)?.name ?? null) : null,
+  )
+
   const [agendaOpen, setAgendaOpen] = useState(false)
   const mode: Mode = agendaOpen
     ? 'agenda'
@@ -260,6 +264,7 @@ export function CampusCalendar() {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
+      {dialog}
       <CalendarChrome
         // The agenda names its own period in its own header; a month title
         // above it would say something else.
@@ -276,7 +281,7 @@ export function CampusCalendar() {
           items={itemsQuery.data ?? []}
           now={now}
           subjectName={subjectName}
-          onToggle={(item, done) => toggleItem.mutate({ id: item.id, done })}
+          onToggle={complete}
         />
       ) : null}
 
@@ -314,11 +319,7 @@ export function CampusCalendar() {
             <GridChip args={args} subjectName={subjectName} paintFor={paintFor} />
           )}
           eventDetailContent={(args) => (
-            <EventDetail
-              args={args}
-              subjectName={subjectName}
-              onToggle={(id, done) => toggleItem.mutate({ id, done })}
-            />
+            <EventDetail args={args} subjectName={subjectName} onToggle={complete} />
           )}
         />
       </div>
@@ -517,7 +518,7 @@ function EventDetail({
 }: {
   args: EventDetailContentProps
   subjectName: (item: AcademicItem) => string | null
-  onToggle: (id: string, done: boolean) => void
+  onToggle: (item: AcademicItem, done: boolean) => void
 }) {
   const item = itemOf(args.event.meta)
   if (!item) return null
@@ -545,7 +546,7 @@ function EventDetail({
         variant={done ? 'ghost' : 'primary'}
         size="sm"
         onClick={() => {
-          onToggle(item.id, !done)
+          onToggle(item, !done)
           args.onClose?.()
         }}
       >

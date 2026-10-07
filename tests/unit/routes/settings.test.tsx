@@ -13,8 +13,11 @@ import { renderRoute } from '../helpers/render-route'
 vi.mock('@/features/auth/auth-context', () => ({
   useAuth: () => ({ session: null, signOut: vi.fn() }),
 }))
+const plan = vi.hoisted(() => ({
+  value: { hasContext: false } as Record<string, unknown>,
+}))
 vi.mock('@/features/academic/queries', () => ({
-  useAcademicPlan: () => ({ hasContext: false }),
+  useAcademicPlan: () => plan.value,
 }))
 
 const Settings = Route.options.component as () => ReactNode
@@ -98,5 +101,24 @@ describe('accent swatches', () => {
     expect(names.length).toBeGreaterThan(1)
     for (const name of names) expect(name).not.toMatch(/\d/)
     expect(new Set(names).size).toBe(names.length)
+  })
+})
+
+describe('Tu carrera', () => {
+  it('shows the short plan name and keeps the full resolution behind "Ver detalle"', async () => {
+    plan.value = {
+      hasContext: true,
+      context: null,
+      curriculum: {
+        name: 'Plan de Estudios de la Licenciatura (Resolución C.D. N° 850/2023)',
+        version: 'TO 2024',
+        sourceUrl: null,
+      },
+    }
+    mount({ folder: FOLDER, change: vi.fn() }, false)
+
+    expect(await screen.findByText('TO 2024')).toBeInTheDocument()
+    const detail = screen.getByText(/Resolución C.D. N° 850\/2023/).closest('details')!
+    expect(detail.open).toBe(false)
   })
 })

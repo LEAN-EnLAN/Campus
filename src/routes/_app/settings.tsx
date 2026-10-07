@@ -196,9 +196,20 @@ function SettingsScreen() {
             <div className="border-rule-soft flex justify-between gap-4 border-b py-2">
               <dt className="text-ink-muted">Plan</dt>
               <dd className="text-ink text-right">
-                {plan.curriculum?.name ?? plan.context?.unmappedLabel ?? '—'}
+                {plan.curriculum?.version ??
+                  plan.curriculum?.name ??
+                  plan.context?.unmappedLabel ??
+                  '—'}
               </dd>
             </div>
+            {plan.curriculum?.version && plan.curriculum.name ? (
+              <details className="text-ink-muted text-xs">
+                <summary className="min-h-8 cursor-pointer py-1.5 underline-offset-4 hover:underline">
+                  Ver detalle
+                </summary>
+                <p className="pb-1">{plan.curriculum.name}</p>
+              </details>
+            ) : null}
             {plan.curriculum?.sourceUrl ? (
               <div className="border-rule-soft flex justify-between gap-4 border-b py-2">
                 <dt className="text-ink-muted">Fuente</dt>

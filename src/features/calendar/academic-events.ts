@@ -1,6 +1,7 @@
 import { dateToPlainDate, dateToPlainDateTime, type Event } from '@dayflow/react'
 
 import type { AcademicItem } from '@/domain/types'
+import { isDateOnly } from '@/features/items/due'
 
 /**
  * Academic items projected onto a calendar grid.
@@ -41,18 +42,22 @@ function parseDate(value: string | null): Date | null {
   return Number.isNaN(date.getTime()) ? null : date
 }
 
-/** Local midnight means "this day", not "this day at 00:00". */
-function isMidnight(date: Date): boolean {
-  return (
-    date.getHours() === 0 &&
-    date.getMinutes() === 0 &&
-    date.getSeconds() === 0 &&
-    date.getMilliseconds() === 0
-  )
+/** The last instant of `date`'s local day. A deadline block never goes past it. */
+function endOfLocalDay(date: Date): Date {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59)
 }
 
-function addMinutes(date: Date, minutes: number): Date {
-  return new Date(date.getTime() + minutes * 60_000)
+/**
+ * A deadline's box on a time grid, clamped to its own day.
+ *
+ * A time grid needs height, so a typed deadline gets an hour — but a block that
+ * starts at 23:30 must not end on the NEXT day: that is how one exam turned into
+ * two rows, "Starts 23:59" on the 10th and "Ends 00:59" on the 11th.
+ */
+function deadlineEnd(start: Date): Date {
+  const hour = new Date(start.getTime() + DEADLINE_BLOCK_MINUTES * 60_000)
+  const limit = endOfLocalDay(start)
+  return hour.getTime() > limit.getTime() ? limit : hour
 }
 
 export function projectAcademicItems(items: readonly AcademicItem[]): CalendarProjection {
@@ -75,9 +80,11 @@ export function projectAcademicItems(items: readonly AcademicItem[]): CalendarPr
     // is hand-edited, and an inverted range breaks the layout engine.
     const span = due && starts && starts.getTime() < due.getTime() ? { starts, due } : null
 
-    const allDay = !span && isMidnight(anchor)
+    // No span and no typed time: a date, not a moment. Midnight and the
+    // end-of-day the capture form writes both mean "this day" and nothing finer.
+    const allDay = !span && isDateOnly(anchor)
     const start = span ? span.starts : anchor
-    const end = span ? span.due : addMinutes(anchor, DEADLINE_BLOCK_MINUTES)
+    const end = span ? span.due : deadlineEnd(anchor)
 
     events.push({
       sortKey: start.getTime(),

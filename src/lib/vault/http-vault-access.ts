@@ -5,7 +5,7 @@ import type {
   VaultEntry,
   VaultStat,
 } from './vault-access'
-import { VaultConflictError } from './vault-repository'
+import { isVaultErrorCode, VaultConflictError, VaultError, type VaultErrorCode } from './errors'
 
 /**
  * The browser's `VaultAccess`. A thin client, and deliberately nothing more.
@@ -31,33 +31,80 @@ export interface VaultTransport {
   baseUrl: string
 }
 
+/**
+ * POST to the Vault API and read a JSON answer.
+ *
+ * Anything that is not the Vault API answering — a network failure, or a static
+ * host replying with an HTML 404/405 — is `unavailable`, reported as such. The
+ * old `response.json()` surfaced it as `Unexpected token '<'`, which says
+ * nothing a student can act on.
+ */
+async function post<T extends { httpOk?: boolean }>(
+  url: string,
+  token: string,
+  payload: unknown,
+): Promise<T> {
+  let response: Response
+  try {
+    response = await fetch(url, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-campus-capability': token },
+      body: JSON.stringify(payload),
+    })
+  } catch {
+    throw new VaultError('unavailable', 'the Vault API could not be reached')
+  }
+  try {
+    const body = (await response.json()) as T | null
+    if (typeof body !== 'object' || body === null) throw new Error('not an object')
+    return Object.assign(body, { httpOk: response.ok })
+  } catch {
+    throw new VaultError('unavailable', `the Vault API sent no JSON (${response.status})`)
+  }
+}
+
+interface Failure {
+  ok?: boolean
+  code?: string
+  error?: string
+  conflict?: boolean
+  httpOk?: boolean
+}
+
+/** A stable code from whatever the server sent; `unknown` for an older server that sent none. */
+const codeOf = (body: Failure): VaultErrorCode =>
+  isVaultErrorCode(body.code) ? body.code : 'unknown'
+
 async function call(
   transport: VaultTransport,
   op: string,
   payload: Record<string, unknown>,
 ): Promise<unknown> {
-  const response = await fetch(`${transport.baseUrl}/__campus/vault/${transport.vaultId}/op`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json', 'x-campus-capability': transport.token },
-    body: JSON.stringify({ op, ...payload }),
-  })
+  const body = await post<Failure & { value?: unknown }>(
+    `${transport.baseUrl}/__campus/vault/${transport.vaultId}/op`,
+    transport.token,
+    { op, ...payload },
+  )
 
-  const body = (await response.json()) as {
-    ok?: boolean
-    value?: unknown
-    error?: string
-    conflict?: boolean
-    notFound?: boolean
-  }
-
-  if (!response.ok || body.ok === false) {
-    const message = body.error ?? `vault ${op} failed (${response.status})`
+  if (!body.httpOk || body.ok === false) {
+    const detail = body.error ?? `vault ${op} failed`
     // A conflict is not an I/O failure: it means the student has two versions
     // of their own work. Flattening it into a generic Error here would lose the
     // one distinction VAULT-003 exists to preserve, and callers that catch
     // `VaultConflictError` would silently stop working over HTTP.
-    if (body.conflict) throw new VaultConflictError(String(payload.path ?? ''), message)
-    throw new Error(message)
+    if (body.conflict) {
+      const code = codeOf(body)
+      throw new VaultConflictError(
+        String(payload.path ?? ''),
+        detail,
+        code === 'already_exists' ||
+          code === 'destination_exists' ||
+          code === 'conflict_missing'
+          ? code
+          : 'conflict_changed',
+      )
+    }
+    throw new VaultError(codeOf(body), detail)
   }
   return body.value
 }
@@ -89,13 +136,14 @@ export async function openVaultSession(
   token: string,
   path: string,
 ): Promise<{ id: string; name: string }> {
-  const response = await fetch(`${baseUrl}/__campus/vault/open`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json', 'x-campus-capability': token },
-    body: JSON.stringify({ path }),
-  })
-  const payload = (await response.json()) as { id?: string; name?: string; error?: string }
-  if (!response.ok || !payload.id) throw new Error(payload.error ?? 'no pudimos abrir el vault')
+  const payload = await post<Failure & { id?: string; name?: string }>(
+    `${baseUrl}/__campus/vault/open`,
+    token,
+    { path },
+  )
+  if (!payload.httpOk || !payload.id) {
+    throw new VaultError(codeOf(payload), payload.error ?? 'the vault could not be opened')
+  }
   return { id: payload.id, name: payload.name ?? path }
 }
 
@@ -104,11 +152,10 @@ export async function vaultExists(
   token: string,
   path: string,
 ): Promise<boolean> {
-  const response = await fetch(`${baseUrl}/__campus/vault/exists`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json', 'x-campus-capability': token },
-    body: JSON.stringify({ path }),
-  })
-  if (!response.ok) return false
-  return ((await response.json()) as { exists?: boolean }).exists === true
+  const payload = await post<{ exists?: boolean; httpOk?: boolean }>(
+    `${baseUrl}/__campus/vault/exists`,
+    token,
+    { path },
+  ).catch(() => null)
+  return payload?.httpOk === true && payload.exists === true
 }

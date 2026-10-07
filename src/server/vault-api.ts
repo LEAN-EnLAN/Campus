@@ -1,5 +1,7 @@
 import { randomBytes } from 'node:crypto'
 
+import { VaultConflictError, VaultError, vaultErrorFromSystem } from '../lib/vault/errors'
+import type { VaultErrorCode } from '../lib/vault/errors'
 import { nodeFileSystem } from '../lib/vault/node-fs'
 import { VaultRepository } from '../lib/vault/vault-repository'
 
@@ -88,6 +90,14 @@ const json = (status: number, value: unknown, origin?: string): VaultResponse =>
   body: JSON.stringify(value),
 })
 
+/** A refusal in the one shape every failure uses: a code, plus English for logs. */
+const refusal = (
+  status: number,
+  code: VaultErrorCode,
+  message: string,
+  origin?: string,
+): VaultResponse => json(status, { ok: false, code, error: message }, origin)
+
 const header = (req: VaultRequest, name: string): string | null => {
   const value = req.headers[name] ?? req.headers[name.toLowerCase()]
   return typeof value === 'string' ? value : null
@@ -105,8 +115,8 @@ export class VaultSessions {
 
   async open(path: string): Promise<{ id: string; name: string }> {
     const stat = await nodeFileSystem.lstat(path)
-    if (stat === null) throw new Error('vault not found')
-    if (stat.kind !== 'dir') throw new Error('not a directory')
+    if (stat === null) throw new VaultError('folder_not_found', 'vault not found')
+    if (stat.kind !== 'dir') throw new VaultError('folder_not_directory', 'not a directory')
 
     // Resolved once, on the privileged side, and stored resolved — so a symlink
     // swapped in afterwards cannot move the root out from under the repository.
@@ -144,7 +154,7 @@ export async function handleVaultRequest(
   // A same-origin fetch sends no Origin header on some requests, so absence is
   // permitted; a PRESENT and unlisted origin is not.
   if (origin !== null && !allowed) {
-    return json(403, { error: 'origin not allowed' })
+    return refusal(403, 'origin_not_allowed', 'origin not allowed')
   }
 
   if (req.method === 'OPTIONS') {
@@ -161,11 +171,16 @@ export async function handleVaultRequest(
   }
 
   if (header(req, 'x-campus-capability') !== options.token) {
-    return json(401, { error: 'missing or invalid capability' }, allowed ? origin : undefined)
+    return refusal(
+      401,
+      'unauthorized',
+      'missing or invalid capability',
+      allowed ? origin : undefined,
+    )
   }
 
   if (req.method !== 'POST') {
-    return json(405, { error: 'method not allowed' }, allowed ? origin : undefined)
+    return refusal(405, 'bad_request', 'method not allowed', allowed ? origin : undefined)
   }
 
   const reply = (status: number, value: unknown) =>
@@ -175,7 +190,7 @@ export async function handleVaultRequest(
   try {
     payload = JSON.parse(req.body || '{}') as Record<string, unknown>
   } catch {
-    return reply(400, { error: 'invalid JSON' })
+    return reply(400, { ok: false, code: 'bad_request', error: 'invalid JSON' })
   }
 
   const path = req.url.split('?')[0] ?? ''
@@ -184,37 +199,42 @@ export async function handleVaultRequest(
   if (path === `${PREFIX}/open`) {
     const target = payload.path
     if (typeof target !== 'string' || target.length === 0) {
-      return reply(400, { error: 'path required' })
+      return reply(400, { ok: false, code: 'bad_request', error: 'path required' })
     }
     try {
       return reply(200, await sessions.open(target))
     } catch (error) {
-      return reply(404, { error: (error as Error).message })
+      const failure = vaultErrorFromSystem(error)
+      return reply(404, { ok: false, code: failure.code, error: failure.message })
     }
   }
 
   if (path === `${PREFIX}/exists`) {
     const target = payload.path
-    if (typeof target !== 'string') return reply(400, { error: 'path required' })
+    if (typeof target !== 'string') {
+      return reply(400, { ok: false, code: 'bad_request', error: 'path required' })
+    }
     return reply(200, { exists: await sessions.exists(target) })
   }
 
   // --- everything else is vault-scoped and relative -------------------------
   const match = /^\/__campus\/vault\/([A-Za-z0-9_-]+)\/op$/.exec(path)
-  if (!match) return reply(404, { error: 'unknown endpoint' })
+  if (!match) return reply(404, { ok: false, code: 'bad_request', error: 'unknown endpoint' })
 
   const session = sessions.get(match[1]!)
   // An unknown id is refused rather than reopened. Reopening from a payload
   // would put vault selection back in the browser's hands.
-  if (!session) return reply(404, { error: 'unknown vault' })
+  if (!session) return reply(404, { ok: false, code: 'unknown_vault', error: 'unknown vault' })
 
   const op = payload.op
   if (typeof op !== 'string' || !OPERATIONS.includes(op as Operation)) {
-    return reply(400, { error: 'unsupported operation' })
+    return reply(400, { ok: false, code: 'bad_request', error: 'unsupported operation' })
   }
 
   const relative = payload.path
-  if (typeof relative !== 'string') return reply(400, { error: 'path must be a string' })
+  if (typeof relative !== 'string') {
+    return reply(400, { ok: false, code: 'bad_request', error: 'path must be a string' })
+  }
 
   try {
     // Delegated to VaultRepository, the single authority. Nothing here
@@ -225,10 +245,19 @@ export async function handleVaultRequest(
       case 'writeNote': {
         const contents = payload.contents
         const expected = payload.expectedMtimeMs
-        if (typeof contents !== 'string')
-          return reply(400, { error: 'contents must be a string' })
+        if (typeof contents !== 'string') {
+          return reply(400, {
+            ok: false,
+            code: 'bad_request',
+            error: 'contents must be a string',
+          })
+        }
         if (expected !== null && typeof expected !== 'number') {
-          return reply(400, { error: 'expectedMtimeMs must be a number or null' })
+          return reply(400, {
+            ok: false,
+            code: 'bad_request',
+            error: 'expectedMtimeMs must be a number or null',
+          })
         }
         await session.repo.writeNote(relative, contents, expected)
         return reply(200, { ok: true, value: null })
@@ -240,7 +269,9 @@ export async function handleVaultRequest(
         return reply(200, { ok: true, value: null })
       case 'rename': {
         const to = payload.to
-        if (typeof to !== 'string') return reply(400, { error: 'to must be a string' })
+        if (typeof to !== 'string') {
+          return reply(400, { ok: false, code: 'bad_request', error: 'to must be a string' })
+        }
         await session.repo.rename(relative, to)
         return reply(200, { ok: true, value: null })
       }
@@ -250,22 +281,28 @@ export async function handleVaultRequest(
         return reply(200, { ok: true, value: await session.repo.stat(relative) })
     }
   } catch (error) {
-    const message = (error as Error).message
+    // Everything that leaves here is a CODE plus a path-free English line. A
+    // raw `fs` error is never forwarded: its message carries the absolute host
+    // path (`ENOENT … rename '/home/…'`), which the page has no business seeing.
+    const failure = vaultErrorFromSystem(error)
 
     // A file that is not there yet is the ORDINARY state of a fresh vault, not
     // a protocol error. Reporting it as 400 made every startup log a client
     // error for reading a note nobody has written, which trains everyone to
     // ignore 400s from this endpoint — including the security refusals.
-    const notFound = /: not found$/.test(message)
+    const notFound = failure.code === 'not_found'
 
-    // Security refusals travel verbatim. Softening "path resolves outside the
-    // vault" into a generic I/O error would hide the one message that explains
-    // it, and let a caller mistake a refusal for a transient failure.
+    // Security refusals keep their own code. Softening `outside_vault` into a
+    // generic I/O error would hide the one thing that explains it, and let a
+    // caller mistake a refusal for a transient failure.
     return reply(notFound ? 200 : 400, {
       ok: false,
       notFound,
-      error: message,
-      conflict: (error as Error).name === 'VaultConflictError',
+      code: failure.code,
+      // A conflict's detail already says what happened; the path is not part
+      // of it, because the caller knows which path it asked about.
+      error: failure instanceof VaultConflictError ? failure.detail : failure.message,
+      conflict: failure instanceof VaultConflictError,
     })
   }
 }

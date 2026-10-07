@@ -24,6 +24,7 @@ Campus/
     │   ├── context.json       which institution/carrera/plan this student picked
     │   ├── curriculum.json    the selected plan, copied in with its provenance
     │   ├── subject-state.json what the student has passed / is cursando
+    │   ├── manual-subjects.json subjects typed in by hand (carrera not in the catalog)
     │   └── items.json         deadlines, parciales, entregas
     ├── settings.json          vault-scoped preferences
     ├── layouts.json           workspace layout
@@ -67,7 +68,7 @@ in LOCAL mode.
 
 ## `academic/`
 
-The whole point of Campus lives here, and it is four readable JSON files.
+The whole point of Campus lives here, and it is a handful of readable JSON files.
 
 `context.json` — what the student picked in onboarding:
 
@@ -140,6 +141,38 @@ does not have. This is the same invariant the cloud backend carries.
   ]
 }
 ```
+
+`manual-subjects.json` exists only when the student's carrera is not in the catalog
+(`context.json` has `curriculumId: null` and an `unmappedLabel`). It holds the subjects they
+typed in. Like every academic file it is an envelope: `schemaVersion` plus one payload key.
+A manual subject owns its status, because there is no curriculum row for a state to point at:
+
+```json
+{
+  "schemaVersion": 1,
+  "subjects": [
+    {
+      "id": "01J9X8QK7M3T4V5W6Y7Z8A9B0C",
+      "name": "Cálculo 1",
+      "yearLevel": 1,
+      "term": "1c",
+      "status": "passed",
+      "grade": 8
+    }
+  ]
+}
+```
+
+- `term` is `anual`, `1c` or `2c`. `yearLevel` is an integer from 1 to 10. `name` is 1-200
+  characters after trimming.
+- `status` is `null` (Sin marcar) or one of the stored statuses: `in_progress`,
+  `regularized`, `passed`, `failed`, `equivalent`. `grade` is `null` or a number.
+- **Manual subjects carry no correlativas and no availability.** There is no `prerequisites`
+  key, and Campus never derives "disponible" or "bloqueada" for them: they are either marked
+  or "Sin marcar". Entregas and material attached to one use its `id` as their `subjectId`.
+- Removing a manual subject deletes only its entry here. Its entregas and material stay.
+- In the cloud the same facts live in `user_manual_subjects`, with the same RLS as every
+  other user table. Ids are ULIDs here and UUIDs there; they are not interchangeable.
 
 IDs are ULIDs minted locally. **They are not Postgres UUIDs and the formats must not be
 assumed interchangeable** — a future sync maps between them explicitly.

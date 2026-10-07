@@ -27,6 +27,12 @@ const DEFAULTS: Record<string, () => Row> = {
     completed_at: null,
     notes: null,
   }),
+  user_manual_subjects: () => ({
+    term: 'anual',
+    status: null,
+    grade: null,
+    created_at: new Date().toISOString(),
+  }),
   user_academic_contexts: () => ({
     institution_id: null,
     academic_unit_id: null,
@@ -66,9 +72,11 @@ export function createFakeSupabase(userId = 'user-1'): FakeSupabase {
     let payload: Row | Row[] | null = null
     let onConflict: string[] = []
     const filters: [string, unknown][] = []
+    const inFilters: [string, unknown[]][] = []
     let wantsRow: 'single' | 'maybe' | null = null
 
-    const matches = (r: Row) => filters.every(([c, v]) => r[c] === v)
+    const matches = (r: Row) =>
+      filters.every(([c, v]) => r[c] === v) && inFilters.every(([c, vs]) => vs.includes(r[c]))
 
     function run(): Result {
       const fail = (message: string): Result => ({ data: null, error: { message } })
@@ -89,11 +97,16 @@ export function createFakeSupabase(userId = 'user-1'): FakeSupabase {
       }
 
       if (op === 'upsert') {
-        const incoming = payload as Row
-        const existing = target.find((r) => onConflict.every((c) => r[c] === incoming[c]))
-        if (existing) Object.assign(existing, incoming)
-        else
-          target.push({ id: `${table}-${++seq}`, ...(DEFAULTS[table]?.() ?? {}), ...incoming })
+        for (const incoming of Array.isArray(payload) ? payload : [payload as Row]) {
+          const existing = target.find((r) => onConflict.every((c) => r[c] === incoming[c]))
+          if (existing) Object.assign(existing, incoming)
+          else
+            target.push({
+              id: `${table}-${++seq}`,
+              ...(DEFAULTS[table]?.() ?? {}),
+              ...incoming,
+            })
+        }
         return respond([])
       }
 
@@ -131,7 +144,7 @@ export function createFakeSupabase(userId = 'user-1'): FakeSupabase {
       select: () => builder,
       insert: (p: Row | Row[]) => ((op = 'insert'), (payload = p), builder),
       update: (p: Row) => ((op = 'update'), (payload = p), builder),
-      upsert: (p: Row, opts?: { onConflict?: string }) => (
+      upsert: (p: Row | Row[], opts?: { onConflict?: string }) => (
         (op = 'upsert'),
         (payload = p),
         (onConflict = (opts?.onConflict ?? 'id').split(',')),
@@ -139,6 +152,7 @@ export function createFakeSupabase(userId = 'user-1'): FakeSupabase {
       ),
       delete: () => ((op = 'delete'), builder),
       eq: (column: string, value: unknown) => (filters.push([column, value]), builder),
+      in: (column: string, values: unknown[]) => (inFilters.push([column, values]), builder),
       order: () => builder,
       limit: () => builder,
       single: () => ((wantsRow = 'single'), builder),

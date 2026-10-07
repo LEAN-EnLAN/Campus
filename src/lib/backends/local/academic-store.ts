@@ -2,7 +2,7 @@ import { backendError } from '@/lib/backends/types'
 import type { VaultAccess } from '@/lib/vault/vault-access'
 
 /**
- * The four academic files, and the only way they are ever changed.
+ * The academic files, and the only way they are ever changed.
  *
  * Every mutation is read → validate → derive the next whole value → atomic
  * write, on ONE file. Nothing here touches two files, because a "transaction"
@@ -20,7 +20,8 @@ export const SCHEMA_VERSION = 1
 
 const DIR = '.campus/academic'
 
-export type AcademicFile = 'context' | 'subject-state' | 'items' | 'resources'
+export type AcademicFile =
+  'context' | 'subject-state' | 'items' | 'resources' | 'manual-subjects'
 
 /** Every file is an envelope, so the payload can change shape without ambiguity. */
 interface Envelope<T> {

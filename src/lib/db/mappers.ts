@@ -5,6 +5,7 @@ import type {
   Curriculum,
   CurriculumSubject,
   Institution,
+  ManualSubject,
   PrerequisiteEdge,
   Program,
   Resource,
@@ -86,9 +87,20 @@ export interface UserSubjectStateRow {
   notes: string | null
 }
 
+export interface ManualSubjectRow {
+  id: string
+  name: string
+  year_level: number
+  term: ManualSubject['term']
+  status: ManualSubject['status']
+  grade: number | string | null
+}
+
 export interface AcademicItemRow {
   id: string
   curriculum_subject_id: string | null
+  /** Set instead of `curriculum_subject_id` when the subject is one typed in by hand. */
+  manual_subject_id?: string | null
   kind: AcademicItem['kind']
   title: string
   starts_at: string | null
@@ -100,6 +112,7 @@ export interface AcademicItemRow {
 export interface ResourceRow {
   id: string
   curriculum_subject_id: string | null
+  manual_subject_id?: string | null
   kind: Resource['kind']
   title: string
   url: string | null
@@ -204,10 +217,21 @@ export function toUserSubjectState(row: UserSubjectStateRow): UserSubjectState {
   }
 }
 
+export function toManualSubject(row: ManualSubjectRow): ManualSubject {
+  return {
+    id: row.id,
+    name: row.name,
+    yearLevel: row.year_level,
+    term: row.term,
+    status: row.status,
+    grade: toNumber(row.grade),
+  }
+}
+
 export function toAcademicItem(row: AcademicItemRow): AcademicItem {
   return {
     id: row.id,
-    curriculumSubjectId: row.curriculum_subject_id,
+    curriculumSubjectId: row.curriculum_subject_id ?? row.manual_subject_id ?? null,
     kind: row.kind,
     title: row.title,
     startsAt: row.starts_at,
@@ -220,7 +244,7 @@ export function toAcademicItem(row: AcademicItemRow): AcademicItem {
 export function toResource(row: ResourceRow): Resource {
   return {
     id: row.id,
-    curriculumSubjectId: row.curriculum_subject_id,
+    curriculumSubjectId: row.curriculum_subject_id ?? row.manual_subject_id ?? null,
     kind: row.kind,
     title: row.title,
     url: row.url,

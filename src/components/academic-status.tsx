@@ -31,6 +31,11 @@ export function statusLabel(status: SubjectStatus): string {
   return STATUS[status].label
 }
 
+/** The glyph character, for controls that colour it themselves. */
+export function statusGlyph(status: SubjectStatus): string {
+  return STATUS[status].glyph
+}
+
 /**
  * The status glyph on its own.
  *

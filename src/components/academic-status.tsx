@@ -1,5 +1,6 @@
 import { Lock } from 'lucide-react'
 
+import { statusLabel } from '@/domain/status-groups'
 import type { SubjectStatus } from '@/domain/types'
 import { cn } from '@/lib/utils'
 
@@ -12,24 +13,22 @@ import { cn } from '@/lib/utils'
 
 interface StatusSpec {
   glyph: string
-  label: string
   className: string
 }
 
 const STATUS: Record<SubjectStatus, StatusSpec> = {
-  passed: { glyph: '✓', label: 'Aprobada', className: 'text-success' },
-  equivalent: { glyph: '≡', label: 'Equivalencia', className: 'text-success' },
-  in_progress: { glyph: '●', label: 'Cursando', className: 'text-accent-ink' },
-  regularized: { glyph: '◐', label: 'Regularizada', className: 'text-accent-ink' },
-  available: { glyph: '○', label: 'Disponible para cursar', className: 'text-ink' },
-  pending: { glyph: '◌', label: 'Sin marcar', className: 'text-ink-muted' },
-  blocked: { glyph: '', label: 'Bloqueada', className: 'text-ink-muted' },
-  failed: { glyph: '✕', label: 'Desaprobada', className: 'text-danger' },
+  passed: { glyph: '✓', className: 'text-success-ink' },
+  equivalent: { glyph: '≡', className: 'text-success-ink' },
+  in_progress: { glyph: '●', className: 'text-accent-ink' },
+  regularized: { glyph: '◐', className: 'text-accent-ink' },
+  available: { glyph: '○', className: 'text-ink' },
+  pending: { glyph: '◌', className: 'text-ink-muted' },
+  blocked: { glyph: '', className: 'text-ink-muted' },
+  failed: { glyph: '✕', className: 'text-danger' },
 }
 
-export function statusLabel(status: SubjectStatus): string {
-  return STATUS[status].label
-}
+// The wording lives in the domain; re-exported so screens keep one import.
+export { statusLabel }
 
 /**
  * The status glyph on its own.
@@ -73,7 +72,7 @@ export function AcademicStatus({
   return (
     <span className={cn('inline-flex items-center gap-1.5 text-xs', spec.className, className)}>
       <StatusGlyph status={status} />
-      {spec.label}
+      {statusLabel(status)}
     </span>
   )
 }

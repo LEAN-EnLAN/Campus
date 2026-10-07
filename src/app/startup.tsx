@@ -214,9 +214,14 @@ export function Startup() {
           </div>
           {/* Always in the page, with a line of height reserved: the card is
               vertically centred, so an error that ADDED a line moved everything
-              up. Being a live region from the start, the sentence is announced
-              when it appears. */}
-          <p id="vault-path-error" role="alert" className="text-danger min-h-5 text-sm">
+              up. It only becomes role="alert" while there is a sentence, so the
+              page never carries an empty alert next to another one (the Cloud
+              section's); an alert inserted with its text is announced on insertion. */}
+          <p
+            id="vault-path-error"
+            role={error ? 'alert' : undefined}
+            className="text-danger min-h-5 text-sm"
+          >
             {error}
           </p>
         </form>

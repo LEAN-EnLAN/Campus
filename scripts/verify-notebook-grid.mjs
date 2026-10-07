@@ -90,7 +90,15 @@ try {
   const opener = page.getByLabel('Ruta de la carpeta')
   await page.goto(`${server.url}/vault`, { waitUntil: 'domcontentloaded' })
   await page.waitForTimeout(2500)
-  if (await opener.isVisible().catch(() => false)) {
+  // The chooser shows the typed path directly, or behind its toggle.
+  const toggle = page.getByRole('button', { name: 'Escribir la ruta a mano' })
+  if (
+    await opener
+      .or(toggle)
+      .first()
+      .isVisible()
+      .catch(() => false)
+  ) {
     await openFolderByPath(page, VAULT)
     // Wait on the workspace, not on a URL: where the app lands after opening a
     // vault is a product decision this check has no business encoding.

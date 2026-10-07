@@ -187,12 +187,14 @@ export function computeSubjectViews({
 
     // A `to_take` gap is what actually blocks a cursada. A `to_pass` gap only
     // matters at final time and must not hide the subject from the plan.
-    const blockedToTake = missing.some((m) => m.kind === 'to_take')
+    const blockedToTake = subject.manual !== true && missing.some((m) => m.kind === 'to_take')
 
     // `available` is a claim: "nothing stops you from taking this today". It is
     // only made when we KNOW the plan's correlativas, and never for an elective
     // slot, which is a placeholder for a choice rather than a subject to take.
-    const claimsNothing = !prerequisitesKnown || subject.elective
+    // A subject typed in by hand has no correlativas to compute from, so it
+    // claims nothing either way.
+    const claimsNothing = !prerequisitesKnown || subject.elective || subject.manual === true
     const status: SubjectStatus =
       stored ?? (blockedToTake ? 'blocked' : claimsNothing ? 'pending' : 'available')
 

@@ -63,6 +63,11 @@ export interface CurriculumSubject {
   credits: number | null
   elective: boolean
   displayOrder: number
+  /**
+   * The student typed this subject in because their carrera is not in Campus.
+   * A manual subject carries no correlativas and never gets an availability claim.
+   */
+  manual?: boolean
 }
 
 export type PrerequisiteKind = 'to_take' | 'to_pass' | 'recommended'
@@ -99,6 +104,20 @@ export interface UserSubjectState {
   startedAt: string | null
   completedAt: string | null
   notes: string | null
+}
+
+/**
+ * A subject the student added by hand (their carrera is not in the catalog).
+ *
+ * It owns its status: there is no curriculum row for a state to point at.
+ */
+export interface ManualSubject {
+  id: string
+  name: string
+  yearLevel: number
+  term: Term
+  status: StoredSubjectStatus | null
+  grade: number | null
 }
 
 export type AcademicItemKind =

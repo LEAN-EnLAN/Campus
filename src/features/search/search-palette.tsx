@@ -1,13 +1,15 @@
 import { useNavigate } from '@tanstack/react-router'
-import { BookMarked, CalendarClock, Link2, Search as SearchIcon } from 'lucide-react'
+import { BookMarked, CalendarClock, FileText, Link2, Search as SearchIcon } from 'lucide-react'
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
 
-import { search, type SearchResult, type SearchResultKind } from '@/domain/search'
+import { noteResults, search, type SearchResult, type SearchResultKind } from '@/domain/search'
 import type { AcademicItem, Resource, SubjectView } from '@/domain/types'
+import { useNoteSearch } from '@/lib/knowledge/use-note-search'
 import { cn } from '@/lib/utils'
 
 /**
- * CAP-SEARCH-001 — find a materia, task or resource by partial text.
+ * CAP-SEARCH-001 — find a materia, task, resource or (with a Vault) note by
+ * partial text.
  *
  * A combobox, wired the way the ARIA pattern says: the input keeps focus and owns
  * `aria-activedescendant`, so arrow keys move the highlight without ever moving
@@ -18,6 +20,7 @@ const ICON: Record<SearchResultKind, typeof BookMarked> = {
   subject: BookMarked,
   item: CalendarClock,
   resource: Link2,
+  note: FileText,
 }
 
 export function SearchPalette({
@@ -26,12 +29,15 @@ export function SearchPalette({
   subjects,
   items,
   resources,
+  prerequisitesKnown = true,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
   subjects: readonly SubjectView[]
   items: readonly AcademicItem[]
   resources: readonly Resource[]
+  /** Whether the plan's correlativas are known; unknown ones never read as "Disponible". */
+  prerequisitesKnown?: boolean
 }) {
   const navigate = useNavigate()
   const listId = useId()
@@ -41,10 +47,17 @@ export function SearchPalette({
   const [query, setQuery] = useState('')
   const [active, setActive] = useState(0)
 
-  const results = useMemo(
-    () => (query.trim().length < 2 ? [] : search({ subjects, items, resources }, query)),
-    [query, subjects, items, resources],
-  )
+  // Notes come from the shared note index (built once per session, queried in
+  // memory); without a Vault there is no such thing and nothing about notes shows.
+  const notes = useNoteSearch(open)
+
+  const results = useMemo(() => {
+    if (query.trim().length < 2) return []
+    return [
+      ...search({ subjects, items, resources, prerequisitesKnown }, query),
+      ...noteResults(notes.search(query)),
+    ]
+  }, [query, subjects, items, resources, prerequisitesKnown, notes.search])
 
   useEffect(() => {
     if (!open) return
@@ -67,6 +80,8 @@ export function SearchPalette({
     onOpenChange(false)
     if (result.kind === 'subject') {
       void navigate({ to: '/courses/$courseId', params: { courseId: result.id } })
+    } else if (result.kind === 'note') {
+      void navigate({ to: '/vault', search: { note: result.id } })
     } else if (result.kind === 'item') {
       void navigate({ to: '/calendar' })
     } else {
@@ -119,8 +134,16 @@ export function SearchPalette({
             aria-activedescendant={
               results.length > 0 ? `${listId}-option-${active}` : undefined
             }
-            aria-label="Buscar materias, entregas y material"
-            placeholder="Buscar materias, entregas, material…"
+            aria-label={
+              notes.available
+                ? 'Buscar materias, entregas, material y notas'
+                : 'Buscar materias, entregas y material'
+            }
+            placeholder={
+              notes.available
+                ? 'Buscar materias, entregas, material, notas…'
+                : 'Buscar materias, entregas, material…'
+            }
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={onKeyDown}

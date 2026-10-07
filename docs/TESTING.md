@@ -149,6 +149,21 @@ Lo que estás aceptando al setearla: por primera vez la API de archivos responde
 que no es la propia máquina. Un dispositivo tuyo comprometido en el tailnet puede leer y
 escribir tu Vault. Sigue sin ser `funnel`.
 
+### Qué carpetas puede abrir la API
+
+La API sólo abre carpetas **dentro de tu carpeta personal** (`$HOME`); `/`, `/etc` o `~/.ssh`
+se rechazan, y `exists` responde `false` para todo lo que quede afuera, exista o no. Para
+abrir Vaults en otro lugar, listá las raíces a mano, separadas por el delimitador de rutas del
+sistema (`:` en Linux/macOS, `;` en Windows):
+
+```bash
+CAMPUS_VAULT_ALLOWED_ROOTS=/srv/vaults:/mnt/usb pnpm dev
+```
+
+La lista **reemplaza** al default (no lo suma), tira las entradas que no sean rutas absolutas o
+que sean la raíz del disco, y avisa por consola cuál tiró. Si no queda ninguna, no se puede
+abrir ninguna carpeta. Un enlace simbólico dentro de una raíz que apunte afuera también se rechaza.
+
 ## Barrido automático de todo el frontend
 
 ```bash

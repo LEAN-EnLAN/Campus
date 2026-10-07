@@ -63,7 +63,7 @@ beforeEach(async () => {
   mkdirSync(outside, { recursive: true })
   writeFileSync(join(outside, 'secret.txt'), 'not yours\n')
 
-  sessions = new VaultSessions()
+  sessions = new VaultSessions({ allowedRoots: [tmpdir()] })
   vaultId = (await sessions.open(root)).id
 })
 

@@ -8,10 +8,12 @@ import { markdown, markdownLanguage } from '@codemirror/lang-markdown'
 import { languages } from '@codemirror/language-data'
 import { search, searchKeymap } from '@codemirror/search'
 import { EditorState } from '@codemirror/state'
-import { EditorView, keymap } from '@codemirror/view'
+import { EditorView, keymap, placeholder } from '@codemirror/view'
 import { useEffect, useRef, useState } from 'react'
 
 import { useFiles } from '@/lib/files/context'
+import { vaultErrorMessage } from '@/lib/files/errors'
+import { NoteAutosave, type SaveState } from '@/lib/workspace/autosave'
 
 import { campusEditorTheme, campusHighlight } from './editor-theme'
 
@@ -19,24 +21,24 @@ import { campusEditorTheme, campusHighlight } from './editor-theme'
  * The note editor. CodeMirror 6 over one vault note, with autosave that never
  * lies and never loses.
  *
- * The save loop is the part worth reading:
- *
- *   edit → debounce 800ms → writeNote(contents, knownMtime) → stat → new mtime
- *
- * `writeNote` is VAULT-003's conflict check — it refuses if the file changed on
- * disk after we loaded it. So a save can FAIL BY DESIGN, and the states below
- * ('conflict', 'external') exist because a vault is edited by text editors,
- * `git checkout` and the student's own `mv`. External change is normal; losing
- * either version silently is the only forbidden outcome.
+ * The save loop lives in `lib/workspace/autosave.ts` — read its header for the
+ * rules. This component is the wiring: it feeds document changes in, shows the
+ * state out, and lends the workspace a handle so a tab is never closed on top of
+ * edits that have not reached the disk.
  */
 
-export type SaveState =
-  | { kind: 'saved' }
-  | { kind: 'dirty' }
-  | { kind: 'saving' }
-  | { kind: 'error'; message: string }
-  /** The file changed on disk AND we hold unsaved edits. The student decides. */
-  | { kind: 'conflict' }
+export type { SaveState }
+
+/**
+ * What the workspace may ask of an open editor. `flush` resolves when
+ * everything typed so far is on disk or has definitively failed; `unsaved`
+ * then says which.
+ */
+export interface EditorHandle {
+  path: string
+  flush(): Promise<void>
+  unsaved(): boolean
+}
 
 const STATUS_LABEL: Record<SaveState['kind'], string> = {
   saved: 'Guardado',
@@ -44,17 +46,19 @@ const STATUS_LABEL: Record<SaveState['kind'], string> = {
   saving: 'Guardando…',
   error: 'Error al guardar',
   conflict: 'Cambió afuera',
+  missing: 'Sin archivo',
 }
 
 /** How often the open document re-checks the disk underneath it. */
 const EXTERNAL_POLL_MS = 5_000
-const AUTOSAVE_MS = 800
 
 export function NoteEditor({
   path,
   onWikilink,
   wikilinkTargets,
   onSaved,
+  registerEditor,
+  onClose,
 }: {
   path: string
   /** Navigate to a [[target]]. The workspace decides what opening means. */
@@ -63,59 +67,28 @@ export function NoteEditor({
   wikilinkTargets?: () => { label: string; detail?: string }[]
   /** Fired after a successful save, so the knowledge index stays incremental. */
   onSaved?: (path: string, contents: string) => void
+  /** Lend the workspace a handle for flush-before-close. Returns the unregister. */
+  registerEditor?: (handle: EditorHandle) => () => void
+  /** The student chose to close this note from the editor itself. */
+  onClose?: () => void
 }) {
   const files = useFiles()
   const hostRef = useRef<HTMLDivElement | null>(null)
-  const viewRef = useRef<EditorView | null>(null)
-  /** The mtime our next save must present. Mutated by load/save/adopt, never by render. */
-  const mtimeRef = useRef<number>(0)
-  const dirtyRef = useRef(false)
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const autosaveRef = useRef<NoteAutosave | null>(null)
 
   const [status, setStatus] = useState<SaveState>({ kind: 'saved' })
   const [loadError, setLoadError] = useState<string | null>(null)
 
-  // Kept in refs for the callbacks below; state alone would capture stale values
-  // inside CodeMirror's update listener, which outlives every render.
-  const statusRef = useRef(status)
-  statusRef.current = status
+  // The callbacks are read through a ref so the editor's lifecycle depends on
+  // the note it edits and nothing else: a parent that re-renders with a new
+  // function must not tear down a document with unsaved text in it.
+  const props = useRef({ onWikilink, wikilinkTargets, onSaved, registerEditor })
+  props.current = { onWikilink, wikilinkTargets, onSaved, registerEditor }
 
   useEffect(() => {
     if (!files || !hostRef.current) return
     let disposed = false
-
-    const save = async (view: EditorView) => {
-      if (!dirtyRef.current || statusRef.current.kind === 'conflict') return
-      setStatus({ kind: 'saving' })
-      const contents = view.state.doc.toString()
-      try {
-        await files.writeNote(path, contents, mtimeRef.current)
-        // Adopt the mtime our own write produced, so the next save presents it.
-        const fresh = await files.stat(path)
-        if (fresh) mtimeRef.current = fresh.mtimeMs
-        dirtyRef.current = false
-        if (!disposed) setStatus({ kind: 'saved' })
-        onSaved?.(path, contents)
-      } catch (error) {
-        if (disposed) return
-        const message = (error as Error).message
-        // A conflict is not an error to retry: the student has two versions of
-        // their own work, and retrying would just refuse again.
-        if (
-          (error as Error).name === 'VaultConflictError' ||
-          /changed on disk|cambió/i.test(message)
-        ) {
-          setStatus({ kind: 'conflict' })
-        } else {
-          setStatus({ kind: 'error', message })
-        }
-      }
-    }
-
-    const scheduleSave = (view: EditorView) => {
-      if (timerRef.current) clearTimeout(timerRef.current)
-      timerRef.current = setTimeout(() => void save(view), AUTOSAVE_MS)
-    }
+    let autosave: NoteAutosave | null = null
 
     const wikilinkComplete = (context: CompletionContext) => {
       // Trigger only right after `[[` — a Markdown note is prose, and popping
@@ -123,7 +96,7 @@ export function NoteEditor({
       const before = context.matchBefore(/\[\[[^\]]*/)
       if (!before) return null
       const query = before.text.slice(2)
-      const targets = wikilinkTargets?.() ?? []
+      const targets = props.current.wikilinkTargets?.() ?? []
       return {
         from: before.from + 2,
         options: targets
@@ -143,14 +116,20 @@ export function NoteEditor({
           campusEditorTheme,
           campusHighlight,
           EditorView.lineWrapping,
+          // The editing surface is a textbox with no label of its own: without
+          // this a screen reader announces "edit text, blank".
+          EditorView.contentAttributes.of({
+            'aria-label': 'Contenido de la nota',
+            'aria-multiline': 'true',
+          }),
+          placeholder('Escribí acá…'),
           search({ top: true }),
           autocompletion({ override: [wikilinkComplete] }),
           keymap.of([
             {
               key: 'Mod-s',
-              run: (v) => {
-                if (timerRef.current) clearTimeout(timerRef.current)
-                void save(v)
+              run: () => {
+                void autosave?.save()
                 return true
               },
             },
@@ -161,17 +140,14 @@ export function NoteEditor({
             indentWithTab,
           ]),
           EditorView.updateListener.of((update) => {
-            if (update.docChanged) {
-              dirtyRef.current = true
-              if (statusRef.current.kind !== 'conflict') setStatus({ kind: 'dirty' })
-              scheduleSave(update.view)
-            }
+            if (update.docChanged) autosave?.edited()
           }),
           EditorView.domEventHandlers({
             click: (event, v) => {
               // Mod+click on a [[wikilink]] navigates. Plain click keeps editing —
               // a note is for writing first.
-              if (!(event.metaKey || event.ctrlKey) || !onWikilink) return false
+              const navigate = props.current.onWikilink
+              if (!(event.metaKey || event.ctrlKey) || !navigate) return false
               const pos = v.posAtCoords({ x: event.clientX, y: event.clientY })
               if (pos == null) return false
               const line = v.state.doc.lineAt(pos)
@@ -181,7 +157,7 @@ export function NoteEditor({
                 const start = line.from + match.index
                 const end = start + match[0].length
                 if (pos >= start && pos <= end) {
-                  onWikilink(match[1]!.trim())
+                  navigate(match[1]!.trim())
                   return true
                 }
               }
@@ -191,84 +167,52 @@ export function NoteEditor({
         ],
       }),
     })
-    viewRef.current = view
 
-    void files
-      .readNote(path)
-      .then((note) => {
-        if (disposed) return
-        mtimeRef.current = note.mtimeMs
-        view.dispatch({
-          changes: { from: 0, to: view.state.doc.length, insert: note.contents },
-        })
-        dirtyRef.current = false
-        setStatus({ kind: 'saved' })
-      })
-      .catch((error) => {
-        if (!disposed) setLoadError((error as Error).message)
-      })
+    autosave = new NoteAutosave({
+      files,
+      path,
+      host: {
+        readText: () => view.state.doc.toString(),
+        replaceText: (text) =>
+          view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: text } }),
+      },
+      onState: (next) => {
+        if (!disposed) setStatus(next)
+      },
+      onSaved: (savedPath, contents) => props.current.onSaved?.(savedPath, contents),
+    })
+    autosaveRef.current = autosave
+    const unregister = props.current.registerEditor?.({
+      path,
+      flush: () => autosave.flush(),
+      unsaved: () => autosave.unsaved(),
+    })
+
+    void autosave.load().catch((error) => {
+      if (!disposed) setLoadError(vaultErrorMessage(error))
+    })
 
     // The disk under an open document is not ours alone. Poll its mtime (and
     // re-check on window focus, the moment a student returns from their other
     // editor). Clean reload when we hold no edits; a decision when we do.
-    const checkExternal = async () => {
-      if (disposed || statusRef.current.kind === 'saving') return
-      try {
-        const fresh = await files.stat(path)
-        if (disposed || !fresh || fresh.mtimeMs === mtimeRef.current) return
-        if (!dirtyRef.current) {
-          const note = await files.readNote(path)
-          if (disposed) return
-          mtimeRef.current = note.mtimeMs
-          view.dispatch({
-            changes: { from: 0, to: view.state.doc.length, insert: note.contents },
-          })
-          setStatus({ kind: 'saved' })
-        } else {
-          setStatus({ kind: 'conflict' })
-        }
-      } catch {
-        // A transient stat failure must not spam the student; the next poll retries.
-      }
-    }
-    const interval = setInterval(() => void checkExternal(), EXTERNAL_POLL_MS)
-    const onFocus = () => void checkExternal()
+    const interval = setInterval(() => void autosave.checkExternal(), EXTERNAL_POLL_MS)
+    const onFocus = () => void autosave.checkExternal()
     window.addEventListener('focus', onFocus)
 
     return () => {
       disposed = true
-      if (timerRef.current) clearTimeout(timerRef.current)
+      unregister?.()
+      // Whatever is still unsaved is written before the view disappears. The
+      // workspace awaits `flush()` first where it can warn; this is the net
+      // under every path that unmounts without asking (route change, pane close).
+      autosave.disposeAndFlush()
       clearInterval(interval)
       window.removeEventListener('focus', onFocus)
       view.destroy()
-      viewRef.current = null
+      autosaveRef.current = null
     }
     // The editor's whole lifecycle is keyed to the note it edits.
-  }, [files, path, onWikilink, wikilinkTargets, onSaved])
-
-  const resolveConflict = async (keepMine: boolean) => {
-    const view = viewRef.current
-    if (!files || !view) return
-    if (keepMine) {
-      // Adopt the disk's current mtime as our base, so OUR version wins the
-      // next write. Explicit choice — never the silent default.
-      const fresh = await files.stat(path)
-      if (fresh) mtimeRef.current = fresh.mtimeMs
-      dirtyRef.current = true
-      setStatus({ kind: 'dirty' })
-      await files.writeNote(path, view.state.doc.toString(), mtimeRef.current)
-      const after = await files.stat(path)
-      if (after) mtimeRef.current = after.mtimeMs
-      dirtyRef.current = false
-      setStatus({ kind: 'saved' })
-    } else {
-      const note = await files.readNote(path)
-      mtimeRef.current = note.mtimeMs
-      view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: note.contents } })
-      dirtyRef.current = false
-      setStatus({ kind: 'saved' })
-    }
-  }
+  }, [files, path])
 
   if (!files) {
     return (
@@ -287,6 +231,8 @@ export function NoteEditor({
     )
   }
 
+  const autosave = autosaveRef.current
+
   return (
     <div className="flex h-full min-h-0 flex-col">
       {status.kind === 'conflict' && (
@@ -295,32 +241,44 @@ export function NoteEditor({
           className="border-warning/40 bg-warning/5 flex flex-wrap items-center gap-2 border-b px-4 py-2 text-sm"
         >
           <span className="font-medium">Este archivo cambió fuera de Campus.</span>
-          <button
-            type="button"
-            onClick={() => void resolveConflict(false)}
-            className="border-rule rounded-md border px-2 py-0.5 text-xs"
-          >
+          <BannerButton onClick={() => void autosave?.reload()}>
             Recargar del disco
-          </button>
-          <button
-            type="button"
-            onClick={() => void resolveConflict(true)}
-            className="border-rule rounded-md border px-2 py-0.5 text-xs"
-          >
+          </BannerButton>
+          <BannerButton onClick={() => void autosave?.keepMine()}>
             Conservar mi versión
-          </button>
+          </BannerButton>
+        </div>
+      )}
+      {status.kind === 'missing' && (
+        <div
+          role="alert"
+          className="border-warning/40 bg-warning/5 flex flex-wrap items-center gap-2 border-b px-4 py-2 text-sm"
+        >
+          <span className="font-medium">Esta nota se movió o se eliminó.</span>
+          <BannerButton onClick={() => void autosave?.saveAsNew()}>
+            Guardar como nueva
+          </BannerButton>
+          <BannerButton onClick={() => onClose?.()}>Cerrar</BannerButton>
+        </div>
+      )}
+      {status.kind === 'error' && (
+        <div
+          role="alert"
+          className="border-danger/40 bg-danger/5 flex flex-wrap items-center gap-2 border-b px-4 py-2 text-sm"
+        >
+          <span className="font-medium">{status.message}</span>
         </div>
       )}
       <div ref={hostRef} className="min-h-0 flex-1 overflow-hidden" data-testid="note-editor" />
       <div
-        // Shares the text axis with the ruled lines above it.
-        className="border-rule text-ink-muted flex items-center justify-between border-t px-4 py-1 text-xs md:pr-[var(--rule-gutter)] md:pl-[var(--rule-text-inset)]"
+        // Shares the text axis with the ruled lines above it. The file name is
+        // NOT repeated here: the tab and the masthead already show it.
+        className="border-rule text-ink-muted flex items-center justify-end border-t px-4 py-1 text-xs md:pr-[var(--rule-gutter)] md:pl-[var(--rule-text-inset)]"
         aria-live="polite"
       >
-        <span className="truncate">{path}</span>
         <span
           className={
-            status.kind === 'error' || status.kind === 'conflict'
+            status.kind === 'error' || status.kind === 'conflict' || status.kind === 'missing'
               ? 'text-danger font-medium'
               : ''
           }
@@ -329,5 +287,17 @@ export function NoteEditor({
         </span>
       </div>
     </div>
+  )
+}
+
+function BannerButton({ onClick, children }: { onClick: () => void; children: string }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="border-rule rounded-md border px-2 py-0.5 text-xs"
+    >
+      {children}
+    </button>
   )
 }

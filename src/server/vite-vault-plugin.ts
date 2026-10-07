@@ -1,10 +1,12 @@
 import type { IncomingMessage, ServerResponse } from 'node:http'
+import { homedir } from 'node:os'
 
 import type { Plugin } from 'vite'
 
 import { assertLoopbackBind } from './bind-guard'
 import { handleVaultRequest, mintToken, PREFIX, VaultSessions } from './vault-api'
 import { ALLOWED_ORIGINS_ENV, vaultAllowedOrigins } from './vault-origins'
+import { ALLOWED_ROOTS_ENV, parseAllowedRoots } from './vault-roots'
 
 /**
  * Mounts the Vault API during development. Nothing more.
@@ -21,7 +23,10 @@ import { ALLOWED_ORIGINS_ENV, vaultAllowedOrigins } from './vault-origins'
  * than decorative: this API can read and write the student's files.
  */
 export function campusVaultPlugin(): Plugin {
-  const sessions = new VaultSessions()
+  // Which folders may be opened as a Vault: the user's home, unless
+  // CAMPUS_VAULT_ALLOWED_ROOTS says otherwise (an explicit list, never widened).
+  const roots = parseAllowedRoots(process.env[ALLOWED_ROOTS_ENV], homedir())
+  const sessions = new VaultSessions({ allowedRoots: roots.roots })
   const token = mintToken()
   let allowedOrigins: string[] = []
   // The escape hatch is for running the FRONTEND over a network without the
@@ -37,6 +42,18 @@ export function campusVaultPlugin(): Plugin {
 
     configResolved(config) {
       if (!enabled) return
+
+      for (const entry of roots.rejected) {
+        // A security setting that is set but ignored must not be silent.
+        config.logger.warn(
+          `[campus] ${ALLOWED_ROOTS_ENV}: ignored "${entry}" (needs an absolute path other than the filesystem root)`,
+        )
+      }
+      if (roots.roots.length === 0) {
+        config.logger.warn(
+          `[campus] ${ALLOWED_ROOTS_ENV} has no usable entry: no folder can be opened`,
+        )
+      }
 
       const { https, port = 5173, host } = config.server
 

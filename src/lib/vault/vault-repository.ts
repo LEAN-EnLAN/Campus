@@ -1,3 +1,4 @@
+import { VaultConflictError, VaultError, type VaultErrorCode } from './errors'
 import type { FileSystemPort } from './fs-port'
 import { validateVaultPath } from './path-resolver'
 import type {
@@ -16,22 +17,30 @@ import type {
  * and neither is sufficient.
  */
 
-export type ResolveResult = { ok: true; absolute: string } | { ok: false; reason: string }
+/** Linux caps symlink expansion at 40 per lookup (ELOOP); the walk uses the same bound. */
+const MAX_LINK_HOPS = 40
+
+export type ResolveResult =
+  { ok: true; absolute: string } | { ok: false; reason: string; code: VaultErrorCode }
+
+// Re-exported: the conflict error is part of this module's public surface.
+export { VaultConflictError }
 
 /**
- * VAULT-003. Not an ordinary error: it means the student has two versions of
- * their own work and only they can decide which one survives.
+ * A file name that is safe to carry into the trash. The sidecar records the
+ * original path, so the trashed copy only needs to be recognisable: capping it
+ * keeps `.campus/trash/<stamp>-<name>.meta.json` inside the path-length limit
+ * however long the student's own file name was.
  */
-export class VaultConflictError extends Error {
-  readonly path: string
-  readonly detail: string
-
-  constructor(path: string, detail: string) {
-    super(`${path}: ${detail}`)
-    this.name = 'VaultConflictError'
-    this.path = path
-    this.detail = detail
-  }
+const TRASH_NAME_MAX = 80
+function shortTrashName(name: string): string {
+  const chars = [...name]
+  if (chars.length <= TRASH_NAME_MAX) return name
+  const dot = name.lastIndexOf('.')
+  const extension = dot > 0 && name.length - dot <= 12 ? name.slice(dot) : ''
+  const stem = chars.slice(0, TRASH_NAME_MAX - [...extension].length).join('')
+  // Windows rewrites a trailing dot or space; do not leave one behind.
+  return stem.replace(/[. ]+$/, '') + extension
 }
 
 export class VaultRepository implements VaultAccess {
@@ -47,11 +56,18 @@ export class VaultRepository implements VaultAccess {
    * Where does this vault-relative path really land?
    *
    * The order matters. Validate the string first, so a malformed name never
-   * reaches a syscall. Then resolve the PARENT — never the full path — because
-   * an existence check on the full path follows symlinks, and a link whose
-   * target does not exist reports "absent". That gap is a real bypass: skip
-   * resolution, and the literal in-vault path passes containment while the link
-   * still points outside. The target can be created a second later.
+   * reaches a syscall. Then walk the path the way the KERNEL will: one
+   * component at a time, following every link — including the links a link
+   * points at. Judging a link by its target string is not enough, because that
+   * target can itself be a link (`a -> b`, `b -> /etc/hostname`): the first hop
+   * lands inside the vault and a textual check passes, while the kernel keeps
+   * going. So a link's target is spliced into the work queue and walked with
+   * the same rules, however many hops it takes.
+   *
+   * Absent entries are not followed (there is nothing to follow) and are not
+   * an error: that is a note or folder being created. A link whose target does
+   * not exist is still followed to where the target WOULD be, because the
+   * target can be created a second later.
    */
   async resolve(relative: string): Promise<ResolveResult> {
     const verdict = validateVaultPath(relative)
@@ -61,88 +77,102 @@ export class VaultRepository implements VaultAccess {
     try {
       realRoot = await this.fs.realpath(this.root)
     } catch {
-      return { ok: false, reason: 'vault root is not readable' }
+      return { ok: false, reason: 'vault root is not readable', code: 'root_unreadable' }
     }
 
     const inside = (p: string) =>
       p === realRoot || p.startsWith(realRoot + '/') || p.startsWith(realRoot + '\\')
+    const outside: ResolveResult = {
+      ok: false,
+      reason: 'path resolves outside the vault',
+      code: 'outside_vault',
+    }
 
-    // Walk segment by segment. A symlinked *directory* halfway down escapes just
-    // as effectively as a symlinked file at the end, and only a walk catches it.
+    // The physical directory we have walked to, and what is left to walk.
     let current = realRoot
-    for (const segment of verdict.segments) {
-      const candidate = this.fs.join(current, segment)
-      const stat = await this.fs.lstat(candidate)
+    const pending = [...verdict.segments]
+    // The deepest prefix that exists on disk: the part `realpath` can vouch for.
+    let deepestExisting = realRoot
+    let hops = 0
+    let absent = false
 
-      if (stat?.kind === 'symlink') {
-        // Judge the link by its TARGET, existing or not.
-        let target: string
-        try {
-          target = await this.fs.readlink(candidate)
-        } catch {
-          return { ok: false, reason: 'symlink is not readable' }
-        }
-        const resolved = this.absolutise(target, current)
-        if (!inside(resolved)) {
-          return { ok: false, reason: 'path resolves outside the vault' }
-        }
-        current = resolved
+    while (pending.length > 0) {
+      const segment = pending.shift()!
+      if (segment === '' || segment === '.') continue
+      if (segment === '..') {
+        // `current` is physical, so its textual parent is its real parent.
+        current = this.fs.dirname(current)
         continue
       }
+
+      const candidate = this.fs.join(current, segment)
+      // Below an absent entry nothing can be a link, so stop asking the disk.
+      const stat = absent ? null : await this.fs.lstat(candidate)
 
       if (stat === null) {
-        // Not there yet — a note being created. Nothing to resolve, and the
-        // parent chain above it has already been checked.
+        absent = true
         current = candidate
         continue
       }
 
-      // A real entry: resolve it, so a hard-to-see case (a bind mount, a link
-      // the lstat above already collapsed) still gets checked against the root.
-      try {
-        current = await this.fs.realpath(candidate)
-      } catch {
+      if (stat.kind !== 'symlink') {
         current = candidate
+        deepestExisting = candidate
+        continue
       }
-      if (!inside(current)) {
-        return { ok: false, reason: 'path resolves outside the vault' }
+
+      hops += 1
+      if (hops > MAX_LINK_HOPS)
+        return { ok: false, reason: 'too many symbolic links', code: 'too_many_links' }
+
+      let target: string
+      try {
+        target = await this.fs.readlink(candidate)
+      } catch {
+        return { ok: false, reason: 'symlink is not readable', code: 'symlink_unreadable' }
       }
+
+      const unified = target.split('\\').join('/')
+      if (unified.startsWith('//')) return outside
+      const drive = /^[a-zA-Z]:/.exec(unified)
+      if (unified.startsWith('/')) {
+        current = '/'
+      } else if (drive) {
+        current = drive[0] + '/'
+      }
+      // The link's own components go FIRST, so the rest of the requested path
+      // is resolved relative to wherever the link really leads.
+      const parts = unified.replace(/^([a-zA-Z]:)?\/+/, '').split('/')
+      pending.unshift(...parts)
+      deepestExisting = current
     }
 
-    if (!inside(current)) return { ok: false, reason: 'path resolves outside the vault' }
+    if (!inside(current)) return outside
+
+    // Defence in depth: ask the OS about the deepest part that exists. This
+    // catches what lstat cannot see (a bind mount, a case-folding quirk).
+    try {
+      const real = await this.fs.realpath(deepestExisting)
+      if (!inside(real)) return outside
+    } catch {
+      return outside
+    }
+
     return { ok: true, absolute: current }
-  }
-
-  private absolutise(target: string, parent: string): string {
-    const isAbsolute =
-      target.startsWith('/') || /^[a-zA-Z]:/.test(target) || target.startsWith('\\\\')
-    if (!isAbsolute) return this.normalise(this.fs.join(parent, target))
-    return this.normalise(target)
-  }
-
-  /** Collapse `.` and `..` textually — the target of a link is not resolvable by stat. */
-  private normalise(p: string): string {
-    const unified = p.split('\\').join('/')
-    const lead = unified.startsWith('/') ? '/' : ''
-    const out: string[] = []
-    for (const seg of unified.split('/')) {
-      if (seg === '' || seg === '.') continue
-      if (seg === '..') out.pop()
-      else out.push(seg)
-    }
-    return lead + out.join('/')
   }
 
   private async require(relative: string): Promise<string> {
     const r = await this.resolve(relative)
-    if (!r.ok) throw new Error(`${relative}: ${r.reason}`)
+    // The reason names no path: the caller already knows which path it asked
+    // about, and repeating it here is how messages ended up saying it twice.
+    if (!r.ok) throw new VaultError(r.code, r.reason)
     return r.absolute
   }
 
   async readNote(relative: string): Promise<LoadedNote> {
     const absolute = await this.require(relative)
     const stat = await this.fs.lstat(absolute)
-    if (stat === null) throw new Error(`${relative}: not found`)
+    if (stat === null) throw new VaultError('not_found', 'not found')
     const contents = await this.fs.readFile(absolute)
     return { contents, mtimeMs: stat.mtimeMs }
   }
@@ -169,6 +199,7 @@ export class VaultRepository implements VaultAccess {
         throw new VaultConflictError(
           relative,
           'expected a new file, but one already exists on disk',
+          'already_exists',
         )
       }
     } else {
@@ -176,10 +207,15 @@ export class VaultRepository implements VaultAccess {
         throw new VaultConflictError(
           relative,
           'the file was deleted or moved after it was loaded',
+          'conflict_missing',
         )
       }
       if (current.mtimeMs !== expectedMtimeMs) {
-        throw new VaultConflictError(relative, 'the file changed on disk after it was loaded')
+        throw new VaultConflictError(
+          relative,
+          'the file changed on disk after it was loaded',
+          'conflict_changed',
+        )
       }
     }
 
@@ -193,12 +229,14 @@ export class VaultRepository implements VaultAccess {
     const source = await this.require(from)
     const destination = await this.require(to)
 
+    if ((await this.fs.lstat(source)) === null) throw new VaultError('not_found', 'not found')
+
     // POSIX rename replaces the destination atomically. For a student that is
     // "renaming a.md onto b.md deleted my b.md" — the filesystem's own default
     // is the data-loss bug, so an existing destination is a CONFLICT the
     // student resolves, never a thing we resolve for them.
     if ((await this.fs.lstat(destination)) !== null) {
-      throw new VaultConflictError(to, 'ya existe un archivo con ese nombre')
+      throw new VaultConflictError(to, 'the destination already exists', 'destination_exists')
     }
 
     await this.fs.mkdirp(this.fs.dirname(destination))
@@ -216,6 +254,7 @@ export class VaultRepository implements VaultAccess {
     // root is the one path that needs no per-segment judgement.
     const absolute =
       relative === '' ? await this.fs.realpath(this.root) : await this.require(relative)
+    if ((await this.fs.lstat(absolute)) === null) throw new VaultError('not_found', 'not found')
     const raw = await this.fs.readdir(absolute)
 
     const out: VaultEntry[] = []
@@ -242,22 +281,25 @@ export class VaultRepository implements VaultAccess {
   async trash(relative: string): Promise<TrashedEntry> {
     const source = await this.require(relative)
     const stat = await this.fs.lstat(source)
-    if (stat === null) throw new Error(`${relative}: not found`)
+    if (stat === null) throw new VaultError('not_found', 'not found')
 
     // A unique destination, so two deleted "nota.md" never clobber each other.
     // The suffix is time-based for a human sorting the trash by hand, plus a
     // random tail because two deletes can land on the same millisecond.
-    const name = relative.split('/').pop() ?? relative
+    const name = shortTrashName(relative.split(/[\\/]/).filter(Boolean).pop() ?? relative)
     const unique = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`
     const trashedTo = `.campus/trash/${unique}-${name}`
 
+    // Both ends are judged BEFORE anything moves. Resolving the sidecar after
+    // the rename meant a path-length refusal there left the note already in the
+    // trash, with no record of where it came from.
     const destination = await this.require(trashedTo)
+    const meta = await this.require(trashedTo + '.meta.json')
     await this.fs.mkdirp(this.fs.dirname(destination))
     await this.fs.rename(source, destination)
 
     // The sidecar is what makes restore possible: the trash entry knows where
     // it came from, in plain JSON any file manager can read.
-    const meta = await this.require(trashedTo + '.meta.json')
     await this.fs.writeFileAtomic(
       meta,
       JSON.stringify({ originalPath: relative, trashedAt: new Date().toISOString() }, null, 2) +

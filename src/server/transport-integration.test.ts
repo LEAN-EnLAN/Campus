@@ -42,7 +42,7 @@ beforeEach(async () => {
     nodeCatalogReader,
   )
 
-  const sessions = new VaultSessions()
+  const sessions = new VaultSessions({ allowedRoots: [tmpdir()] })
   server = createServer((req, res) => {
     const chunks: Buffer[] = []
     req.on('data', (c: Buffer) => chunks.push(c))
@@ -154,7 +154,11 @@ describe('LocalBackend over the real transport', () => {
     const access = httpVaultAccess({ vaultId: session.id, token: TOKEN, baseUrl })
     // Bypassing LocalBackend entirely, the way a compromised browser would:
     // straight at the transport, which has no resolver of its own to fool.
-    await expect(access.readNote('../outside/secret.txt')).rejects.toThrow(/traversal|outside/i)
-    await expect(access.readNote('/etc/passwd')).rejects.toThrow(/absolute/i)
+    await expect(access.readNote('../outside/secret.txt')).rejects.toMatchObject({
+      code: 'path_traversal',
+    })
+    await expect(access.readNote('/etc/passwd')).rejects.toMatchObject({
+      code: 'path_absolute',
+    })
   })
 })

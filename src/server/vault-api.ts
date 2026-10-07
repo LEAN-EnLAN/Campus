@@ -1,7 +1,12 @@
 import { randomBytes } from 'node:crypto'
+import { homedir } from 'node:os'
+import { dirname, isAbsolute, join, resolve } from 'node:path'
 
+import { VaultConflictError, VaultError, vaultErrorFromSystem } from '../lib/vault/errors'
+import type { VaultErrorCode } from '../lib/vault/errors'
 import { nodeFileSystem } from '../lib/vault/node-fs'
 import { VaultRepository } from '../lib/vault/vault-repository'
+import { isInsideAny } from './vault-roots'
 
 /**
  * The local Vault API.
@@ -16,10 +21,13 @@ import { VaultRepository } from '../lib/vault/vault-repository'
  *
  * Three rules shape everything below.
  *
- * 1. The wire surface is `VaultAccess`, not a filesystem. Two operations, both
- *    semantic, both inside an already-chosen vault. There is no realpath, no
- *    stat-an-absolute-path, no readdir, no exec — not because they are guarded,
- *    but because they are absent.
+ * 1. The wire surface is `VaultAccess`, not a filesystem: semantic operations
+ *    inside an already-chosen vault. There is no realpath, no
+ *    stat-an-absolute-path, no exec — not because they are guarded, but because
+ *    they are absent. The ONE deliberate exception is choosing the vault in the
+ *    first place: `open`, `exists` and `dirs` (a folder browser's listing, names
+ *    of directories only) accept an absolute path, and all three are confined to
+ *    the allowed roots (`vault-roots.ts`).
  *
  * 2. The browser names an absolute path exactly once, at `open`, and receives an
  *    opaque id. Every later request is vault-relative.
@@ -88,6 +96,14 @@ const json = (status: number, value: unknown, origin?: string): VaultResponse =>
   body: JSON.stringify(value),
 })
 
+/** A refusal in the one shape every failure uses: a code, plus English for logs. */
+const refusal = (
+  status: number,
+  code: VaultErrorCode,
+  message: string,
+  origin?: string,
+): VaultResponse => json(status, { ok: false, code, error: message }, origin)
+
 const header = (req: VaultRequest, name: string): string | null => {
   const value = req.headers[name] ?? req.headers[name.toLowerCase()]
   return typeof value === 'string' ? value : null
@@ -102,15 +118,73 @@ const header = (req: VaultRequest, name: string): string | null => {
  */
 export class VaultSessions {
   private readonly byId = new Map<string, { path: string; repo: VaultRepository }>()
+  /** The folders `open` may land in. Absolute and normalised; never empty by accident. */
+  readonly allowedRoots: readonly string[]
+
+  constructor(options: { allowedRoots?: readonly string[] } = {}) {
+    this.allowedRoots = (options.allowedRoots ?? [homedir()]).map((root) => resolve(root))
+  }
+
+  /**
+   * Decide whether `path` may become a Vault, and where it really is.
+   *
+   * Judged TWICE, deliberately. First on the string the page sent: a path
+   * outside the roots is refused as `folder_outside_roots` WITHOUT touching the
+   * disk, so existing and missing folders look identical from outside (no
+   * existence oracle). Then on the real path: a link inside the home that points
+   * out of it is refused too, which is the other half of "refuses symlinks that
+   * escape" — the roots themselves are resolved first, because `/home` may
+   * itself be a link.
+   */
+  private async admit(path: string): Promise<string> {
+    if (!isAbsolute(path)) throw new VaultError('folder_not_absolute', 'path is not absolute')
+
+    const realRoots = await this.realRoots()
+    const textual = [...this.allowedRoots, ...realRoots]
+    if (!isInsideAny(textual, path)) {
+      throw new VaultError('folder_outside_roots', 'folder is outside the allowed roots')
+    }
+
+    let real: string
+    try {
+      const stat = await nodeFileSystem.lstat(path)
+      if (stat === null) throw new VaultError('folder_not_found', 'vault not found')
+      real = await nodeFileSystem.realpath(path)
+    } catch (error) {
+      if (error instanceof VaultError) throw error
+      const failure = vaultErrorFromSystem(error)
+      throw new VaultError(
+        failure.code === 'not_found' ? 'folder_not_found' : failure.code,
+        failure.message,
+      )
+    }
+    if (!isInsideAny(realRoots, real)) {
+      throw new VaultError('folder_outside_roots', 'folder is outside the allowed roots')
+    }
+
+    const stat = await nodeFileSystem.lstat(real)
+    if (stat === null) throw new VaultError('folder_not_found', 'vault not found')
+    if (stat.kind !== 'dir') throw new VaultError('folder_not_directory', 'not a directory')
+    return real
+  }
+
+  /** Allowed roots that exist, resolved. A root that is not there allows nothing. */
+  private async realRoots(): Promise<string[]> {
+    const out: string[] = []
+    for (const root of this.allowedRoots) {
+      try {
+        out.push(await nodeFileSystem.realpath(root))
+      } catch {
+        // Not there (yet): nothing can be inside it.
+      }
+    }
+    return out
+  }
 
   async open(path: string): Promise<{ id: string; name: string }> {
-    const stat = await nodeFileSystem.lstat(path)
-    if (stat === null) throw new Error('vault not found')
-    if (stat.kind !== 'dir') throw new Error('not a directory')
-
     // Resolved once, on the privileged side, and stored resolved — so a symlink
     // swapped in afterwards cannot move the root out from under the repository.
-    const real = await nodeFileSystem.realpath(path)
+    const real = await this.admit(path)
     const id = randomBytes(16).toString('base64url')
     this.byId.set(id, { path: real, repo: new VaultRepository(nodeFileSystem, real) })
     return { id, name: real.split(/[/\\]/).pop() ?? real }
@@ -120,10 +194,73 @@ export class VaultSessions {
     return this.byId.get(id) ?? null
   }
 
+  /** True only for a folder that `open` would accept. Everything else — outside the roots, missing, a file — is the same `false`. */
   async exists(path: string): Promise<boolean> {
-    const stat = await nodeFileSystem.lstat(path)
-    return stat !== null && stat.kind === 'dir'
+    try {
+      await this.admit(path)
+      return true
+    } catch {
+      return false
+    }
   }
+
+  /**
+   * The folders inside `path`, for a folder browser. Names only, directories
+   * only; the same confinement as `open` (it IS `open`'s check), plus:
+   *
+   * - an entry that is a symlink is listed only if it resolves to a directory
+   *   INSIDE the roots — a link out is not even named;
+   * - dot-folders are left out, as in any folder picker (and `.ssh` is not
+   *   something a page needs to learn exists);
+   * - `parent` is given only while it is still inside the roots, so the browser
+   *   cannot be walked upwards out of them.
+   *
+   * With no `path` it starts at the first allowed root.
+   */
+  async listDirs(
+    path: string | undefined,
+  ): Promise<{ path: string; parent: string | null; dirs: string[] }> {
+    const start = path === undefined || path === '' ? this.allowedRoots[0] : path
+    if (start === undefined) {
+      throw new VaultError('folder_outside_roots', 'folder is outside the allowed roots')
+    }
+    const real = await this.admit(start)
+    const realRoots = await this.realRoots()
+
+    let entries
+    try {
+      entries = await nodeFileSystem.readdir(real)
+    } catch (error) {
+      throw vaultErrorFromSystem(error)
+    }
+
+    const dirs: string[] = []
+    for (const entry of entries) {
+      if (entry.name.startsWith('.')) continue
+      if (entry.kind === 'dir') {
+        dirs.push(entry.name)
+      } else if (entry.kind === 'symlink') {
+        try {
+          const target = await nodeFileSystem.realpath(join(real, entry.name))
+          const stat = await nodeFileSystem.lstat(target)
+          if (stat?.kind === 'dir' && isInsideAny(realRoots, target)) dirs.push(entry.name)
+        } catch {
+          // A dangling or unreadable link is simply not a folder to browse.
+        }
+      }
+    }
+    dirs.sort((a, b) => a.localeCompare(b, 'es'))
+
+    const up = dirname(real)
+    return { path: real, parent: up !== real && isInsideAny(realRoots, up) ? up : null, dirs }
+  }
+}
+
+/** HTTP status for a refusal while opening or browsing a folder. */
+function folderStatus(code: VaultErrorCode): number {
+  if (code === 'folder_outside_roots' || code === 'permission_denied') return 403
+  if (code === 'folder_not_absolute') return 400
+  return 404
 }
 
 /**
@@ -144,7 +281,7 @@ export async function handleVaultRequest(
   // A same-origin fetch sends no Origin header on some requests, so absence is
   // permitted; a PRESENT and unlisted origin is not.
   if (origin !== null && !allowed) {
-    return json(403, { error: 'origin not allowed' })
+    return refusal(403, 'origin_not_allowed', 'origin not allowed')
   }
 
   if (req.method === 'OPTIONS') {
@@ -161,11 +298,16 @@ export async function handleVaultRequest(
   }
 
   if (header(req, 'x-campus-capability') !== options.token) {
-    return json(401, { error: 'missing or invalid capability' }, allowed ? origin : undefined)
+    return refusal(
+      401,
+      'unauthorized',
+      'missing or invalid capability',
+      allowed ? origin : undefined,
+    )
   }
 
   if (req.method !== 'POST') {
-    return json(405, { error: 'method not allowed' }, allowed ? origin : undefined)
+    return refusal(405, 'bad_request', 'method not allowed', allowed ? origin : undefined)
   }
 
   const reply = (status: number, value: unknown) =>
@@ -175,7 +317,7 @@ export async function handleVaultRequest(
   try {
     payload = JSON.parse(req.body || '{}') as Record<string, unknown>
   } catch {
-    return reply(400, { error: 'invalid JSON' })
+    return reply(400, { ok: false, code: 'bad_request', error: 'invalid JSON' })
   }
 
   const path = req.url.split('?')[0] ?? ''
@@ -184,37 +326,64 @@ export async function handleVaultRequest(
   if (path === `${PREFIX}/open`) {
     const target = payload.path
     if (typeof target !== 'string' || target.length === 0) {
-      return reply(400, { error: 'path required' })
+      return reply(400, { ok: false, code: 'bad_request', error: 'path required' })
     }
     try {
       return reply(200, await sessions.open(target))
     } catch (error) {
-      return reply(404, { error: (error as Error).message })
+      const failure = vaultErrorFromSystem(error)
+      return reply(folderStatus(failure.code), {
+        ok: false,
+        code: failure.code,
+        error: failure.message,
+      })
     }
   }
 
   if (path === `${PREFIX}/exists`) {
     const target = payload.path
-    if (typeof target !== 'string') return reply(400, { error: 'path required' })
+    if (typeof target !== 'string') {
+      return reply(400, { ok: false, code: 'bad_request', error: 'path required' })
+    }
     return reply(200, { exists: await sessions.exists(target) })
+  }
+
+  // --- dirs: browse folders (names only) to choose a Vault --------------------
+  if (path === `${PREFIX}/dirs`) {
+    const target = payload.path
+    if (target !== undefined && typeof target !== 'string') {
+      return reply(400, { ok: false, code: 'bad_request', error: 'path must be a string' })
+    }
+    try {
+      return reply(200, await sessions.listDirs(target))
+    } catch (error) {
+      const failure = vaultErrorFromSystem(error)
+      return reply(folderStatus(failure.code), {
+        ok: false,
+        code: failure.code,
+        error: failure.message,
+      })
+    }
   }
 
   // --- everything else is vault-scoped and relative -------------------------
   const match = /^\/__campus\/vault\/([A-Za-z0-9_-]+)\/op$/.exec(path)
-  if (!match) return reply(404, { error: 'unknown endpoint' })
+  if (!match) return reply(404, { ok: false, code: 'bad_request', error: 'unknown endpoint' })
 
   const session = sessions.get(match[1]!)
   // An unknown id is refused rather than reopened. Reopening from a payload
   // would put vault selection back in the browser's hands.
-  if (!session) return reply(404, { error: 'unknown vault' })
+  if (!session) return reply(404, { ok: false, code: 'unknown_vault', error: 'unknown vault' })
 
   const op = payload.op
   if (typeof op !== 'string' || !OPERATIONS.includes(op as Operation)) {
-    return reply(400, { error: 'unsupported operation' })
+    return reply(400, { ok: false, code: 'bad_request', error: 'unsupported operation' })
   }
 
   const relative = payload.path
-  if (typeof relative !== 'string') return reply(400, { error: 'path must be a string' })
+  if (typeof relative !== 'string') {
+    return reply(400, { ok: false, code: 'bad_request', error: 'path must be a string' })
+  }
 
   try {
     // Delegated to VaultRepository, the single authority. Nothing here
@@ -225,10 +394,19 @@ export async function handleVaultRequest(
       case 'writeNote': {
         const contents = payload.contents
         const expected = payload.expectedMtimeMs
-        if (typeof contents !== 'string')
-          return reply(400, { error: 'contents must be a string' })
+        if (typeof contents !== 'string') {
+          return reply(400, {
+            ok: false,
+            code: 'bad_request',
+            error: 'contents must be a string',
+          })
+        }
         if (expected !== null && typeof expected !== 'number') {
-          return reply(400, { error: 'expectedMtimeMs must be a number or null' })
+          return reply(400, {
+            ok: false,
+            code: 'bad_request',
+            error: 'expectedMtimeMs must be a number or null',
+          })
         }
         await session.repo.writeNote(relative, contents, expected)
         return reply(200, { ok: true, value: null })
@@ -240,7 +418,9 @@ export async function handleVaultRequest(
         return reply(200, { ok: true, value: null })
       case 'rename': {
         const to = payload.to
-        if (typeof to !== 'string') return reply(400, { error: 'to must be a string' })
+        if (typeof to !== 'string') {
+          return reply(400, { ok: false, code: 'bad_request', error: 'to must be a string' })
+        }
         await session.repo.rename(relative, to)
         return reply(200, { ok: true, value: null })
       }
@@ -250,22 +430,28 @@ export async function handleVaultRequest(
         return reply(200, { ok: true, value: await session.repo.stat(relative) })
     }
   } catch (error) {
-    const message = (error as Error).message
+    // Everything that leaves here is a CODE plus a path-free English line. A
+    // raw `fs` error is never forwarded: its message carries the absolute host
+    // path (`ENOENT … rename '/home/…'`), which the page has no business seeing.
+    const failure = vaultErrorFromSystem(error)
 
     // A file that is not there yet is the ORDINARY state of a fresh vault, not
     // a protocol error. Reporting it as 400 made every startup log a client
     // error for reading a note nobody has written, which trains everyone to
     // ignore 400s from this endpoint — including the security refusals.
-    const notFound = /: not found$/.test(message)
+    const notFound = failure.code === 'not_found'
 
-    // Security refusals travel verbatim. Softening "path resolves outside the
-    // vault" into a generic I/O error would hide the one message that explains
-    // it, and let a caller mistake a refusal for a transient failure.
+    // Security refusals keep their own code. Softening `outside_vault` into a
+    // generic I/O error would hide the one thing that explains it, and let a
+    // caller mistake a refusal for a transient failure.
     return reply(notFound ? 200 : 400, {
       ok: false,
       notFound,
-      error: message,
-      conflict: (error as Error).name === 'VaultConflictError',
+      code: failure.code,
+      // A conflict's detail already says what happened; the path is not part
+      // of it, because the caller knows which path it asked about.
+      error: failure instanceof VaultConflictError ? failure.detail : failure.message,
+      conflict: failure instanceof VaultConflictError,
     })
   }
 }

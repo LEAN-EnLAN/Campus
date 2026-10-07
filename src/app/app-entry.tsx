@@ -42,6 +42,17 @@ declare module '@tanstack/react-router' {
 // identity changes, and a fresh object every render would re-resolve forever.
 const capabilities = resolveRuntimeCapabilities()
 
+/**
+ * A closed workspace leaves nothing behind: its cached answers belong to ITS
+ * folder or account, and query keys do not say which one that was. The router is
+ * pointed at Hoy because the next workspace may not have the screen the last one
+ * was on.
+ */
+function leftWorkspace() {
+  queryClient.clear()
+  void router.navigate({ to: '/today', replace: true })
+}
+
 const rootElement = document.getElementById('root')
 if (!rootElement) throw new Error('No se encontró el elemento #root')
 
@@ -55,7 +66,11 @@ createRoot(rootElement).render(
           {/* The composition root. RuntimeProvider decides local or cloud once,
             renders the picker until it can, and hands the resolved backend to
             BackendProvider — so both modes reach the SAME router below. */}
-          <RuntimeProvider capabilities={capabilities} fallback={() => <Startup />}>
+          <RuntimeProvider
+            capabilities={capabilities}
+            fallback={() => <Startup />}
+            onWorkspaceClosed={leftWorkspace}
+          >
             <RouterProvider router={router} />
           </RuntimeProvider>
         </AuthProvider>

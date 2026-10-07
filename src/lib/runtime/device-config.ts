@@ -98,3 +98,13 @@ export function forgetVault(config: DeviceConfig, path: string): DeviceConfig {
 export function rememberCloud(config: DeviceConfig): DeviceConfig {
   return { ...config, lastRuntime: { mode: 'cloud' } }
 }
+
+/**
+ * The student closed the workspace on purpose.
+ *
+ * Forgets what to reopen — the next launch asks — but keeps every recent vault:
+ * leaving a folder is not the same as removing it from the list.
+ */
+export function leaveRuntime(config: DeviceConfig): DeviceConfig {
+  return { ...config, lastRuntime: null }
+}

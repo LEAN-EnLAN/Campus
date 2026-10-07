@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button'
 import { useAcademicPlan } from '@/features/academic/queries'
 import { useAuth } from '@/features/auth/auth-context'
 import { harmonic, SEED_HUES, toCss } from '@/lib/design/palette'
+import { useRequiresAccount } from '@/lib/runtime/identity'
+import { useWorkspace } from '@/lib/runtime/workspace'
 import { useTheme } from '@/lib/theme/theme-context'
 import type { ThemePreference } from '@/lib/theme/theme'
 import { cn } from '@/lib/utils'
@@ -31,20 +33,31 @@ const THEMES = [
  * Spaced by the same golden angle the subject colours use, starting at the four
  * seeds so the set opens on colours the palette already contains.
  */
-const ACCENT_PRESETS = [
-  SEED_HUES.tomatoJam,
-  SEED_HUES.vanillaCustard,
-  160,
-  SEED_HUES.linen,
-  265,
-  310,
+const ACCENT_PRESETS: readonly { hue: number; name: string }[] = [
+  { hue: SEED_HUES.tomatoJam, name: 'Rojo' },
+  { hue: SEED_HUES.vanillaCustard, name: 'Amarillo' },
+  { hue: 160, name: 'Verde' },
+  { hue: SEED_HUES.linen, name: 'Arena' },
+  { hue: 265, name: 'Violeta' },
+  { hue: 310, name: 'Rosa' },
 ]
+
+const DEFAULT_ACCENT_NAME = 'Turquesa'
 
 function SettingsScreen() {
   const { preference, setPreference, theme, accentHue, setAccentHue } = useTheme()
   const { session, signOut } = useAuth()
+  // Capability questions, answered by the composition root: whether this
+  // workspace has an account, and which folder it is. Never "which mode".
+  const requiresAccount = useRequiresAccount()
+  const workspace = useWorkspace()
   const plan = useAcademicPlan()
   const navigate = useNavigate()
+
+  const accentName =
+    accentHue === null
+      ? DEFAULT_ACCENT_NAME
+      : (ACCENT_PRESETS.find((preset) => preset.hue === accentHue)?.name ?? DEFAULT_ACCENT_NAME)
 
   return (
     <div className="flex flex-col gap-8">
@@ -81,15 +94,15 @@ function SettingsScreen() {
         </div>
 
         <p className="text-ink-muted mt-2 text-sm">
-          El acento. Todos los tonos salen de la misma regla de armonía que la paleta, así que
-          ninguno puede desentonar con el resto de la app.
+          Color de acento: <span className="text-ink font-medium">{accentName}</span>. Todos los
+          tonos combinan con el resto de la app.
         </p>
         <div role="group" aria-label="Color de acento" className="flex flex-wrap gap-2">
           <button
             type="button"
             aria-pressed={accentHue === null}
             onClick={() => setAccentHue(null)}
-            title="Tropical Teal, el de la paleta"
+            title={`${DEFAULT_ACCENT_NAME}, el de siempre`}
             className={cn(
               'border-rule size-7 rounded-md border transition-transform duration-150',
               accentHue === null &&
@@ -99,16 +112,16 @@ function SettingsScreen() {
               backgroundColor: toCss(harmonic(SEED_HUES.tropicalTeal, 'subject', theme)),
             }}
           >
-            <span className="sr-only">Color de la paleta</span>
+            <span className="sr-only">{DEFAULT_ACCENT_NAME}</span>
           </button>
 
-          {ACCENT_PRESETS.map((hue) => (
+          {ACCENT_PRESETS.map(({ hue, name }) => (
             <button
               key={hue}
               type="button"
               aria-pressed={accentHue === hue}
               onClick={() => setAccentHue(hue)}
-              title={`Tono ${hue}`}
+              title={name}
               className={cn(
                 'border-rule size-7 rounded-md border transition-transform duration-150',
                 accentHue === hue &&
@@ -116,31 +129,65 @@ function SettingsScreen() {
               )}
               style={{ backgroundColor: toCss(harmonic(hue, 'subject', theme)) }}
             >
-              <span className="sr-only">Tono {hue}</span>
+              <span className="sr-only">{name}</span>
             </button>
           ))}
         </div>
       </section>
 
-      <section aria-labelledby="cuenta" className="flex flex-col gap-3">
-        <SectionHeading id="cuenta">Tu cuenta</SectionHeading>
-        <dl className="flex flex-col gap-2 text-sm">
-          <div className="border-rule-soft flex justify-between gap-4 border-b py-2">
-            <dt className="text-ink-muted">Email</dt>
-            <dd className="text-ink truncate">{session?.user.email}</dd>
-          </div>
-        </dl>
-        <Button
-          variant="secondary"
-          className="self-start"
-          onClick={async () => {
-            await signOut()
-            void navigate({ to: '/login' })
-          }}
-        >
-          Cerrar sesión
+      <section aria-labelledby="espacio" className="flex flex-col gap-3">
+        <SectionHeading id="espacio">
+          {workspace.folder ? 'Tu carpeta' : 'Dónde trabajás'}
+        </SectionHeading>
+        {workspace.folder ? (
+          <>
+            <p className="text-ink-muted text-sm">
+              Campus guarda tus materias, entregas, notas y material en esta carpeta.
+            </p>
+            <dl className="flex flex-col gap-2 text-sm">
+              <div className="border-rule-soft flex justify-between gap-4 border-b py-2">
+                <dt className="text-ink-muted">Nombre</dt>
+                <dd className="text-ink text-right">{workspace.folder.name}</dd>
+              </div>
+              <div className="border-rule-soft flex justify-between gap-4 border-b py-2">
+                <dt className="text-ink-muted">Ubicación</dt>
+                <dd className="text-ink min-w-0 text-right break-all">
+                  {workspace.folder.path}
+                </dd>
+              </div>
+            </dl>
+          </>
+        ) : (
+          <p className="text-ink-muted text-sm">
+            Estás trabajando en Campus Cloud, sincronizado con tu cuenta.
+          </p>
+        )}
+        <Button variant="secondary" className="self-start" onClick={workspace.change}>
+          Cambiar de espacio de trabajo
         </Button>
       </section>
+
+      {requiresAccount ? (
+        <section aria-labelledby="cuenta" className="flex flex-col gap-3">
+          <SectionHeading id="cuenta">Tu cuenta</SectionHeading>
+          <dl className="flex flex-col gap-2 text-sm">
+            <div className="border-rule-soft flex justify-between gap-4 border-b py-2">
+              <dt className="text-ink-muted">Email</dt>
+              <dd className="text-ink truncate">{session?.user.email}</dd>
+            </div>
+          </dl>
+          <Button
+            variant="secondary"
+            className="self-start"
+            onClick={async () => {
+              await signOut()
+              void navigate({ to: '/login' })
+            }}
+          >
+            Cerrar sesión
+          </Button>
+        </section>
+      ) : null}
 
       <section aria-labelledby="carrera" className="flex flex-col gap-3">
         <SectionHeading id="carrera">Tu carrera</SectionHeading>
@@ -186,10 +233,17 @@ function SettingsScreen() {
             Campus nunca te va a pedir las credenciales de tu autogestión universitaria, ni se
             conecta con los sistemas de tu facultad.
           </p>
-          <p>
-            Tus materias, entregas y material son tuyos: nadie más que vos puede verlos, y eso
-            está garantizado en la base de datos, no solo en la interfaz.
-          </p>
+          {workspace.folder ? (
+            <p>
+              Tus materias, entregas y notas quedan en archivos de tu carpeta, en esta
+              computadora. Campus no los envía a ningún servidor.
+            </p>
+          ) : (
+            <p>
+              Tus materias, entregas y material son tuyos: nadie más que vos puede verlos, y eso
+              está garantizado en la base de datos, no solo en la interfaz.
+            </p>
+          )}
           <p>
             Los planes de estudio salen de documentos oficiales publicados por cada universidad.
             Si algo no lo pudimos verificar, lo decimos en vez de inventarlo.

@@ -17,6 +17,7 @@ export const queryKeys = {
   curriculum: (curriculumId: string | null) => ['curriculum', curriculumId] as const,
 
   subjectStates: ['subject-states'] as const,
+  manualSubjects: ['manual-subjects'] as const,
   academicItems: ['academic-items'] as const,
   resources: ['resources'] as const,
 } as const

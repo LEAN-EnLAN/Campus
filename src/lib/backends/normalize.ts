@@ -1,5 +1,5 @@
 import { manualProblem } from '@/domain/manual-subjects'
-import type { StoredSubjectStatus, UserSubjectState } from '@/domain/types'
+import type { ManualSubject, StoredSubjectStatus, UserSubjectState } from '@/domain/types'
 
 import {
   backendError,
@@ -118,4 +118,57 @@ export function assertUniformBatch(inputs: readonly SetSubjectStatusInput[]): bo
     )
   }
   return manual > 0
+}
+
+/**
+ * The whole next list of stored states after a batch of changes.
+ *
+ * `null` removes the row: `available` and `pending` are derived from the
+ * prerequisite graph, so a cleared subject must be ABSENT, never a placeholder.
+ * Shared by LocalBackend (what gets written) and the screens (what is shown
+ * while the write is in flight), so both can never disagree about the result.
+ */
+export function applyStatusBatch(
+  states: readonly UserSubjectState[],
+  inputs: readonly SetSubjectStatusInput[],
+  now: Date,
+): UserSubjectState[] {
+  const next = new Map(states.map((s) => [s.curriculumSubjectId, s]))
+  for (const input of inputs) {
+    if (input.status === null) {
+      next.delete(input.curriculumSubjectId)
+      continue
+    }
+    next.set(
+      input.curriculumSubjectId,
+      nextSubjectState(
+        next.get(input.curriculumSubjectId),
+        { ...input, status: input.status },
+        now,
+      ),
+    )
+  }
+  return [...next.values()]
+}
+
+/** Ids in a batch that name no manual subject. */
+export function unknownManualIds(
+  subjects: readonly ManualSubject[],
+  inputs: readonly SetSubjectStatusInput[],
+): string[] {
+  const known = new Set(subjects.map((s) => s.id))
+  return inputs.map((i) => i.curriculumSubjectId).filter((id) => !known.has(id))
+}
+
+/** The manual subjects after a batch. Unknown ids are skipped; see `unknownManualIds`. */
+export function applyManualBatch(
+  subjects: readonly ManualSubject[],
+  inputs: readonly SetSubjectStatusInput[],
+): ManualSubject[] {
+  const byId = new Map(subjects.map((s) => [s.id, s]))
+  for (const input of inputs) {
+    const current = byId.get(input.curriculumSubjectId)
+    if (current) byId.set(current.id, { ...current, ...nextManualStatus(current, input) })
+  }
+  return subjects.map((s) => byId.get(s.id) ?? s)
 }

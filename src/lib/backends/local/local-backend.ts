@@ -10,13 +10,14 @@ import type {
   UserSubjectState,
 } from '@/domain/types'
 import {
+  applyManualBatch,
+  applyStatusBatch,
   assertUniformBatch,
-  nextManualStatus,
-  nextSubjectState,
   normalizeContextInput,
   normalizeItemInput,
   normalizeManualSubjectInput,
   normalizeResourceInput,
+  unknownManualIds,
 } from '@/lib/backends/normalize'
 import { backendError } from '@/lib/backends/types'
 import type {
@@ -177,18 +178,14 @@ export class LocalBackend implements CampusBackend {
           'subjects',
           [],
           (subjects) => {
-            const byId = new Map(subjects.map((s) => [s.id, s]))
-            for (const input of inputs) {
-              const current = byId.get(input.curriculumSubjectId)
-              if (!current) {
-                backendError(
-                  'No encontramos esa materia en tu vault',
-                  `unknown manual subject ${input.curriculumSubjectId}`,
-                )
-              }
-              byId.set(current.id, { ...current, ...nextManualStatus(current, input) })
+            const [unknown] = unknownManualIds(subjects, inputs)
+            if (unknown !== undefined) {
+              backendError(
+                'No encontramos esa materia en tu vault',
+                `unknown manual subject ${unknown}`,
+              )
             }
-            return subjects.map((s) => byId.get(s.id) ?? s)
+            return applyManualBatch(subjects, inputs)
           },
         )
         return
@@ -199,28 +196,7 @@ export class LocalBackend implements CampusBackend {
         'subject-state',
         'states',
         [],
-        (states) => {
-          const now = new Date()
-          const next = new Map(states.map((s) => [s.curriculumSubjectId, s]))
-          for (const input of inputs) {
-            // `null` clears the row. `available` and `pending` are derived from
-            // the prerequisite graph, so a cleared subject must be ABSENT here —
-            // storing a placeholder would let the file drift from the graph.
-            if (input.status === null) {
-              next.delete(input.curriculumSubjectId)
-              continue
-            }
-            next.set(
-              input.curriculumSubjectId,
-              nextSubjectState(
-                next.get(input.curriculumSubjectId),
-                { ...input, status: input.status },
-                now,
-              ),
-            )
-          }
-          return [...next.values()]
-        },
+        (states) => applyStatusBatch(states, inputs, new Date()),
       )
     },
 

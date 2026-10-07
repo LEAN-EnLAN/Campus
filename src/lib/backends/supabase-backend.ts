@@ -25,6 +25,12 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { supabase as defaultClient } from '@/lib/supabase'
 import type { PrerequisiteEdge } from '@/domain/types'
 
+import {
+  completedAtFor,
+  normalizeContextInput,
+  normalizeItemInput,
+  normalizeResourceInput,
+} from './normalize'
 import { backendError, type CampusBackend, type CurriculumBundle } from './types'
 
 /**
@@ -194,10 +200,23 @@ export function createSupabaseBackend(client?: SupabaseClient): CampusBackend {
         return data ? toAcademicContext(data as AcademicContextRow) : null
       },
 
-      async saveContext(input) {
+      async saveContext(rawInput) {
+        const input = normalizeContextInput(rawInput)
         const userId = await requireUserId(supabase)
 
-        // One active context per user is a unique index; deactivate before inserting.
+        // One active context per user is a unique index, so the old one has to be
+        // deactivated before the new one can be inserted. Those are two writes, and
+        // if the second fails the student must not be left with NO active context
+        // (every screen then reads "no elegiste tu carrera"). So remember which one
+        // was active and put it back on failure.
+        const { data: previous, error: lookupError } = await supabase
+          .from('user_academic_contexts')
+          .select('id')
+          .eq('user_id', userId)
+          .eq('is_active', true)
+          .maybeSingle()
+        if (lookupError) backendError('No pudimos guardar tu carrera', lookupError.message)
+
         const { error: deactivateError } = await supabase
           .from('user_academic_contexts')
           .update({ is_active: false })
@@ -219,7 +238,15 @@ export function createSupabaseBackend(client?: SupabaseClient): CampusBackend {
           })
           .select(CONTEXT_COLUMNS)
           .single()
-        if (error) backendError('No pudimos guardar tu carrera', error.message)
+        if (error) {
+          if (previous) {
+            await supabase
+              .from('user_academic_contexts')
+              .update({ is_active: true })
+              .eq('id', (previous as { id: string }).id)
+          }
+          backendError('No pudimos guardar tu carrera', error.message)
+        }
 
         return toAcademicContext(data as AcademicContextRow)
       },
@@ -245,18 +272,15 @@ export function createSupabaseBackend(client?: SupabaseClient): CampusBackend {
           return
         }
 
-        const completedAt =
-          status === 'passed' || status === 'equivalent'
-            ? new Date().toISOString().slice(0, 10)
-            : null
-
         const { error } = await supabase.from('user_subject_states').upsert(
           {
             user_id: userId,
             curriculum_subject_id: curriculumSubjectId,
             status,
-            grade: grade ?? null,
-            completed_at: completedAt,
+            // Omitted when not given, so an upsert keeps the grade that is there;
+            // `null` is the explicit "clear it".
+            ...(grade === undefined ? {} : { grade }),
+            completed_at: completedAtFor(status, new Date()),
           },
           { onConflict: 'user_id,curriculum_subject_id' },
         )
@@ -276,15 +300,16 @@ export function createSupabaseBackend(client?: SupabaseClient): CampusBackend {
 
       async create(input) {
         const userId = await requireUserId(supabase)
+        const clean = normalizeItemInput(input)
         const { data, error } = await supabase
           .from('academic_items')
           .insert({
             user_id: userId,
-            title: input.title.trim(),
-            kind: input.kind,
-            curriculum_subject_id: input.curriculumSubjectId,
-            due_at: input.dueAt,
-            notes: input.notes?.trim() || null,
+            title: clean.title,
+            kind: clean.kind,
+            curriculum_subject_id: clean.curriculumSubjectId,
+            due_at: clean.dueAt,
+            notes: clean.notes,
           })
           .select(ITEM_COLUMNS)
           .single()
@@ -318,15 +343,16 @@ export function createSupabaseBackend(client?: SupabaseClient): CampusBackend {
 
       async create(input) {
         const userId = await requireUserId(supabase)
+        const clean = normalizeResourceInput(input)
         const { data, error } = await supabase
           .from('resources')
           .insert({
             user_id: userId,
-            title: input.title.trim(),
-            kind: input.kind,
-            curriculum_subject_id: input.curriculumSubjectId,
-            url: input.kind === 'link' ? input.url : null,
-            body: input.kind === 'note' ? input.body : null,
+            title: clean.title,
+            kind: clean.kind,
+            curriculum_subject_id: clean.curriculumSubjectId,
+            url: clean.url,
+            body: clean.body,
           })
           .select(RESOURCE_COLUMNS)
           .single()

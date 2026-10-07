@@ -302,7 +302,9 @@ export function FolderPicker({
 
         <div className="border-rule-soft flex flex-wrap items-center justify-between gap-3 border-t px-4 py-3">
           <p className="text-ink-muted min-w-0 truncate text-sm">
-            {current ? `Vas a usar: ${baseName(current.path)}` : ''}
+            {current
+              ? `Vas a usar: ${current.path === root ? 'Inicio' : baseName(current.path)}`
+              : ''}
           </p>
           <div className="flex gap-2">
             <Button type="button" variant="secondary" size="sm" onClick={onClose}>

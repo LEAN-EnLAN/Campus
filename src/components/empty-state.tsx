@@ -36,7 +36,9 @@ export function EmptyState({
       )}
     >
       {Icon ? <Icon aria-hidden="true" className="text-ink-faint size-5" /> : null}
-      <p className={cn('text-ink', quiet ? 'text-sm' : 'font-serif text-lg')}>{title}</p>
+      <p className={quiet ? 'text-ink-muted text-sm' : 'text-ink font-serif text-lg'}>
+        {title}
+      </p>
       {description ? <p className="text-ink-muted max-w-prose text-sm">{description}</p> : null}
       {action ? <div className="mt-2">{action}</div> : null}
     </div>

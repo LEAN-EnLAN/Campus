@@ -149,6 +149,13 @@ describe('FolderPicker', () => {
     expect(onChoose).toHaveBeenCalledExactlyOnceWith('/home/ana/Documentos')
   })
 
+  it('calls the top folder "Inicio" rather than by its (personal) name', async () => {
+    mount()
+    await filter()
+
+    expect(screen.getByText('Vas a usar: Inicio')).toBeInTheDocument()
+  })
+
   it('Ctrl+Enter chooses the current folder', async () => {
     const user = userEvent.setup()
     const { onChoose } = mount()

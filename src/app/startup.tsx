@@ -289,7 +289,7 @@ export function Startup() {
               aria-expanded={typedOpen}
               aria-controls="vault-path-form"
               onClick={() => setTyping((v) => !v)}
-              className="text-ink-muted hover:text-ink self-start text-sm underline-offset-4 hover:underline"
+              className="text-ink-muted hover:text-ink self-start text-sm underline underline-offset-4"
             >
               Escribir la ruta a mano
             </button>

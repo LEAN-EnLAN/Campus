@@ -7,6 +7,7 @@ import {
   NAV,
   showsFloatingAdd,
   TAB_ITEMS,
+  titleForPath,
 } from './nav-model'
 
 describe('navigation model', () => {
@@ -46,4 +47,33 @@ describe('floating add button', () => {
       expect(showsFloatingAdd(path)).toBe(false)
     },
   )
+})
+
+describe('document titles', () => {
+  it.each([
+    ['/today', 'Hoy · Campus'],
+    ['/', 'Hoy · Campus'],
+    ['/plan', 'Plan · Campus'],
+    ['/courses', 'Materias · Campus'],
+    ['/calendar', 'Calendario · Campus'],
+    ['/vault', 'Vault · Campus'],
+    ['/library', 'Material · Campus'],
+    ['/settings', 'Ajustes · Campus'],
+    ['/onboarding', 'Tu carrera · Campus'],
+    ['/login', 'Entrar · Campus'],
+  ])('%s is "%s"', (path, title) => {
+    expect(titleForPath(path)).toBe(title)
+  })
+
+  it('names the subject on a course page', () => {
+    expect(titleForPath('/courses/algebra-12', 'Álgebra')).toBe('Álgebra · Campus')
+  })
+
+  it('falls back to "Materia" while the subject is not known yet', () => {
+    expect(titleForPath('/courses/algebra-12')).toBe('Materia · Campus')
+  })
+
+  it('is plain "Campus" for a path it does not know', () => {
+    expect(titleForPath('/quien-sabe')).toBe('Campus')
+  })
 })

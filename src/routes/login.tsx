@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { TextField } from '@/components/ui/field'
 import { useAuth } from '@/features/auth/auth-context'
+import { useDocumentTitle } from '@/lib/hooks/use-document-title'
 import { useWorkspace } from '@/lib/runtime/workspace'
 
 export const Route = createFileRoute('/login')({
@@ -15,6 +16,7 @@ type Mode = 'signin' | 'signup'
 function LoginScreen() {
   const { signIn, signUp, session, loading } = useAuth()
   const workspace = useWorkspace()
+  useDocumentTitle('Entrar · Campus')
   const navigate = useNavigate()
 
   const [mode, setMode] = useState<Mode>('signup')

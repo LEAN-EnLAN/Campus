@@ -13,6 +13,7 @@ import {
   usePrograms,
   useSaveAcademicContext,
 } from '@/features/academic/queries'
+import { useDocumentTitle } from '@/lib/hooks/use-document-title'
 import { useRequiresAccount } from '@/lib/runtime/identity'
 import { useWorkspace } from '@/lib/runtime/workspace'
 import { useAuth } from '@/features/auth/auth-context'
@@ -36,6 +37,7 @@ function OnboardingScreen() {
   const { session, loading } = useAuth()
   const requiresAccount = useRequiresAccount()
   const workspace = useWorkspace()
+  useDocumentTitle('Tu carrera · Campus')
   const navigate = useNavigate()
 
   const [institutionId, setInstitutionId] = useState<string | null>(null)

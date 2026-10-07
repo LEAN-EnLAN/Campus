@@ -66,3 +66,22 @@ const NO_FLOATING_ADD = [/^\/courses\/[^/]+/, /^\/library/, /^\/vault/, /^\/sett
 export function showsFloatingAdd(pathname: string): boolean {
   return !NO_FLOATING_ADD.some((pattern) => pattern.test(pathname))
 }
+
+const TITLE_SUFFIX = 'Campus'
+
+const OTHER_TITLES: Record<string, string> = {
+  '/onboarding': 'Tu carrera',
+  '/login': 'Entrar',
+}
+
+/**
+ * The browser-tab title for a path. Every tab used to say "Campus", so five open
+ * tabs were indistinguishable and a screen reader announced nothing on navigation.
+ */
+export function titleForPath(pathname: string, subjectName?: string | null): string {
+  if (/^\/courses\/[^/]+/.test(pathname)) return `${subjectName ?? 'Materia'} · ${TITLE_SUFFIX}`
+  const section = NAV.find((item) => isCurrentSection(pathname, item.to))
+  if (section) return `${section.label} · ${TITLE_SUFFIX}`
+  const other = OTHER_TITLES[pathname]
+  return other ? `${other} · ${TITLE_SUFFIX}` : TITLE_SUFFIX
+}

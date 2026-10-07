@@ -3,11 +3,13 @@ import { useEffect, useState } from 'react'
 
 import { AcademicShell } from '@/components/academic-shell'
 import { QuickCapture, type QuickCaptureValues } from '@/components/quick-capture'
+import { titleForPath } from '@/components/nav-model'
 import { ToastProvider, useToast } from '@/components/toast'
 import { SearchPalette } from '@/features/search/search-palette'
 import { useAcademicPlan } from '@/features/academic/queries'
 import { useRequiresAccount } from '@/lib/runtime/identity'
 import { useAuth } from '@/features/auth/auth-context'
+import { useDocumentTitle } from '@/lib/hooks/use-document-title'
 import { useAcademicItems, useCreateAcademicItem, useResources } from '@/features/items/queries'
 
 export const Route = createFileRoute('/_app')({
@@ -47,6 +49,10 @@ function AppFrame() {
   const [searchOpen, setSearchOpen] = useState(false)
 
   const plan = useAcademicPlan()
+  const courseId = courseIdOf(pathname)
+  useDocumentTitle(
+    titleForPath(pathname, courseId ? (plan.subjectById.get(courseId)?.name ?? null) : null),
+  )
   const itemsQuery = useAcademicItems()
   const resourcesQuery = useResources()
   const createItem = useCreateAcademicItem()

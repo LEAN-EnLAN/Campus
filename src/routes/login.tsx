@@ -20,6 +20,7 @@ function LoginScreen() {
   const [password, setPassword] = useState('')
   const [displayName, setDisplayName] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [notice, setNotice] = useState<string | null>(null)
   const [pending, setPending] = useState(false)
 
   useEffect(() => {
@@ -29,16 +30,27 @@ function LoginScreen() {
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault()
     setError(null)
+    setNotice(null)
     setPending(true)
 
     const result =
       mode === 'signin'
-        ? await signIn(email.trim(), password)
+        ? { ...(await signIn(email.trim(), password)), needsConfirmation: false }
         : await signUp(email.trim(), password, displayName.trim())
 
     setPending(false)
     if (result.error) {
       setError(result.error)
+      return
+    }
+    if (result.needsConfirmation) {
+      // No session yet: navigating to /today would just bounce back here with no
+      // explanation. Say what to do next and leave the form on "Entrar".
+      setMode('signin')
+      setPassword('')
+      setNotice(
+        `Te mandamos un email a ${email.trim()}. Confirmalo y después entrá con tu contraseña.`,
+      )
       return
     }
     // Always /today. The protected layout decides whether this student still
@@ -94,6 +106,12 @@ function LoginScreen() {
             minLength={6}
             required
           />
+
+          {notice ? (
+            <p role="status" className="text-ink text-sm font-medium">
+              {notice}
+            </p>
+          ) : null}
 
           {error ? (
             <p role="alert" className="text-danger text-sm font-medium">

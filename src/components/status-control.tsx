@@ -125,7 +125,7 @@ export function StatusControl({
                   : 'border-rule bg-paper-elevated text-ink-muted hover:border-ink-faint hover:text-ink',
               )}
             >
-              <span aria-hidden="true" className="w-3 text-center leading-none">
+              <span aria-hidden="true" className="w-4 text-center leading-none">
                 {statusGlyph(option.value ?? 'pending')}
               </span>
               {compact ? null : <span>{label}</span>}

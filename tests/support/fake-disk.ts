@@ -86,8 +86,28 @@ export class FakeDisk {
         })
       },
       mkdir: async () => {},
-      rename: async () => {},
-      trash: async () => ({ trashedTo: '' }),
+      rename: async (from, to) => {
+        const moving = [...this.files.keys()].filter(
+          (p) => p === from || p.startsWith(from + '/'),
+        )
+        if (moving.length === 0) throw new VaultError('not_found', 'not found')
+        if (this.files.has(to) || [...this.files.keys()].some((p) => p.startsWith(to + '/'))) {
+          throw new VaultConflictError(to, 'exists', 'destination_exists')
+        }
+        for (const path of moving) {
+          const file = this.files.get(path)!
+          this.files.delete(path)
+          this.files.set(to + path.slice(from.length), file)
+        }
+      },
+      trash: async (path) => {
+        const going = [...this.files.keys()].filter(
+          (p) => p === path || p.startsWith(path + '/'),
+        )
+        if (going.length === 0) throw new VaultError('not_found', 'not found')
+        for (const p of going) this.files.delete(p)
+        return { trashedTo: `.campus/trash/${path}` }
+      },
     }
   }
 }

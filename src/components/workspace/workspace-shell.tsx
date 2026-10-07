@@ -15,9 +15,11 @@ import {
 } from '@/lib/workspace/model'
 
 import { useFiles } from '@/lib/files/context'
+import { vaultErrorCode, vaultErrorMessage } from '@/lib/files/errors'
 import { KnowledgeProvider, useKnowledge } from '@/lib/knowledge/provider'
 
 import { BacklinksPanel } from './backlinks-panel'
+import { useEditorGuard } from './editor-guard'
 import { FileExplorer } from './file-explorer'
 import { NoteEditor } from './note-editor'
 import { QuickSwitcher } from './quick-switcher'
@@ -37,15 +39,33 @@ import { SearchDialog } from './search-dialog'
  * as a concept the student has to manage on a phone.
  */
 
-export function WorkspaceShell({ vaultKey }: { vaultKey: string }) {
+export interface WorkspaceShellProps {
+  vaultKey: string
+  /** A note the app asked to open (global search). Reported back via `onOpenRequestHandled`. */
+  openRequest?: string | null
+  onOpenRequestHandled?: () => void
+  /**
+   * Receives the "may I leave?" check: flushes every open editor and, only if
+   * some text could not be saved, asks. The route calls it before navigating
+   * away from the workspace.
+   */
+  onGuard?: (settle: () => Promise<boolean>) => void
+}
+
+export function WorkspaceShell(props: WorkspaceShellProps) {
   return (
     <KnowledgeProvider>
-      <WorkspaceShellInner vaultKey={vaultKey} />
+      <WorkspaceShellInner {...props} />
     </KnowledgeProvider>
   )
 }
 
-function WorkspaceShellInner({ vaultKey }: { vaultKey: string }) {
+function WorkspaceShellInner({
+  vaultKey,
+  openRequest,
+  onOpenRequestHandled,
+  onGuard,
+}: WorkspaceShellProps) {
   const storageKey = workspaceStorageKey(vaultKey)
   const [state, setState] = useState<WorkspaceState>(() =>
     deserialize(localStorage.getItem(storageKey)),
@@ -55,6 +75,10 @@ function WorkspaceShellInner({ vaultKey }: { vaultKey: string }) {
   const [searchOpen, setSearchOpen] = useState(false)
   const files = useFiles()
   const knowledge = useKnowledge()
+  const guard = useEditorGuard()
+  // A gesture that failed, said in Spanish. Cleared by the next one that works.
+  const [notice, setNotice] = useState<string | null>(null)
+  const [createRequest, setCreateRequest] = useState(0)
 
   // Persist on every change, debounced by the event loop — layout writes are
   // tiny and losing one to a crash costs nothing.
@@ -65,16 +89,69 @@ function WorkspaceShellInner({ vaultKey }: { vaultKey: string }) {
   const active = state.panes.find((p) => p.id === state.activePaneId) ?? state.panes[0]!
   const activePath = active.activeTab
 
+  const stateRef = useRef(state)
+  stateRef.current = state
+
+  /**
+   * Opening a note replaces the editor of the active tab, so whatever is typed
+   * there is settled first. If it cannot be saved and the student declines to
+   * lose it, nothing changes.
+   */
   const open = useCallback(
     (path: string) => {
-      setState((s) => openNote(s, path))
-      knowledge.noteOpened(path)
+      void (async () => {
+        const current = stateRef.current
+        const pane = current.panes.find((p) => p.id === current.activePaneId)
+        const leaving = pane?.activeTab
+        if (leaving && leaving !== path && !(await guard.settle((p) => p === leaving))) return
+        setState((s) => openNote(s, path))
+        knowledge.noteOpened(path)
+      })()
     },
-    [knowledge],
+    [knowledge, guard],
   )
 
   const openRef = useRef(open)
   openRef.current = open
+
+  /** Close a tab, saving what it holds first. */
+  const requestClose = useCallback(
+    async (paneId: string, path: string) => {
+      if (!(await guard.settle((p) => p === path))) return
+      setState((s) => closeTab(s, paneId, path))
+    },
+    [guard],
+  )
+
+  /** Switch tabs inside a pane: the editor being left is settled first. */
+  const requestActivate = useCallback(
+    async (paneId: string, path: string) => {
+      const pane = stateRef.current.panes.find((p) => p.id === paneId)
+      const leaving = pane?.activeTab
+      if (leaving && leaving !== path && !(await guard.settle((p) => p === leaving))) return
+      setState((s) => activateTab(activatePane(s, paneId), paneId, path))
+    },
+    [guard],
+  )
+
+  useEffect(() => {
+    onGuard?.(() => guard.settle())
+  }, [guard, onGuard])
+
+  // A note the app asked for (global search): open it, then say it was handled
+  // so the request is not replayed on the next render.
+  const handledRequest = useRef<string | null>(null)
+  const handledCallback = useRef(onOpenRequestHandled)
+  handledCallback.current = onOpenRequestHandled
+  useEffect(() => {
+    // Keyed on the request alone: `open` changes whenever the index does, and
+    // replaying a request on every such change would loop.
+    if (!openRequest || handledRequest.current === openRequest) return
+    handledRequest.current = openRequest
+    openRef.current(openRequest)
+    handledCallback.current?.()
+  }, [openRequest])
+
   const knowledgeRef = useRef(knowledge)
   knowledgeRef.current = knowledge
   const filesRef = useRef(files)
@@ -84,19 +161,33 @@ function WorkspaceShellInner({ vaultKey }: { vaultKey: string }) {
   // use, just opened afterwards. The date is built from LOCAL components —
   // Argentina is UTC-3 and toISOString() would file tonight's note under
   // tomorrow.
+  //
+  // Every step either works or says why it did not. A failed create used to
+  // open a phantom note and index the template; a failed existence check used
+  // to be read as "absent", so the template was written over the real note.
   const openDailyNote = useCallback(async () => {
     const files = filesRef.current
     if (!files) return
     const now = new Date()
     const stamp = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
     const path = `Daily/${stamp}.md`
-    const existing = await files.stat(path).catch(() => null)
-    if (!existing) {
-      const body = `---\ndate: ${stamp}\ntype: daily\n---\n\n# ${stamp}\n\n- [ ] \n`
-      await files.writeNote(path, body, null).catch(() => {})
-      knowledgeRef.current.noteCreated(path, body)
+    try {
+      const existing = await files.stat(path)
+      if (!existing) {
+        const body = `---\ndate: ${stamp}\ntype: daily\n---\n\n# ${stamp}\n\n- [ ] \n`
+        try {
+          await files.writeNote(path, body, null)
+          knowledgeRef.current.noteCreated(path, body)
+        } catch (error) {
+          // Created in the meantime (another tab, a sync): it exists, so open it.
+          if (vaultErrorCode(error) !== 'already_exists') throw error
+        }
+      }
+      setNotice(null)
+      openRef.current(path)
+    } catch (error) {
+      setNotice(vaultErrorMessage(error))
     }
-    openRef.current(path)
   }, [])
 
   // [[Target]] resolution goes through the index: exact path, then unique
@@ -108,18 +199,22 @@ function WorkspaceShellInner({ vaultKey }: { vaultKey: string }) {
     const verdict = knowledgeRef.current.index.resolve(target)
     if (verdict.status === 'resolved') {
       openRef.current(verdict.path)
-    } else if (verdict.status === 'missing') {
-      const path = target.endsWith('.md') ? target : `${target}.md`
-      void filesRef.current
-        ?.writeNote(path, `# ${target}\n\n`, null)
-        .then(() => {
+    } else if (verdict.status === 'ambiguous') {
+      setNotice(`«${target}» puede ser más de una nota: ${verdict.candidates.join(', ')}.`)
+    } else {
+      const path = /\.md$/i.test(target) ? target : `${target}.md`
+      void (async () => {
+        try {
+          await filesRef.current?.writeNote(path, `# ${target}\n\n`, null)
           knowledgeRef.current.noteCreated(path, `# ${target}\n\n`)
+          setNotice(null)
           openRef.current(path)
-        })
-        .catch(() => {
-          // The vault refused the name (invalid, or created meanwhile). The
-          // student sees nothing happen rather than a wrong note opening.
-        })
+        } catch (error) {
+          // The vault refused the name (invalid, or created meanwhile): say so,
+          // and open nothing rather than a note that does not exist.
+          setNotice(vaultErrorMessage(error))
+        }
+      })()
     }
   }, [])
 
@@ -136,14 +231,14 @@ function WorkspaceShellInner({ vaultKey }: { vaultKey: string }) {
   const shortcuts = useMemo(
     () => ({
       split: () => setState((s) => splitPane(s)),
-      closeActive: () =>
-        setState((s) => {
-          const pane = s.panes.find((p) => p.id === s.activePaneId)
-          return pane?.activeTab ? closeTab(s, pane.id, pane.activeTab) : s
-        }),
+      closeActive: () => {
+        const s = stateRef.current
+        const pane = s.panes.find((p) => p.id === s.activePaneId)
+        if (pane?.activeTab) void requestClose(pane.id, pane.activeTab)
+      },
       toggleSidebar: () => setSidebarOpen((v) => !v),
     }),
-    [],
+    [requestClose],
   )
 
   useEffect(() => {
@@ -179,6 +274,10 @@ function WorkspaceShellInner({ vaultKey }: { vaultKey: string }) {
 
   // Explorer mutations must not orphan tabs: rename/trash flow through the
   // model so an open note follows its file.
+  const beforeChange = useCallback(
+    (path: string) => guard.settle((p) => p === path || p.startsWith(path + '/')),
+    [guard],
+  )
   const handleRenamed = useCallback(
     (from: string, to: string) => {
       setState((s) => renamePath(s, from, to))
@@ -233,6 +332,8 @@ function WorkspaceShellInner({ vaultKey }: { vaultKey: string }) {
             </button>
             <FileExplorer
               activePath={activePath}
+              createRequest={createRequest}
+              onBeforeChange={beforeChange}
               onOpen={(p) => (open(p), setSidebarOpen(window.innerWidth >= 768))}
               onRenamed={handleRenamed}
               onTrashed={handleTrashed}
@@ -241,7 +342,23 @@ function WorkspaceShellInner({ vaultKey }: { vaultKey: string }) {
         </>
       )}
 
-      <div className="bg-paper-sunken/45 flex min-w-0 flex-1 overflow-hidden">
+      <div className="bg-paper-sunken/45 relative flex min-w-0 flex-1 overflow-hidden">
+        {notice && (
+          <p
+            role="alert"
+            className="border-warning/40 bg-paper-elevated text-ink absolute inset-x-2 top-2 z-10 flex items-center justify-between gap-2 rounded-md border px-3 py-2 text-sm"
+          >
+            <span>{notice}</span>
+            <button
+              type="button"
+              aria-label="Cerrar aviso"
+              onClick={() => setNotice(null)}
+              className="text-ink-muted shrink-0 px-1"
+            >
+              ✕
+            </button>
+          </p>
+        )}
         {state.panes.map((pane, index) => {
           const isActivePane = pane.id === state.activePaneId
           // Mobile: only the active pane exists. Desktop: both, split evenly.
@@ -281,18 +398,16 @@ function WorkspaceShellInner({ vaultKey }: { vaultKey: string }) {
                     <button
                       type="button"
                       aria-current={pane.activeTab === tab ? 'true' : undefined}
-                      onClick={() =>
-                        setState((s) => activateTab(activatePane(s, pane.id), pane.id, tab))
-                      }
+                      onClick={() => void requestActivate(pane.id, tab)}
                       className="max-w-44 truncate px-2.5 py-1.5 text-xs"
                       title={tab}
                     >
-                      {(tab.split('/').pop() ?? tab).replace(/\.md$/, '')}
+                      {(tab.split('/').pop() ?? tab).replace(/\.md$/i, '')}
                     </button>
                     <button
                       type="button"
                       aria-label={`Cerrar ${tab}`}
-                      onClick={() => setState((s) => closeTab(s, pane.id, tab))}
+                      onClick={() => void requestClose(pane.id, tab)}
                       className="text-ink-faint hover:text-ink pr-1.5 text-xs"
                     >
                       ×
@@ -317,7 +432,7 @@ function WorkspaceShellInner({ vaultKey }: { vaultKey: string }) {
                         arbitrary px-4: the label, the first character of every
                         ruled line and the filename below share one axis. */}
                     <div className="border-rule-soft flex items-center justify-between gap-3 border-b px-4 py-2 md:pr-[var(--rule-gutter)] md:pl-[var(--rule-text-inset)]">
-                      <div className="min-w-0">
+                      <div className="min-w-0" title={pane.activeTab}>
                         <p className="text-2xs text-ink-muted tracking-[0.18em] uppercase">
                           Cuaderno
                         </p>
@@ -328,9 +443,6 @@ function WorkspaceShellInner({ vaultKey }: { vaultKey: string }) {
                           )}
                         </h2>
                       </div>
-                      <span className="text-2xs text-ink-muted hidden shrink-0 md:inline">
-                        {pane.activeTab}
-                      </span>
                     </div>
                     {/* The ruling itself lives in the editor theme, painted on
                         the scroller — see editor-theme.ts. Painting it here,
@@ -345,12 +457,22 @@ function WorkspaceShellInner({ vaultKey }: { vaultKey: string }) {
                         onWikilink={onWikilink}
                         wikilinkTargets={wikilinkTargets}
                         onSaved={handleSaved}
+                        registerEditor={guard.register}
+                        onClose={() => void requestClose(pane.id, pane.activeTab!)}
                       />
                     </div>
                     <BacklinksPanel path={pane.activeTab} onOpen={open} />
                   </div>
                 ) : (
-                  <EmptyPane onOpenSidebar={() => setSidebarOpen(true)} />
+                  <EmptyPane
+                    sidebarOpen={sidebarOpen}
+                    vaultIsEmpty={!knowledge.building && knowledge.index.notes().length === 0}
+                    onOpenSidebar={() => setSidebarOpen(true)}
+                    onCreateFirst={() => {
+                      setSidebarOpen(true)
+                      setCreateRequest((n) => n + 1)
+                    }}
+                  />
                 )}
               </div>
             </section>
@@ -361,7 +483,17 @@ function WorkspaceShellInner({ vaultKey }: { vaultKey: string }) {
   )
 }
 
-function EmptyPane({ onOpenSidebar }: { onOpenSidebar: () => void }) {
+function EmptyPane({
+  sidebarOpen,
+  vaultIsEmpty,
+  onOpenSidebar,
+  onCreateFirst,
+}: {
+  sidebarOpen: boolean
+  vaultIsEmpty: boolean
+  onOpenSidebar: () => void
+  onCreateFirst: () => void
+}) {
   return (
     <div className="grid h-full place-items-center p-6">
       <div className="text-center">
@@ -380,13 +512,28 @@ function EmptyPane({ onOpenSidebar }: { onOpenSidebar: () => void }) {
           <line x1="14" y1="40" x2="74" y2="40" strokeDasharray="2 3" />
         </svg>
         <p className="text-ink-muted text-sm">Ninguna nota abierta en este panel.</p>
-        <button
-          type="button"
-          onClick={onOpenSidebar}
-          className="border-rule text-ink mt-2 rounded-md border px-3 py-1 text-sm"
-        >
-          Abrir el explorador
-        </button>
+        {/* ONE action, and it always does something: an empty vault is offered
+            its first note; otherwise the explorer button only shows when the
+            explorer is actually hidden (on desktop it sits right beside this). */}
+        {vaultIsEmpty ? (
+          <button
+            type="button"
+            onClick={onCreateFirst}
+            className="border-rule text-ink mt-2 rounded-md border px-3 py-1 text-sm"
+          >
+            Creá tu primera nota
+          </button>
+        ) : (
+          !sidebarOpen && (
+            <button
+              type="button"
+              onClick={onOpenSidebar}
+              className="border-rule text-ink mt-2 rounded-md border px-3 py-1 text-sm"
+            >
+              Abrir el explorador
+            </button>
+          )
+        )}
       </div>
     </div>
   )

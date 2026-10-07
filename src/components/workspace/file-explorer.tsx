@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import { useVaultDir, useVaultMutations } from '@/features/vault/queries'
 import type { VaultEntry } from '@/lib/files/context'
+import { vaultErrorMessage } from '@/lib/files/errors'
 
 /**
  * The vault explorer: the student's real folder, shown as it is.
@@ -22,15 +23,35 @@ export interface ExplorerEvents {
   onRenamed?: (from: string, to: string) => void
   /** A trashed note closes everywhere. */
   onTrashed?: (path: string) => void
+  /**
+   * Called before a rename, so an open note inside it is saved first. Resolves
+   * false when the student chose not to go ahead.
+   */
+  onBeforeChange?: (path: string) => Promise<boolean>
 }
+
+/** A name for a new note: `.md` is added unless the student already wrote it (any case). */
+const noteFileName = (name: string) => (/\.md$/i.test(name) ? name : `${name}.md`)
 
 export function FileExplorer({
   activePath,
+  createRequest = 0,
   ...events
-}: { activePath: string | null } & ExplorerEvents) {
+}: {
+  activePath: string | null
+  /** Bump to open the "new note" name field (the empty-state action does). */
+  createRequest?: number
+} & ExplorerEvents) {
   return (
     <nav aria-label="Archivos del Vault" className="flex h-full flex-col overflow-y-auto p-2">
-      <Directory path="" depth={0} activePath={activePath} events={events} alwaysOpen />
+      <Directory
+        path=""
+        depth={0}
+        activePath={activePath}
+        events={events}
+        createRequest={createRequest}
+        alwaysOpen
+      />
     </nav>
   )
 }
@@ -40,12 +61,14 @@ function Directory({
   depth,
   activePath,
   events,
+  createRequest = 0,
   alwaysOpen = false,
 }: {
   path: string
   depth: number
   activePath: string | null
   events: ExplorerEvents
+  createRequest?: number
   alwaysOpen?: boolean
 }) {
   const { onOpen } = events
@@ -55,13 +78,17 @@ function Directory({
   const [draft, setDraft] = useState('')
   const [error, setError] = useState<string | null>(null)
 
+  useEffect(() => {
+    if (path === '' && createRequest > 0) setCreating('note')
+  }, [path, createRequest])
+
   const submitCreate = async () => {
     const name = draft.trim()
     if (!name || !creating) return
     setError(null)
     try {
       if (creating === 'note') {
-        const file = name.endsWith('.md') ? name : `${name}.md`
+        const file = noteFileName(name)
         const target = join(path, file)
         await mutations.createNote.mutateAsync({ path: target })
         onOpen(target)
@@ -71,9 +98,9 @@ function Directory({
       setCreating(null)
       setDraft('')
     } catch (cause) {
-      // The refusal names the reason (invalid name, conflict, escape). The
-      // student typed the name; the message is theirs to read.
-      setError((cause as Error).message)
+      // One Spanish sentence for the reason (invalid name, already exists...).
+      // It never repeats the name or shows the raw server text.
+      setError(vaultErrorMessage(cause))
     }
   }
 
@@ -122,9 +149,14 @@ function Directory({
           <input
             autoFocus
             value={draft}
-            onChange={(e) => setDraft(e.target.value)}
+            onChange={(e) => {
+              setDraft(e.target.value)
+              // The refusal was about the old text; keeping it under new text
+              // reads as if the new text were refused too.
+              setError(null)
+            }}
             onKeyDown={(e) => e.key === 'Escape' && (setCreating(null), setDraft(''))}
-            placeholder={creating === 'note' ? 'nombre-de-la-nota' : 'nombre-de-carpeta'}
+            placeholder={creating === 'note' ? 'Nombre de la nota' : 'Nombre de la carpeta'}
             aria-label={
               creating === 'note' ? 'Nombre de la nota nueva' : 'Nombre de la carpeta nueva'
             }
@@ -192,12 +224,15 @@ function Entry({
     }
     try {
       const to = join(parent, name)
+      // An open note inside what is being renamed is saved first, so its text
+      // does not chase a path that is about to stop existing.
+      if (!((await events.onBeforeChange?.(path)) ?? true)) return
       await mutations.rename.mutateAsync({ from: path, to })
       events.onRenamed?.(path, to)
       setRenaming(false)
       setError(null)
     } catch (cause) {
-      setError((cause as Error).message)
+      setError(vaultErrorMessage(cause))
     }
   }
 
@@ -207,7 +242,7 @@ function Entry({
       events.onTrashed?.(path)
       setConfirming(false)
     } catch (cause) {
-      setError((cause as Error).message)
+      setError(vaultErrorMessage(cause))
     }
   }
 
@@ -224,7 +259,10 @@ function Entry({
         <input
           autoFocus
           value={draft}
-          onChange={(e) => setDraft(e.target.value)}
+          onChange={(e) => {
+            setDraft(e.target.value)
+            setError(null)
+          }}
           onKeyDown={(e) => e.key === 'Escape' && setRenaming(false)}
           aria-label={`Renombrar ${entry.name}`}
           className="border-rule w-full rounded-md border px-2 py-0.5 text-xs"
@@ -257,7 +295,7 @@ function Entry({
           <span aria-hidden className="text-ink-faint w-3 shrink-0 text-center text-xs">
             {entry.kind === 'dir' ? (open ? '▾' : '▸') : '·'}
           </span>
-          <span className="truncate">{entry.name.replace(/\.md$/, '')}</span>
+          <span className="truncate">{entry.name.replace(/\.md$/i, '')}</span>
         </button>
         <span className="hidden shrink-0 gap-0.5 group-focus-within:flex group-hover:flex">
           <button

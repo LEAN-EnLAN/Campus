@@ -36,7 +36,6 @@ export function useNoteSearch(active: boolean): {
   // the scan finishes, so a query typed while it ran is answered again.
   const search = useCallback(
     (query: string) => (files && ready ? sessionFor(files).index.search(query) : []),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [files, ready],
   )
 

@@ -255,6 +255,10 @@ Example:
 
 > No tenés nada para hoy. Buen momento para adelantar algo, o para no hacer nada.
 
+One component (`EmptyState`): one sentence plus at most one action. Never two empty
+messages on one screen. `quiet` drops the dashed box for use inside a section that
+already has a heading. Quote with «guillemets».
+
 # 14. Motion
 
 120–180ms controls, 180–240ms panels. Respect reduced motion.

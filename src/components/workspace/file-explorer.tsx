@@ -170,12 +170,8 @@ function Directory({
         </form>
       )}
 
-      {entries.length === 0 && !creating && path === '' && (
-        <p className="text-ink-muted px-2 py-4 text-center text-xs">
-          Tu Vault está vacío. Creá tu primera nota.
-        </p>
-      )}
-
+      {/* An empty folder says so in the main pane, once and with its one action:
+          saying it here as well put two "empty" messages on one screen. */}
       {entries.map((entry) => (
         <Entry
           key={entry.name}

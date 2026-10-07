@@ -1,4 +1,5 @@
 import { itemKindLabel } from '@/components/deadline-row'
+import { EmptyState } from '@/components/empty-state'
 import type { AcademicItem } from '@/domain/types'
 import { dueTimeLabel } from '@/features/items/due'
 import { cn } from '@/lib/utils'
@@ -44,9 +45,7 @@ export function AgendaList({
       </h3>
 
       {days.length === 0 ? (
-        <p className="text-ink-muted mt-4 text-sm">
-          No tenés nada agendado de hoy en adelante.
-        </p>
+        <EmptyState quiet title="No tenés nada agendado de hoy en adelante." />
       ) : (
         <div className="mt-2 flex flex-col gap-5">
           {days.map((day) => (

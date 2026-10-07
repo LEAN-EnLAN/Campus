@@ -274,11 +274,15 @@ describe('gestures that fail say so', () => {
 })
 
 describe('the first run', () => {
-  it('an empty vault offers one working "Creá tu primera nota" action', async () => {
+  it('an empty vault says so once and offers one working "Escribir mi primera nota" action', async () => {
     const disk = new FakeDisk()
     await mount(disk)
 
-    await click('Creá tu primera nota')
+    // One sentence on the whole screen: not the explorer AND the pane saying it.
+    expect(screen.getAllByText('Todavía no escribiste ninguna nota.')).toHaveLength(1)
+    expect(screen.queryByText(/Tu Vault está vacío/)).toBeNull()
+
+    await click('Escribir mi primera nota')
     const input = screen.getByRole('textbox', { name: 'Nombre de la nota nueva' })
     expect(input).toHaveFocus()
     fireEvent.change(input, { target: { value: 'Primera' } })
@@ -287,14 +291,14 @@ describe('the first run', () => {
 
     expect(disk.files.has('Primera.md')).toBe(true)
     expect(document.querySelector('.cm-editor')).not.toBeNull()
-    expect(screen.queryByRole('button', { name: 'Creá tu primera nota' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Escribir mi primera nota' })).toBeNull()
   })
 
   it('a vault with notes does not nag, and no longer offers a button that does nothing', async () => {
     const disk = new FakeDisk()
     disk.put('a.md', 'x')
     await mount(disk)
-    expect(screen.queryByRole('button', { name: 'Creá tu primera nota' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Escribir mi primera nota' })).toBeNull()
     expect(screen.queryByRole('button', { name: 'Abrir el explorador' })).toBeNull()
   })
 })

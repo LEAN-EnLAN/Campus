@@ -193,9 +193,7 @@ function CourseDetailScreen() {
             onRetry={() => void itemsQuery.refetch()}
           />
         ) : items.length === 0 ? (
-          <p className="text-ink-muted py-3 text-sm">
-            No tenés nada anotado para esta materia.
-          </p>
+          <EmptyState quiet title="No tenés nada anotado para esta materia." />
         ) : (
           <div>
             {items.map((item) => (

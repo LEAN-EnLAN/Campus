@@ -124,7 +124,7 @@ function TodayScreen() {
               {today.today.length > 0 ? (
                 <div>{renderRows(today.today)}</div>
               ) : (
-                <p className="text-ink-muted py-3 text-sm">Nada más agendado para hoy.</p>
+                <EmptyState quiet title="Nada más agendado para hoy." />
               )}
             </section>
           ) : null}

@@ -138,9 +138,10 @@ function PlanScreen() {
         <section aria-labelledby="agregar-materia" className="flex flex-col gap-3">
           <SectionHeading id="agregar-materia">Agregar una materia</SectionHeading>
           {plan.views.length === 0 ? (
-            <p className="text-ink-muted text-sm">
-              Todavía no cargaste ninguna. Agregá la primera y después marcá en qué estás.
-            </p>
+            <EmptyState
+              quiet
+              title="Todavía no cargaste ninguna materia. Agregá la primera y después marcá en qué estás."
+            />
           ) : null}
           <AddManualSubjectForm />
         </section>

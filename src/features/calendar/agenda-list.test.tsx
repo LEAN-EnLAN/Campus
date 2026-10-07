@@ -125,3 +125,12 @@ describe('AgendaList', () => {
     expect(screen.getByText(/Paradigmas/)).toBeInTheDocument()
   })
 })
+
+describe('AgendaList when there is nothing', () => {
+  it('says so once, as a quiet sentence', () => {
+    const { container } = render(<AgendaList items={[]} now={NOW} subjectName={() => null} />)
+
+    expect(screen.getByText('No tenés nada agendado de hoy en adelante.')).toBeInTheDocument()
+    expect(container.querySelector('.border-dashed')).toBeNull()
+  })
+})

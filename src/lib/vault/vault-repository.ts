@@ -16,6 +16,9 @@ import type {
  * and neither is sufficient.
  */
 
+/** Linux caps symlink expansion at 40 per lookup (ELOOP); the walk uses the same bound. */
+const MAX_LINK_HOPS = 40
+
 export type ResolveResult = { ok: true; absolute: string } | { ok: false; reason: string }
 
 /**
@@ -47,11 +50,18 @@ export class VaultRepository implements VaultAccess {
    * Where does this vault-relative path really land?
    *
    * The order matters. Validate the string first, so a malformed name never
-   * reaches a syscall. Then resolve the PARENT — never the full path — because
-   * an existence check on the full path follows symlinks, and a link whose
-   * target does not exist reports "absent". That gap is a real bypass: skip
-   * resolution, and the literal in-vault path passes containment while the link
-   * still points outside. The target can be created a second later.
+   * reaches a syscall. Then walk the path the way the KERNEL will: one
+   * component at a time, following every link — including the links a link
+   * points at. Judging a link by its target string is not enough, because that
+   * target can itself be a link (`a -> b`, `b -> /etc/hostname`): the first hop
+   * lands inside the vault and a textual check passes, while the kernel keeps
+   * going. So a link's target is spliced into the work queue and walked with
+   * the same rules, however many hops it takes.
+   *
+   * Absent entries are not followed (there is nothing to follow) and are not
+   * an error: that is a note or folder being created. A link whose target does
+   * not exist is still followed to where the target WOULD be, because the
+   * target can be created a second later.
    */
   async resolve(relative: string): Promise<ResolveResult> {
     const verdict = validateVaultPath(relative)
@@ -66,71 +76,78 @@ export class VaultRepository implements VaultAccess {
 
     const inside = (p: string) =>
       p === realRoot || p.startsWith(realRoot + '/') || p.startsWith(realRoot + '\\')
+    const outside: ResolveResult = { ok: false, reason: 'path resolves outside the vault' }
 
-    // Walk segment by segment. A symlinked *directory* halfway down escapes just
-    // as effectively as a symlinked file at the end, and only a walk catches it.
+    // The physical directory we have walked to, and what is left to walk.
     let current = realRoot
-    for (const segment of verdict.segments) {
-      const candidate = this.fs.join(current, segment)
-      const stat = await this.fs.lstat(candidate)
+    const pending = [...verdict.segments]
+    // The deepest prefix that exists on disk: the part `realpath` can vouch for.
+    let deepestExisting = realRoot
+    let hops = 0
+    let absent = false
 
-      if (stat?.kind === 'symlink') {
-        // Judge the link by its TARGET, existing or not.
-        let target: string
-        try {
-          target = await this.fs.readlink(candidate)
-        } catch {
-          return { ok: false, reason: 'symlink is not readable' }
-        }
-        const resolved = this.absolutise(target, current)
-        if (!inside(resolved)) {
-          return { ok: false, reason: 'path resolves outside the vault' }
-        }
-        current = resolved
+    while (pending.length > 0) {
+      const segment = pending.shift()!
+      if (segment === '' || segment === '.') continue
+      if (segment === '..') {
+        // `current` is physical, so its textual parent is its real parent.
+        current = this.fs.dirname(current)
         continue
       }
+
+      const candidate = this.fs.join(current, segment)
+      // Below an absent entry nothing can be a link, so stop asking the disk.
+      const stat = absent ? null : await this.fs.lstat(candidate)
 
       if (stat === null) {
-        // Not there yet — a note being created. Nothing to resolve, and the
-        // parent chain above it has already been checked.
+        absent = true
         current = candidate
         continue
       }
 
-      // A real entry: resolve it, so a hard-to-see case (a bind mount, a link
-      // the lstat above already collapsed) still gets checked against the root.
-      try {
-        current = await this.fs.realpath(candidate)
-      } catch {
+      if (stat.kind !== 'symlink') {
         current = candidate
+        deepestExisting = candidate
+        continue
       }
-      if (!inside(current)) {
-        return { ok: false, reason: 'path resolves outside the vault' }
+
+      hops += 1
+      if (hops > MAX_LINK_HOPS) return { ok: false, reason: 'too many symbolic links' }
+
+      let target: string
+      try {
+        target = await this.fs.readlink(candidate)
+      } catch {
+        return { ok: false, reason: 'symlink is not readable' }
       }
+
+      const unified = target.split('\\').join('/')
+      if (unified.startsWith('//')) return outside
+      const drive = /^[a-zA-Z]:/.exec(unified)
+      if (unified.startsWith('/')) {
+        current = '/'
+      } else if (drive) {
+        current = drive[0] + '/'
+      }
+      // The link's own components go FIRST, so the rest of the requested path
+      // is resolved relative to wherever the link really leads.
+      const parts = unified.replace(/^([a-zA-Z]:)?\/+/, '').split('/')
+      pending.unshift(...parts)
+      deepestExisting = current
     }
 
-    if (!inside(current)) return { ok: false, reason: 'path resolves outside the vault' }
+    if (!inside(current)) return outside
+
+    // Defence in depth: ask the OS about the deepest part that exists. This
+    // catches what lstat cannot see (a bind mount, a case-folding quirk).
+    try {
+      const real = await this.fs.realpath(deepestExisting)
+      if (!inside(real)) return outside
+    } catch {
+      return { ok: false, reason: 'path resolves outside the vault' }
+    }
+
     return { ok: true, absolute: current }
-  }
-
-  private absolutise(target: string, parent: string): string {
-    const isAbsolute =
-      target.startsWith('/') || /^[a-zA-Z]:/.test(target) || target.startsWith('\\\\')
-    if (!isAbsolute) return this.normalise(this.fs.join(parent, target))
-    return this.normalise(target)
-  }
-
-  /** Collapse `.` and `..` textually — the target of a link is not resolvable by stat. */
-  private normalise(p: string): string {
-    const unified = p.split('\\').join('/')
-    const lead = unified.startsWith('/') ? '/' : ''
-    const out: string[] = []
-    for (const seg of unified.split('/')) {
-      if (seg === '' || seg === '.') continue
-      if (seg === '..') out.pop()
-      else out.push(seg)
-    }
-    return lead + out.join('/')
   }
 
   private async require(relative: string): Promise<string> {

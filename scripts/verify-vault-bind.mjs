@@ -18,14 +18,14 @@ const check = (name, ok, detail = '') => {
 
 console.log('\nP1-05 — Vault API bind guard')
 
-await waitForPortFree(5173)
+await waitForPortFree()
 
 // A) the ordinary developer path must keep working
 const ok = await startDevServer({ args: ['dev'] })
 check('`pnpm dev` starts on loopback', ok.ready, ok.url ?? ok.output.slice(-160))
 if (ok.ready) check('bound to loopback', /127\.0\.0\.1|\[::1\]/.test(ok.url ?? ''), ok.url)
 await ok.stop()
-await waitForPortFree(5173)
+await waitForPortFree()
 
 // B) --host must be refused, loudly
 const unsafe = await startDevServer({ args: ['vite', '--host'], expectFailure: true })
@@ -46,7 +46,7 @@ check(
   'a silent downgrade teaches everyone to delete the check',
 )
 await unsafe.stop()
-await waitForPortFree(5173)
+await waitForPortFree()
 
 // C) the documented opt-out: frontend on the network, no filesystem API
 const optOut = await startDevServer({
@@ -69,7 +69,7 @@ if (optOut.ready) {
   check('and the endpoint is not mounted', probe.status === 404, `status=${probe.status}`)
 }
 await optOut.stop()
-await waitForPortFree(5173)
+await waitForPortFree()
 
 const failed = results.filter((r) => !r).length
 console.log(`\n${failed === 0 ? 'PASS' : 'FAIL'}  ${results.length - failed}/${results.length}`)

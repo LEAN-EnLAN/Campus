@@ -14,23 +14,31 @@ export function EmptyState({
   title,
   description,
   action,
+  quiet = false,
   className,
 }: {
   icon?: LucideIcon
+  /** The sentence. One. */
   title: string
   description?: string
+  /** At most one. */
   action?: ReactNode
+  /** No dashed box, for inside a section that already has its own heading. */
+  quiet?: boolean
   className?: string
 }) {
   return (
     <div
       className={cn(
-        'border-rule flex flex-col items-start gap-2 rounded-lg border border-dashed px-5 py-8',
+        'flex flex-col items-start gap-2',
+        quiet ? 'py-3' : 'border-rule rounded-lg border border-dashed px-5 py-8',
         className,
       )}
     >
       {Icon ? <Icon aria-hidden="true" className="text-ink-faint size-5" /> : null}
-      <p className="text-ink font-serif text-lg">{title}</p>
+      <p className={quiet ? 'text-ink-muted text-sm' : 'text-ink font-serif text-lg'}>
+        {title}
+      </p>
       {description ? <p className="text-ink-muted max-w-prose text-sm">{description}</p> : null}
       {action ? <div className="mt-2">{action}</div> : null}
     </div>

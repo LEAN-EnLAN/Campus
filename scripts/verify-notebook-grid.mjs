@@ -21,6 +21,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
 import { startDevServer, waitForPortFree } from './lib/dev-server.mjs'
+import { openFolderByPath } from './lib/startup.mjs'
 
 const VAULT = process.env.CAMPUS_VAULT ?? join(process.env.HOME, 'Documents/CampusVault')
 // CAMPUS_PROFILE reuses a browser profile that already holds an open vault.
@@ -61,7 +62,7 @@ const existing = process.env.CAMPUS_URL
 const server = existing
   ? { url: existing, ready: true, stop: async () => {} }
   : await (async () => {
-      await waitForPortFree(5173)
+      await waitForPortFree()
       return startDevServer({
         args: ['dev'],
         // Point Supabase at a closed port: this check is about local layout,
@@ -85,13 +86,20 @@ try {
   // opener only when it shows the chooser. The waits are explicit rather than
   // locator timeouts because the answer here is "which screen rendered", and
   // probing that mid-hydration reports the wrong one.
-  const explorer = page.getByLabel('Archivos del Vault')
+  const explorer = page.getByLabel('Archivos de tu carpeta')
   const opener = page.getByLabel('Ruta de la carpeta')
   await page.goto(`${server.url}/vault`, { waitUntil: 'domcontentloaded' })
   await page.waitForTimeout(2500)
-  if (await opener.isVisible().catch(() => false)) {
-    await opener.fill(VAULT)
-    await page.getByRole('button', { name: 'Abrir', exact: true }).click()
+  // The chooser shows the typed path directly, or behind its toggle.
+  const toggle = page.getByRole('button', { name: 'Escribir la ruta a mano' })
+  if (
+    await opener
+      .or(toggle)
+      .first()
+      .isVisible()
+      .catch(() => false)
+  ) {
+    await openFolderByPath(page, VAULT)
     // Wait on the workspace, not on a URL: where the app lands after opening a
     // vault is a product decision this check has no business encoding.
     await page.waitForTimeout(3000)

@@ -6,7 +6,12 @@ import { isVaultAvailable, type BuildEnv } from '@/lib/runtime/build-flags'
 import { browserDeviceStore } from '@/lib/runtime/device-config'
 import type { RuntimeCapabilities } from '@/lib/runtime/resolve'
 import { VaultError } from '@/lib/vault/errors'
-import { httpVaultAccess, openVaultSession, vaultExists } from '@/lib/vault/http-vault-access'
+import {
+  httpVaultAccess,
+  listVaultFolders,
+  openVaultSession,
+  vaultExists,
+} from '@/lib/vault/http-vault-access'
 
 import { fetchCatalogFile } from './catalog-fetch'
 
@@ -70,8 +75,10 @@ export function resolveRuntimeCapabilities(
       }
     },
 
-    openLocal: async (vault) => {
-      const session = await openVaultSession(baseUrl, token, vault.path)
+    listFolders: (path) => listVaultFolders(baseUrl, token, path),
+
+    openLocal: async (vault, options) => {
+      const session = await openVaultSession(baseUrl, token, vault.path, options)
       // The chain, assembled in one place and in one direction:
       //   HttpVaultAccess → HTTP → VaultRepository → NodeFileSystem
       // There is NO repository on this side. Client-side path checks are

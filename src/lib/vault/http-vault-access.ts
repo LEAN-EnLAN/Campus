@@ -139,11 +139,14 @@ export async function openVaultSession(
   baseUrl: string,
   token: string,
   path: string,
+  options: { create?: boolean } = {},
 ): Promise<{ id: string; name: string }> {
   const payload = await post<Failure & { id?: string; name?: string }>(
     `${baseUrl}/__campus/vault/open`,
     token,
-    { path },
+    // `create` makes the one missing folder the path names; the server still
+    // decides whether it may.
+    options.create ? { path, create: true } : { path },
   )
   if (!payload.httpOk || !payload.id) {
     throw new VaultError(codeOf(payload), vaultErrorText(codeOf(payload)))
@@ -162,4 +165,35 @@ export async function vaultExists(
     { path },
   ).catch(() => null)
   return payload?.httpOk === true && payload.exists === true
+}
+
+/** The folders inside one folder, for choosing a Vault. Names only. */
+export interface FolderListing {
+  /** The real path that was listed. */
+  path: string
+  /** The folder above, or null where the server stops letting the browser climb. */
+  parent: string | null
+  /** Sub-folder names, already sorted. Never files. */
+  dirs: string[]
+}
+
+/**
+ * List the folders of `path` on the machine the Vault API runs on — which is not
+ * necessarily the one the page is open on, and is why this is a request and not a
+ * browser file dialog. With no `path` the server starts at its first allowed root.
+ */
+export async function listVaultFolders(
+  baseUrl: string,
+  token: string,
+  path?: string,
+): Promise<FolderListing> {
+  const payload = await post<Failure & Partial<FolderListing>>(
+    `${baseUrl}/__campus/vault/dirs`,
+    token,
+    path === undefined ? {} : { path },
+  )
+  if (!payload.httpOk || typeof payload.path !== 'string' || !Array.isArray(payload.dirs)) {
+    throw new VaultError(codeOf(payload), vaultErrorText(codeOf(payload)))
+  }
+  return { path: payload.path, parent: payload.parent ?? null, dirs: payload.dirs }
 }

@@ -16,8 +16,8 @@ describe('navigation model', () => {
     for (const item of NAV) expect(reachable.has(item.to)).toBe(true)
   })
 
-  it('keeps Vault, Material and Ajustes behind "Más"', () => {
-    expect(MORE_ITEMS.map((item) => item.label)).toEqual(['Vault', 'Material', 'Ajustes'])
+  it('keeps Notas, Material and Ajustes behind "Más"', () => {
+    expect(MORE_ITEMS.map((item) => item.label)).toEqual(['Notas', 'Material', 'Ajustes'])
   })
 
   it('keeps four direct tabs plus "Más" so each tab stays above 56px at 375px', () => {
@@ -56,7 +56,7 @@ describe('document titles', () => {
     ['/plan', 'Plan · Campus'],
     ['/courses', 'Materias · Campus'],
     ['/calendar', 'Calendario · Campus'],
-    ['/vault', 'Vault · Campus'],
+    ['/vault', 'Notas · Campus'],
     ['/library', 'Material · Campus'],
     ['/settings', 'Ajustes · Campus'],
     ['/onboarding', 'Tu carrera · Campus'],

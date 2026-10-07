@@ -85,7 +85,7 @@ async function main() {
       // the default. Going straight to /login skipped the runtime, so the
       // router had no backend and the form never mounted.
       await page.goto(PREVIEW_URL, { waitUntil: 'domcontentloaded' })
-      const cloud = page.getByRole('button', { name: 'Usar Campus Cloud' })
+      const cloud = page.getByRole('button', { name: 'Entrar o crear cuenta' })
       if (await cloud.isVisible().catch(() => false)) await cloud.click()
       await page.waitForURL(/login/, { timeout: 20_000 }).catch(() => {})
       await page.getByLabel('¿Cómo te llamás?').fill('Camila')

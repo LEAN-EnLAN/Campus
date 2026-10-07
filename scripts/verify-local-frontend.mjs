@@ -16,6 +16,7 @@ import AxeBuilder from '@axe-core/playwright'
 import { chromium } from '@playwright/test'
 
 import { startDevServer, waitForPortFree } from './lib/dev-server.mjs'
+import { openFolderByPath } from './lib/startup.mjs'
 
 const WORK = '/tmp/campus-local-frontend'
 const VIEWPORTS = [
@@ -43,7 +44,7 @@ const unrVault = join(WORK, 'UnrVault')
 for (const d of [vault, utnVault, unrVault, join(WORK, 'profile')])
   mkdirSync(d, { recursive: true })
 
-await waitForPortFree(5173)
+await waitForPortFree()
 const server = await startDevServer({
   args: ['dev'],
   env: { VITE_SUPABASE_URL: 'http://127.0.0.1:1', VITE_SUPABASE_ANON_KEY: 'offline' },
@@ -60,8 +61,7 @@ async function seed(vaultPath, cascade) {
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 } })
   const page = await ctx.newPage()
   await page.goto(server.url, { waitUntil: 'domcontentloaded' })
-  await page.getByLabel('Ruta de la carpeta').fill(vaultPath)
-  await page.getByRole('button', { name: 'Abrir', exact: true }).click()
+  await openFolderByPath(page, vaultPath)
   await page.waitForURL(/onboarding|today/, { timeout: 25_000 })
   for (const label of cascade) {
     const el = page.getByText(label, { exact: false }).first()
@@ -74,7 +74,7 @@ async function seed(vaultPath, cascade) {
     .first()
     .click()
     .catch(() => {})
-  await page.waitForURL(/today/, { timeout: 25_000 }).catch(() => {})
+  await page.waitForURL(/plan/, { timeout: 25_000 }).catch(() => {})
   const storage = await ctx.storageState()
   await ctx.close()
   return storage
@@ -94,7 +94,7 @@ const unrState = await seed(unrVault, [
 ])
 
 const SURFACES = [
-  { name: 'startup-picker', path: '/', state: null, expect: 'Ruta de la carpeta' },
+  { name: 'startup-picker', path: '/', state: null, expect: 'En esta computadora' },
   { name: 'vault-workspace', path: '/vault', state: utnState, expect: 'Nota de hoy' },
   { name: 'local-utn-today', path: '/today', state: utnState },
   { name: 'local-utn-plan', path: '/plan', state: utnState },

@@ -1,4 +1,8 @@
+import { FileText } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+
+import { EmptyState } from '@/components/empty-state'
+import { Button } from '@/components/ui/button'
 
 import {
   activatePane,
@@ -309,7 +313,7 @@ function WorkspaceShellInner({
             onClick={() => setSidebarOpen(false)}
           />
           <aside
-            aria-label="Explorador del Vault"
+            aria-label="Explorador de notas"
             className="bg-paper border-rule fixed inset-y-0 left-0 z-30 w-72 border-r md:static md:z-auto md:w-60 md:shrink-0 lg:w-72"
           >
             <div className="flex items-center justify-between px-3 py-2 md:hidden">
@@ -434,7 +438,7 @@ function WorkspaceShellInner({
                     <div className="border-rule-soft flex items-center justify-between gap-3 border-b px-4 py-2 md:pr-[var(--rule-gutter)] md:pl-[var(--rule-text-inset)]">
                       <div className="min-w-0" title={pane.activeTab}>
                         <p className="text-2xs text-ink-muted tracking-[0.18em] uppercase">
-                          Cuaderno
+                          Notas
                         </p>
                         <h2 className="text-ink truncate font-serif text-lg font-semibold">
                           {(pane.activeTab.split('/').pop() ?? pane.activeTab).replace(
@@ -494,47 +498,31 @@ function EmptyPane({
   onOpenSidebar: () => void
   onCreateFirst: () => void
 }) {
+  // ONE message, and its one action always does something: an empty vault is
+  // offered its first note; otherwise the explorer button only shows when the
+  // explorer is actually hidden (on desktop it sits right beside this).
+  const action = vaultIsEmpty ? (
+    <Button variant="secondary" size="sm" onClick={onCreateFirst}>
+      Escribir mi primera nota
+    </Button>
+  ) : !sidebarOpen ? (
+    <Button variant="secondary" size="sm" onClick={onOpenSidebar}>
+      Abrir el explorador
+    </Button>
+  ) : undefined
+
   return (
     <div className="grid h-full place-items-center p-6">
-      <div className="text-center">
-        {/* Editorial line-art placeholder: a blank index card. Decorative. */}
-        <svg
-          aria-hidden
-          viewBox="0 0 96 64"
-          className="text-ink-faint mx-auto mb-3 h-16 w-24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.5"
-        >
-          <rect x="6" y="8" width="84" height="48" rx="3" />
-          <line x1="14" y1="22" x2="82" y2="22" />
-          <line x1="14" y1="32" x2="66" y2="32" strokeDasharray="2 3" />
-          <line x1="14" y1="40" x2="74" y2="40" strokeDasharray="2 3" />
-        </svg>
-        <p className="text-ink-muted text-sm">Ninguna nota abierta en este panel.</p>
-        {/* ONE action, and it always does something: an empty vault is offered
-            its first note; otherwise the explorer button only shows when the
-            explorer is actually hidden (on desktop it sits right beside this). */}
-        {vaultIsEmpty ? (
-          <button
-            type="button"
-            onClick={onCreateFirst}
-            className="border-rule text-ink mt-2 rounded-md border px-3 py-1 text-sm"
-          >
-            Creá tu primera nota
-          </button>
-        ) : (
-          !sidebarOpen && (
-            <button
-              type="button"
-              onClick={onOpenSidebar}
-              className="border-rule text-ink mt-2 rounded-md border px-3 py-1 text-sm"
-            >
-              Abrir el explorador
-            </button>
-          )
-        )}
-      </div>
+      <EmptyState
+        quiet
+        icon={FileText}
+        title={
+          vaultIsEmpty
+            ? 'Todavía no escribiste ninguna nota.'
+            : 'Ninguna nota abierta en este panel.'
+        }
+        action={action}
+      />
     </div>
   )
 }

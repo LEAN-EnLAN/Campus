@@ -199,7 +199,7 @@ describe('recovery from a changed or moved file (DEV-05)', () => {
     await open(disk) // n.md does not exist
     expect(screen.getByText('No pudimos abrir esta nota.')).toBeInTheDocument()
     expect(
-      screen.getByText('Eso ya no está en el Vault: se movió o se eliminó.'),
+      screen.getByText('Eso ya no está en tu carpeta: se movió o se eliminó.'),
     ).toBeInTheDocument()
   })
 })

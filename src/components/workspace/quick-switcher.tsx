@@ -88,7 +88,7 @@ export function QuickSwitcher({
         >
           {results.length === 0 && (
             <li className="text-ink-muted px-4 py-3 text-sm">
-              {query ? 'Ninguna nota coincide.' : 'Todavía no hay notas en este Vault.'}
+              {query ? 'Ninguna nota coincide.' : 'Todavía no hay notas en tu carpeta.'}
             </li>
           )}
           {results.map((r, i) => (

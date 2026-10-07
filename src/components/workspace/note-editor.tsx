@@ -217,7 +217,7 @@ export function NoteEditor({
   if (!files) {
     return (
       <p className="text-ink-muted p-6 text-sm">
-        El editor necesita un Vault local. Abrí uno desde el inicio.
+        El editor necesita una carpeta en tu computadora. Elegila desde el inicio.
       </p>
     )
   }

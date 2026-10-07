@@ -317,3 +317,55 @@ describe('stats', () => {
     expect(index.stats()).toEqual({ notes: 4, links: 3, unresolved: 2 })
   })
 })
+
+// -------------------------------------------------------------------- mentions
+
+describe('mentions', () => {
+  const index = () => {
+    const i = new VaultIndex()
+    i.upsert('Notas/Clase 1.md', '# Clase 1\n\nMateria: [[Análisis Matemático I]]\n')
+    i.upsert(
+      'Notas/Resumen.md',
+      '# Resumen\n\nVer [[analisis matematico i|el apunte]] y [[Álgebra]].\n',
+    )
+    i.upsert('Notas/Otra.md', '# Otra\n\nSin enlaces a la materia, solo [[Álgebra]].\n')
+    return i
+  }
+
+  it('lists the notes that link the subject by name, ignoring case and accents', () => {
+    expect(
+      index()
+        .mentions('Análisis Matemático I')
+        .map((m) => m.sourcePath),
+    ).toEqual(['Notas/Clase 1.md', 'Notas/Resumen.md'])
+  })
+
+  it('answers with the title and the line the link is on', () => {
+    const [first] = index().mentions('Análisis Matemático I')
+    expect(first).toMatchObject({
+      sourceTitle: 'Clase 1',
+      snippet: 'Materia: [[Análisis Matemático I]]',
+    })
+  })
+
+  it('accepts several names for one subject (name and code) and lists a note once', () => {
+    const i = new VaultIndex()
+    i.upsert('a.md', 'Ver [[Física II]] y [[F2]].')
+    i.upsert('b.md', 'Solo [[F2]].')
+
+    expect(i.mentions(['Física II', 'F2']).map((m) => m.sourcePath)).toEqual(['a.md', 'b.md'])
+  })
+
+  it('is empty for a subject nobody links, and for a blank name', () => {
+    expect(index().mentions('Redes')).toEqual([])
+    expect(index().mentions('  ')).toEqual([])
+  })
+
+  it('follows edits and removals: it answers from the live index, no re-scan', () => {
+    const i = index()
+    i.upsert('Notas/Clase 1.md', '# Clase 1\n\nSin materia.\n')
+    i.remove('Notas/Resumen.md')
+
+    expect(i.mentions('Análisis Matemático I')).toEqual([])
+  })
+})

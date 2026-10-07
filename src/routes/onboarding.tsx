@@ -103,7 +103,10 @@ function OnboardingScreen() {
       curriculumId: manual ? null : curriculumId,
       unmappedLabel: manual ? manualLabel.trim() || 'Carrera no listada' : null,
     })
-    void navigate({ to: '/today' })
+    // A catalog career has a plan whose statuses are worth marking first; a
+    // manual one has no plan yet, so the plan page is where its materias get
+    // added. Neither starts on an empty Hoy.
+    void navigate({ to: manual ? '/plan' : '/plan/progress' })
   }
 
   // Gate on the session too, not just the auth load: otherwise the whole wizard

@@ -31,7 +31,7 @@ export const NAV: NavItem[] = [
   { to: '/plan', label: 'Plan', icon: GraduationCap, primary: true },
   { to: '/courses', label: 'Materias', icon: BookMarked, primary: true },
   { to: '/calendar', label: 'Calendario', icon: CalendarDays, primary: true },
-  { to: '/vault', label: 'Vault', icon: NotebookPen },
+  { to: '/vault', label: 'Notas', icon: NotebookPen },
   { to: '/library', label: 'Material', icon: Library },
   { to: '/settings', label: 'Ajustes', icon: Settings },
 ]

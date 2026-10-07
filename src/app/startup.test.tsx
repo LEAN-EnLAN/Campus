@@ -35,13 +35,14 @@ function mount(over: Partial<RuntimeCapabilities> & { store: DeviceStore }) {
 }
 
 describe('Startup on a build with a Vault API', () => {
-  it('offers the Vault and Campus Cloud', async () => {
+  it('offers this computer and the cloud as two equal choices', async () => {
     mount({ store: memoryStore() })
 
-    expect(await screen.findByRole('heading', { name: 'Abrir un Vault' })).toBeTruthy()
+    expect(await screen.findByRole('heading', { name: 'En esta computadora' })).toBeTruthy()
+    expect(screen.getByRole('heading', { name: 'En la nube' })).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Abrir' })).toBeTruthy()
-    expect(screen.getByRole('button', { name: 'Usar Campus Cloud' })).toBeTruthy()
-    expect(screen.queryByText(/en tu propia computadora/)).toBeNull()
+    expect(screen.getByRole('button', { name: 'Entrar o crear cuenta' })).toBeTruthy()
+    expect(screen.queryByText(/abrí Campus ahí/)).toBeNull()
   })
 })
 
@@ -49,19 +50,17 @@ describe('Startup on a hosted build (no Vault API)', () => {
   it('does not offer a Vault that can only fail', async () => {
     mount({ store: memoryStore(), vaultAvailable: false })
 
-    expect(await screen.findByRole('button', { name: 'Usar Campus Cloud' })).toBeTruthy()
-    expect(screen.queryByRole('heading', { name: 'Abrir un Vault' })).toBeNull()
+    expect(await screen.findByRole('button', { name: 'Entrar o crear cuenta' })).toBeTruthy()
+    expect(screen.queryByRole('heading', { name: 'En esta computadora' })).toBeNull()
     expect(screen.queryByLabelText('Ruta de la carpeta')).toBeNull()
     expect(screen.queryByRole('button', { name: 'Abrir' })).toBeNull()
   })
 
-  it('explains, in one note, where the local Vault does work', async () => {
+  it('explains, in one note, where saving on the computer does work', async () => {
     mount({ store: memoryStore(), vaultAvailable: false })
 
     expect(
-      await screen.findByText(
-        /El Vault local funciona cuando corrés Campus en tu propia computadora/,
-      ),
+      await screen.findByText(/Si querés guardar todo en tu computadora, abrí Campus ahí/),
     ).toBeTruthy()
   })
 
@@ -72,7 +71,7 @@ describe('Startup on a hosted build (no Vault API)', () => {
     )
     mount({ store: memoryStore(), vaultAvailable: false, openCloud })
 
-    const button = await screen.findByRole('button', { name: 'Usar Campus Cloud' })
+    const button = await screen.findByRole('button', { name: 'Entrar o crear cuenta' })
     // `primary` is the one loud variant (bg-accent); the plain bordered button
     // is what the Vault-first picker uses.
     expect(button.className).toContain('bg-accent')
@@ -86,7 +85,7 @@ describe('Startup on a hosted build (no Vault API)', () => {
     const store = memoryStore(rememberVault({ recentVaults: [], lastRuntime: null }, VAULT))
     mount({ store, vaultAvailable: false })
 
-    expect(await screen.findByRole('button', { name: 'Usar Campus Cloud' })).toBeTruthy()
+    expect(await screen.findByRole('button', { name: 'Entrar o crear cuenta' })).toBeTruthy()
     expect(screen.queryByRole('alert')).toBeNull()
     expect(screen.queryByText(/No pudimos abrir/)).toBeNull()
     expect(screen.queryByText(/No encontramos/)).toBeNull()
@@ -105,11 +104,11 @@ describe('Campus Cloud failing to open', () => {
       },
     })
 
-    await user.click(await screen.findByRole('button', { name: 'Usar Campus Cloud' }))
+    await user.click(await screen.findByRole('button', { name: 'Entrar o crear cuenta' }))
 
     const alert = await screen.findByRole('alert')
     expect(alert).toHaveTextContent('Campus Cloud no responde ahora')
     expect(alert).not.toHaveTextContent('Revisá tu conexión')
-    expect(screen.getByRole('heading', { name: 'Abrir un Vault' })).toBeTruthy()
+    expect(screen.getByRole('heading', { name: 'En esta computadora' })).toBeTruthy()
   })
 })

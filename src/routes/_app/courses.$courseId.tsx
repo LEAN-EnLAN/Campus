@@ -15,6 +15,7 @@ import { OrderConflictNote } from '@/features/academic/order-conflict-note'
 import { useAcademicPlan, useSetSubjectStatus } from '@/features/academic/queries'
 import { CorrelativasPanel, correlativasNote } from '@/features/courses/correlativas-panel'
 import { SubjectDateRow } from '@/features/courses/subject-dates'
+import { SubjectNotes } from '@/features/courses/subject-notes'
 import {
   useAcademicItems,
   useCreateAcademicItem,
@@ -193,9 +194,7 @@ function CourseDetailScreen() {
             onRetry={() => void itemsQuery.refetch()}
           />
         ) : items.length === 0 ? (
-          <p className="text-ink-muted py-3 text-sm">
-            No tenés nada anotado para esta materia.
-          </p>
+          <EmptyState quiet title="No tenés nada anotado para esta materia." />
         ) : (
           <div>
             {items.map((item) => (
@@ -208,6 +207,9 @@ function CourseDetailScreen() {
           </div>
         )}
       </section>
+
+      {/* Local folder only: the component renders nothing without one. */}
+      <SubjectNotes subject={subject} />
 
       <section aria-labelledby="correlativas" className="flex flex-col gap-3">
         <SectionHeading id="correlativas">Correlativas</SectionHeading>

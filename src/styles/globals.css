@@ -54,6 +54,9 @@
   --color-accent: oklch(72% 0.075 202); /* Tropical Teal #7ebdc2 */
   --color-accent-soft: oklch(93% 0.03 202);
   --color-accent-ink: oklch(42% 0.07 202);
+  /* The primary button's hover fill: a step off --color-accent that the dark
+     on-tint label still reads on (accent-ink would be ~2:1). */
+  --color-accent-hover: oklch(64% 0.08 202);
   /* The keyboard focus ring. --color-accent is a FILL colour (72% lightness) and
      was 1.95:1 on the page; the ring needs 3:1 on page, field and soft surfaces. */
   --color-focus: oklch(42% 0.07 202);
@@ -163,6 +166,7 @@
   --color-accent: oklch(76% 0.08 202);
   --color-accent-soft: oklch(28% 0.035 202);
   --color-accent-ink: oklch(84% 0.06 202);
+  --color-accent-hover: oklch(82% 0.085 202);
   --color-focus: oklch(84% 0.06 202);
   --color-on-tint: oklch(18% 0.006 30);
 

@@ -232,6 +232,37 @@ export class VaultIndex {
     return backlinks
   }
 
+  /**
+   * The notes that link `names` — any of them — with `[[wikilink]]`. For a thing
+   * that is not a note itself (a materia), where `backlinks` has no path to start
+   * from. Answered from the link-text map like `backlinks` is, so it costs the
+   * number of mentions, not the size of the vault. One entry per note, by path.
+   */
+  mentions(names: string | readonly string[]): Backlink[] {
+    const keys = new Set(
+      (typeof names === 'string' ? [names] : names).map((name) => fold(name.trim())),
+    )
+    keys.delete('')
+
+    const candidates = new Set<string>()
+    for (const key of keys) {
+      for (const source of this.sourcesByLinkText.get(key) ?? []) candidates.add(source)
+    }
+
+    const mentions: Backlink[] = []
+    for (const sourcePath of [...candidates].sort(compare)) {
+      const source = this.byPath.get(sourcePath)!
+      const link = source.meta.links.find((l) => keys.has(fold(l.target)))
+      if (!link) continue
+      mentions.push({
+        sourcePath,
+        sourceTitle: source.meta.title,
+        snippet: snippetAt(source.contents, link.offset),
+      })
+    }
+    return mentions
+  }
+
   search(query: string): SearchResult[] {
     const folded = fold(query.trim())
     if (folded === '') return []

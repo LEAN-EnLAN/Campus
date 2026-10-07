@@ -20,18 +20,18 @@ const MESSAGES: Record<VaultErrorCode, string> = {
   name_trailing_dot_space: 'Ese nombre no es válido: no puede terminar en punto ni en espacio.',
   name_reserved: 'Ese nombre está reservado por Windows.',
 
-  outside_vault: 'Esa ubicación queda fuera de tu Vault, así que Campus no la toca.',
+  outside_vault: 'Esa ubicación queda fuera de tu carpeta, así que Campus no la toca.',
   too_many_links: 'Esa ruta pasa por demasiados enlaces simbólicos encadenados.',
   symlink_unreadable: 'Esa ruta pasa por un enlace simbólico que no pudimos leer.',
-  root_unreadable: 'No pudimos leer la carpeta del Vault: revisá que siga ahí.',
+  root_unreadable: 'No pudimos leer tu carpeta: revisá que siga ahí.',
 
-  not_found: 'Eso ya no está en el Vault: se movió o se eliminó.',
+  not_found: 'Eso ya no está en tu carpeta: se movió o se eliminó.',
   already_exists: 'Ya existe una nota con ese nombre.',
   destination_exists: 'Ya existe algo con ese nombre.',
   conflict_changed: 'Este archivo cambió fuera de Campus.',
   conflict_missing: 'Esta nota se movió o se eliminó.',
   permission_denied: 'Campus no tiene permiso para hacer eso en esa carpeta.',
-  io_error: 'No pudimos completar la operación en el Vault: probá de nuevo.',
+  io_error: 'No pudimos completar la operación en tu carpeta: probá de nuevo.',
 
   folder_not_absolute: 'La ruta tiene que ser completa, desde la raíz del disco.',
   folder_not_found: 'No encontramos esa carpeta. Revisá la ruta.',
@@ -41,10 +41,10 @@ const MESSAGES: Record<VaultErrorCode, string> = {
 
   unauthorized: 'Campus no pudo conectarse con tu carpeta: recargá la página.',
   origin_not_allowed: 'Campus no pudo conectarse con tu carpeta: recargá la página.',
-  unknown_vault: 'La sesión del Vault se cerró: recargá la página para volver a abrirlo.',
-  bad_request: 'No pudimos completar la operación en el Vault: probá de nuevo.',
+  unknown_vault: 'La sesión de tu carpeta se cerró: recargá la página para volver a abrirla.',
+  bad_request: 'No pudimos completar la operación en tu carpeta: probá de nuevo.',
   unavailable: 'No pudimos comunicarnos con el servidor de Campus: probá de nuevo.',
-  unknown: 'No pudimos completar la operación en el Vault: probá de nuevo.',
+  unknown: 'No pudimos completar la operación en tu carpeta: probá de nuevo.',
 }
 
 export function vaultErrorText(code: VaultErrorCode): string {

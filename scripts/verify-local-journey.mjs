@@ -17,6 +17,7 @@ import process from 'node:process'
 import { chromium } from '@playwright/test'
 
 import { startDevServer, waitForPortFree } from './lib/dev-server.mjs'
+import { openFolderByPath, revealPathField } from './lib/startup.mjs'
 
 let BASE = process.env.CAMPUS_BASE_URL ?? ''
 const WORK = process.env.CAMPUS_JOURNEY_DIR ?? '/tmp/campus-local-journey'
@@ -46,7 +47,7 @@ async function main() {
   // died on "port in use".
   let server = null
   if (!BASE) {
-    await waitForPortFree(5173)
+    await waitForPortFree()
     server = await startDevServer({ args: ['dev'] })
     if (!server.ready) {
       console.error('dev server did not start:', server.output.slice(-600))
@@ -81,7 +82,7 @@ async function main() {
 
   // --- startup shows the picker, not a login redirect ----------------------
   await page.goto(BASE, { waitUntil: 'networkidle' })
-  const picker = page.getByLabel('Ruta de la carpeta')
+  const picker = await revealPathField(page)
   check('startup shows the picker', await picker.isVisible())
   check(
     'startup did not redirect to /login',
@@ -90,8 +91,7 @@ async function main() {
   )
 
   // --- open a real vault ----------------------------------------------------
-  await picker.fill(VAULT)
-  await page.getByRole('button', { name: 'Abrir', exact: true }).click()
+  await openFolderByPath(page, VAULT)
   // Wait for the DESTINATION, not for a duration. `networkidle` resolved before
   // the click's own fetch had begun, which is why this used to read as a race.
   await page.waitForURL(/\/(today|onboarding)/, { timeout: 20_000 }).catch(() => {})

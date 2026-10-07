@@ -18,7 +18,7 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        primary: 'bg-accent text-on-tint hover:bg-accent-ink',
+        primary: 'bg-accent text-on-tint hover:bg-accent-hover',
         secondary:
           'border border-rule bg-paper-elevated text-ink hover:border-ink-faint hover:bg-paper-sunken',
         ghost: 'text-ink-muted hover:bg-paper-sunken hover:text-ink',

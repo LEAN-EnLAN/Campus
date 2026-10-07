@@ -94,6 +94,16 @@ describe('Hoy', () => {
     expect(screen.queryByText(/No tenés nada para hoy/)).toBeNull()
   })
 
+  it('says so inside "Hoy" when only overdue work is left, as one quiet sentence', async () => {
+    state.items = [item('Informe viejo', { dueAt: at(-2) })]
+    mount()
+
+    const section = (await screen.findByRole('heading', { name: 'Hoy' })).closest('section')!
+    expect(within(section).getByText('Nada más agendado para hoy.')).toBeInTheDocument()
+    // One message, no dashed box: the section already has its heading.
+    expect(section.querySelector('.border-dashed')).toBeNull()
+  })
+
   it('shows undated items under "Sin fecha", so the calendar footnote is true', async () => {
     state.items = [item('TP 1 sin fecha')]
     mount()

@@ -84,9 +84,36 @@ function PlanScreen() {
     <div className="flex flex-col gap-8">
       <PageHeader eyebrow={plan.curriculum?.version} title={plan.programName ?? 'Tu plan'} />
 
+      {/* Where this plan comes from and when we read it, before the student relies on
+          it to decide an enrolment. Same data as ever: ordinance, official source, date. */}
+      {plan.curriculum?.sourceUrl ? (
+        <p className="text-ink-muted -mt-4 text-xs">
+          {plan.curriculum?.name ? `${plan.curriculum.name}. ` : null}
+          Plan tomado de{' '}
+          <a
+            href={plan.curriculum.sourceUrl}
+            target="_blank"
+            rel="noreferrer noopener"
+            className="text-accent-ink underline underline-offset-4"
+          >
+            la fuente oficial
+          </a>
+          {plan.curriculum.sourceFetchedAt
+            ? ` · consultado el ${new Date(plan.curriculum.sourceFetchedAt).toLocaleDateString('es-AR')}`
+            : null}
+          .
+        </p>
+      ) : null}
+
       <ProgressLine value={earned} total={plan.progress.total} />
 
-      {plan.progress.blocked > 0 ? (
+      {plan.progress.flagged > 0 ? (
+        <p className="text-ink-muted -mt-6 text-xs">
+          {plan.progress.flagged} con correlativas pendientes
+        </p>
+      ) : null}
+
+      {plan.prerequisitesKnown && plan.progress.blocked > 0 ? (
         <p className="text-ink-muted text-sm">
           {plan.progress.available} disponible{plan.progress.available === 1 ? '' : 's'} ·{' '}
           {plan.progress.blocked} bloqueada{plan.progress.blocked === 1 ? '' : 's'} por
@@ -126,25 +153,6 @@ function PlanScreen() {
           </ul>
         </section>
       ))}
-
-      {plan.curriculum?.sourceUrl ? (
-        <footer className="border-rule-soft text-ink-muted border-t pt-4 text-xs">
-          {plan.curriculum?.name ? `${plan.curriculum.name}. ` : null}
-          Plan tomado de{' '}
-          <a
-            href={plan.curriculum.sourceUrl}
-            target="_blank"
-            rel="noreferrer noopener"
-            className="text-accent-ink underline underline-offset-4"
-          >
-            la fuente oficial
-          </a>
-          {plan.curriculum.sourceFetchedAt
-            ? ` · consultado el ${new Date(plan.curriculum.sourceFetchedAt).toLocaleDateString('es-AR')}`
-            : null}
-          .
-        </footer>
-      ) : null}
     </div>
   )
 }

@@ -2,7 +2,10 @@ import { useMemo } from 'react'
 
 import { StatusGlyph, statusLabel } from '@/components/academic-status'
 import { KanbanBoard, type KanbanColumn } from '@/components/ui/kanban-board'
+import { orderConflictOf } from '@/domain/consistency'
+import { isFinalBlocked, missingSummary } from '@/domain/requirements'
 import type { SubjectView } from '@/domain/types'
+import { OrderConflictNote } from '@/features/academic/order-conflict-note'
 import { useAcademicPlan, useSetSubjectStatus } from '@/features/academic/queries'
 
 import { buildSubjectBoard, statusForColumn, type BoardColumnId } from './subject-board'
@@ -21,7 +24,14 @@ const TERM_LABEL: Record<SubjectView['term'], string> = {
  * grab.
  */
 function SubjectCard({ subject }: { subject: SubjectView }) {
-  const missing = subject.missingRequirements
+  const conflict = orderConflictOf(subject)
+  // Only a cursada the plan says is not open yet. An unmet `to_pass` is about the
+  // final and has its own tag below.
+  const missing =
+    subject.status === 'in_progress' &&
+    subject.missingRequirements.some((m) => m.kind === 'to_take')
+      ? missingSummary(subject)
+      : null
 
   return (
     <div className="flex flex-col gap-1">
@@ -52,13 +62,20 @@ function SubjectCard({ subject }: { subject: SubjectView }) {
         Shown, never enforced. Our correlativa data can be incomplete — the plan
         distinguishes "no las tenemos" from "no tiene" — so a subject we believe
         is bloqueada may be one the student is legitimately cursando. The card
-        says what we know and lets them move it anyway.
+        says what we know and lets them move it anyway. A card the student put
+        in Aprobada/Final pendiente against the plan carries the same quiet note
+        as the subject page (its dismiss control lives there: a card is itself a
+        button, and a button inside a button is not accessible).
       */}
-      {missing.length > 0 ? (
+      {conflict ? (
+        <OrderConflictNote subject={subject} className="ml-6 px-2 py-1 text-xs" />
+      ) : missing ? (
         <span className="text-ink-muted pl-6 text-xs">
-          {statusLabel(subject.status)} · falta {missing[0]?.name}
-          {missing.length > 1 ? ` +${missing.length - 1}` : ''}
+          {statusLabel(subject.status)} · {missing}
         </span>
+      ) : null}
+      {isFinalBlocked(subject) ? (
+        <span className="text-ink-muted pl-6 text-xs">final bloqueado</span>
       ) : null}
     </div>
   )
@@ -80,7 +97,9 @@ export function SubjectBoardView() {
         ? 'Nada habilitado por ahora.'
         : column.id === 'cursando'
           ? 'Arrastrá una materia acá cuando la empieces.'
-          : 'Todavía no aprobaste ninguna.',
+          : column.id === 'final_pendiente'
+            ? 'Acá van las que ya cursaste y esperan el final.'
+            : 'Todavía no aprobaste ninguna.',
   }))
 
   return (
@@ -105,7 +124,7 @@ export function SubjectBoardView() {
         <p className="text-ink-muted text-xs">
           {board.offBoard.length}{' '}
           {board.offBoard.length === 1 ? 'materia no entra' : 'materias no entran'} en el
-          tablero (bloqueadas, pendientes o desaprobadas). Mirálas con el filtro «Todas».
+          tablero (bloqueadas, sin marcar o desaprobadas). Mirálas en la vista Lista.
         </p>
       ) : null}
     </div>

@@ -6,7 +6,13 @@ import { EmptyState, ErrorState, LoadingRows } from '@/components/empty-state'
 import { PageHeader, SectionHeading } from '@/components/page-header'
 import { SubjectRow } from '@/components/subject-row'
 import { Button } from '@/components/ui/button'
-import type { SubjectStatus } from '@/domain/types'
+import {
+  STATUS_GROUPS,
+  defaultStatusFilter,
+  groupByStatus,
+  statusGroupOf,
+  type StatusGroupId,
+} from '@/domain/status-groups'
 import { useAcademicPlan } from '@/features/academic/queries'
 import { SubjectBoardView } from '@/features/courses/subject-board-view'
 
@@ -14,44 +20,55 @@ export const Route = createFileRoute('/_app/courses/')({
   component: CoursesScreen,
 })
 
-type Filter = 'cursando' | 'disponibles' | 'aprobadas' | 'todas'
+type Filter = StatusGroupId | 'todas'
 type View = 'list' | 'board'
 
-const FILTERS: { value: Filter; label: string; match: (s: SubjectStatus) => boolean }[] = [
-  {
-    value: 'cursando',
-    label: 'Cursando',
-    match: (s) => s === 'in_progress' || s === 'regularized',
-  },
-  { value: 'disponibles', label: 'Disponibles', match: (s) => s === 'available' },
-  {
-    value: 'aprobadas',
-    label: 'Aprobadas',
-    match: (s) => s === 'passed' || s === 'equivalent',
-  },
-  { value: 'todas', label: 'Todas', match: () => true },
+const FILTERS: { value: Filter; label: string }[] = [
+  ...STATUS_GROUPS.map((g) => ({ value: g.id as Filter, label: g.label })),
+  { value: 'todas', label: 'Todas' },
 ]
 
 function CoursesScreen() {
   const plan = useAcademicPlan()
-  const [filter, setFilter] = useState<Filter>('cursando')
+  const [chosen, setChosen] = useState<Filter | null>(null)
   const [view, setView] = useState<View>('list')
 
-  /* Forty cards side by side is a wall, not a board, so "Todas" stays a list
-     whatever the toggle says. */
-  const showBoard = view === 'board' && filter !== 'todas'
-
-  const spec = FILTERS.find((f) => f.value === filter) ?? FILTERS[3]!
+  const groups = useMemo(() => groupByStatus(plan.views), [plan.views])
   const counts = useMemo(() => {
-    const map = new Map<Filter, number>()
-    for (const f of FILTERS)
-      map.set(f.value, plan.views.filter((v) => f.match(v.status)).length)
+    const map = new Map<Filter, number>(
+      STATUS_GROUPS.map((g) => [g.id, groups[g.id].length] as const),
+    )
+    map.set('todas', plan.views.length)
     return map
-  }, [plan.views])
+  }, [groups, plan.views.length])
+
+  // "Disponible" is a claim about correlativas. With none published, the chip would
+  // be a promise we cannot keep, so it is not offered at all.
+  const filters = FILTERS.filter((f) => f.value !== 'disponibles' || plan.prerequisitesKnown)
+
+  // The student's own choice wins; until they make one, open on the first group
+  // that has something in it (never an empty list).
+  const filter: Filter =
+    chosen ??
+    defaultStatusFilter(
+      {
+        disponibles: groups.disponibles.length,
+        cursando: groups.cursando.length,
+        final_pendiente: groups.final_pendiente.length,
+        aprobadas: groups.aprobadas.length,
+      },
+      plan.prerequisitesKnown,
+    )
+
+  const spec = filters.find((f) => f.value === filter) ?? FILTERS[FILTERS.length - 1]!
+  const showBoard = view === 'board'
 
   const visible = useMemo(
-    () => plan.views.filter((v) => spec.match(v.status)),
-    [plan.views, spec],
+    () =>
+      filter === 'todas'
+        ? plan.views
+        : plan.views.filter((v) => statusGroupOf(v.status) === filter),
+    [plan.views, filter],
   )
 
   if (plan.isLoading) {
@@ -109,26 +126,32 @@ function CoursesScreen() {
       />
 
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div role="group" aria-label="Filtrar materias" className="flex flex-wrap gap-1.5">
-          {FILTERS.map((f) => (
-            <Button
-              key={f.value}
-              size="sm"
-              variant={filter === f.value ? 'primary' : 'secondary'}
-              aria-pressed={filter === f.value}
-              onClick={() => setFilter(f.value)}
-            >
-              {f.label}
-              {/* No opacity at all. opacity-70 composited to 3.84:1 and failed; 90%
+        {/* The board shows every column at once, so status chips would only
+            contradict it (a pressed chip over a board that ignores it). */}
+        {showBoard ? (
+          <div />
+        ) : (
+          <div role="group" aria-label="Filtrar materias" className="flex flex-wrap gap-1.5">
+            {filters.map((f) => (
+              <Button
+                key={f.value}
+                size="sm"
+                variant={filter === f.value ? 'primary' : 'secondary'}
+                aria-pressed={filter === f.value}
+                onClick={() => setChosen(f.value)}
+              >
+                {f.label}
+                {/* No opacity at all. opacity-70 composited to 3.84:1 and failed; 90%
                   measured ~5.3:1 yet still tripped axe at 390px, which means it was
                   sitting close enough to the threshold to be decided by rounding.
                   A value that passes at four viewports out of five is not passing. */}
-              <span className="text-xs" data-numeric>
-                {counts.get(f.value) ?? 0}
-              </span>
-            </Button>
-          ))}
-        </div>
+                <span className="text-xs" data-numeric>
+                  {counts.get(f.value) ?? 0}
+                </span>
+              </Button>
+            ))}
+          </div>
+        )}
 
         <div role="group" aria-label="Cómo ver tus materias" className="flex gap-1.5">
           <Button
@@ -162,7 +185,11 @@ function CoursesScreen() {
           <EmptyState
             className="mt-2"
             title={
-              filter === 'cursando' ? 'No estás cursando nada todavía' : 'No hay materias acá'
+              filter === 'cursando'
+                ? 'No estás cursando nada todavía'
+                : filter === 'final_pendiente'
+                  ? 'No tenés finales pendientes'
+                  : 'No hay materias acá'
             }
             description={
               filter === 'cursando'
@@ -190,12 +217,6 @@ function CoursesScreen() {
           </ul>
         )}
       </section>
-
-      {view === 'board' && filter === 'todas' ? (
-        <p className="text-ink-muted text-xs">
-          «Todas» se muestra siempre como lista: cuarenta tarjetas en fila no son un tablero.
-        </p>
-      ) : null}
     </div>
   )
 }

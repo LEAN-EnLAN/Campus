@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'vitest'
 
 import { computeSubjectViews } from './availability'
-import { STATUS_GROUPS, groupByStatus, statusGroupOf } from './status-groups'
+import {
+  STATUS_GROUPS,
+  defaultStatusFilter,
+  groupByStatus,
+  statusGroupOf,
+  type StatusGroupId,
+} from './status-groups'
 import { state, subject } from './test-fixtures'
 import type { SubjectStatus } from './types'
 
@@ -47,5 +53,37 @@ describe('status groups', () => {
     expect(groups.cursando.map((v) => v.id)).toEqual(['c'])
     expect(groups.disponibles.map((v) => v.id)).toEqual(['d'])
     expect(groups.aprobadas).toEqual([])
+  })
+})
+
+describe('defaultStatusFilter', () => {
+  const counts = (o: Partial<Record<StatusGroupId, number>>) => ({
+    disponibles: 0,
+    cursando: 0,
+    final_pendiente: 0,
+    aprobadas: 0,
+    ...o,
+  })
+
+  it('opens on what the student is doing now', () => {
+    expect(defaultStatusFilter(counts({ cursando: 2, disponibles: 9 }), true)).toBe('cursando')
+    expect(defaultStatusFilter(counts({ final_pendiente: 1, disponibles: 9 }), true)).toBe(
+      'final_pendiente',
+    )
+  })
+
+  it('falls through to disponibles, then aprobadas', () => {
+    expect(defaultStatusFilter(counts({ disponibles: 3, aprobadas: 1 }), true)).toBe(
+      'disponibles',
+    )
+    expect(defaultStatusFilter(counts({ aprobadas: 1 }), true)).toBe('aprobadas')
+  })
+
+  it('never opens on an empty list: everything empty means "todas"', () => {
+    expect(defaultStatusFilter(counts({}), true)).toBe('todas')
+  })
+
+  it('does not offer disponibles when the plan has no known correlativas', () => {
+    expect(defaultStatusFilter(counts({ disponibles: 5 }), false)).toBe('todas')
   })
 })

@@ -53,3 +53,18 @@ export function groupByStatus(
   }
   return groups
 }
+
+/**
+ * Which Materias filter to open on: the first group, in order of "what am I doing
+ * now", that actually has subjects. Opening on an empty list reads as a broken
+ * page. `disponibles` is only a candidate when the plan's correlativas are known.
+ */
+export function defaultStatusFilter(
+  counts: Readonly<Record<StatusGroupId, number>>,
+  prerequisitesKnown: boolean,
+): StatusGroupId | 'todas' {
+  const order: StatusGroupId[] = ['cursando', 'final_pendiente']
+  if (prerequisitesKnown) order.push('disponibles')
+  order.push('aprobadas')
+  return order.find((id) => counts[id] > 0) ?? 'todas'
+}

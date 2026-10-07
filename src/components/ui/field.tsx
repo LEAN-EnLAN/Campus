@@ -18,9 +18,9 @@ import { cn } from '@/lib/utils'
  */
 
 const controlClass =
-  'w-full rounded-md border border-rule bg-paper-elevated px-3 text-sm text-ink ' +
+  'w-full rounded-md border border-field bg-paper-elevated px-3 text-sm text-ink ' +
   'placeholder:text-ink-faint transition-colors duration-150 ' +
-  'hover:border-ink-faint focus:border-accent ' +
+  'hover:border-ink focus:border-focus ' +
   'aria-[invalid=true]:border-danger disabled:cursor-not-allowed disabled:opacity-55'
 
 interface FieldShellProps {

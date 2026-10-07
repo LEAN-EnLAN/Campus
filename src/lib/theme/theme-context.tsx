@@ -37,7 +37,7 @@ interface ThemeValue {
  */
 function applyAccent(hue: number | null, theme: Theme) {
   const root = document.documentElement
-  const vars = ['--color-accent', '--color-accent-soft', '--color-accent-ink']
+  const vars = ['--color-accent', '--color-accent-soft', '--color-accent-ink', '--color-focus']
 
   if (hue === null) {
     // Remove rather than write the default back: the stylesheet already holds
@@ -50,6 +50,8 @@ function applyAccent(hue: number | null, theme: Theme) {
   root.style.setProperty('--color-accent', toCss(harmonic(safe, 'subject', theme)))
   root.style.setProperty('--color-accent-soft', toCss(harmonic(safe, 'soft', theme)))
   root.style.setProperty('--color-accent-ink', toCss(harmonic(safe, 'ink', theme)))
+  // The ring follows the accent's hue at the ink lightness, which clears 3:1.
+  root.style.setProperty('--color-focus', toCss(harmonic(safe, 'ink', theme)))
 }
 
 const ThemeContext = createContext<ThemeValue | null>(null)

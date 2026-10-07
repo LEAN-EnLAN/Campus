@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState } from 'react'
 
 import type { AcademicItemKind, SubjectView } from '@/domain/types'
+import { combineDue, parseDateInput, parseTimeInput } from '@/features/items/date-input'
 import { cn } from '@/lib/utils'
 
 import { Button } from './ui/button'
@@ -25,6 +26,17 @@ const KINDS: { value: AcademicItemKind; label: string }[] = [
   { value: 'class', label: 'Clase' },
   { value: 'custom', label: 'Otro' },
 ]
+
+/** What the dialog is called: what it is about to add, never "algo". */
+const TITLE_BY_KIND: Record<AcademicItemKind, string> = {
+  assignment: 'Agregar entrega',
+  midterm: 'Agregar parcial',
+  final: 'Agregar final',
+  task: 'Agregar tarea',
+  registration: 'Agregar inscripción',
+  class: 'Agregar clase',
+  custom: 'Agregar fecha',
+}
 
 export interface QuickCaptureValues {
   title: string
@@ -64,6 +76,11 @@ export function QuickCapture({
   const [dueDate, setDueDate] = useState('')
   const [dueTime, setDueTime] = useState('')
   const [touched, setTouched] = useState(false)
+  // Date and time complain after a save attempt (or on leaving the field), never
+  // while the student is still typing "2" on the way to "23/10/2026".
+  const [submitted, setSubmitted] = useState(false)
+  const dateRef = useRef<HTMLInputElement>(null)
+  const timeRef = useRef<HTMLInputElement>(null)
 
   // Reset on open so a previous capture never leaks into the next one.
   useEffect(() => {
@@ -75,6 +92,7 @@ export function QuickCapture({
     setDueDate('')
     setDueTime('')
     setTouched(false)
+    setSubmitted(false)
     const timer = window.setTimeout(() => firstFieldRef.current?.focus(), 20)
     return () => window.clearTimeout(timer)
   }, [open, defaultSubjectId])
@@ -121,27 +139,48 @@ export function QuickCapture({
   const trimmed = title.trim()
   const titleError = touched && trimmed.length === 0 ? 'Poné un título.' : null
 
+  // The app's own messages, in the app's own voice. The form opts out of the
+  // browser's (`noValidate`), whose text follows the browser language and is
+  // never announced next to the field it is about.
+  const date = parseDateInput(dueDate)
+  const time = parseTimeInput(dueTime)
+  const dateError =
+    submitted && dueDate.trim() !== '' && !date
+      ? 'Escribí la fecha como dd/mm/aaaa, por ejemplo 23/10/2026.'
+      : submitted && dueDate.trim() === '' && dueTime.trim() !== ''
+        ? 'Elegí también el día.'
+        : null
+  const timeError =
+    touched && dueTime.trim() !== '' && !time
+      ? 'Escribí la hora como hh:mm, por ejemplo 18:30.'
+      : null
+
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault()
     setTouched(true)
+    setSubmitted(true)
+    // First problem wins the focus, in the order the fields appear.
     if (trimmed.length === 0) {
       firstFieldRef.current?.focus()
       return
     }
-
-    // A date with no time means end of day — a TP due "el martes" is not due at 00:00.
-    let dueAt: string | null = null
-    if (dueDate) {
-      const [y, m, d] = dueDate.split('-').map(Number)
-      const [hh, mm] = dueTime ? dueTime.split(':').map(Number) : [23, 59]
-      dueAt = new Date(y!, m! - 1, d!, hh ?? 23, mm ?? 59).toISOString()
+    const dateProblem =
+      (dueDate.trim() !== '' && !date) || (dueDate.trim() === '' && dueTime.trim() !== '')
+    if (dateProblem) {
+      dateRef.current?.focus()
+      return
+    }
+    if (dueTime.trim() !== '' && !time) {
+      timeRef.current?.focus()
+      return
     }
 
     await onSubmit({
       title: trimmed,
       kind,
       curriculumSubjectId: subjectId || null,
-      dueAt,
+      // A date with no time is DATE-ONLY, recorded as such; it is not due at 23:59.
+      dueAt: combineDue(date, time),
     })
   }
 
@@ -165,9 +204,9 @@ export function QuickCapture({
           'max-h-[88dvh] overflow-y-auto',
         )}
       >
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4 p-5 pb-6">
+        <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4 p-5 pb-6">
           <h2 id={titleId} className="text-ink font-serif text-lg">
-            Agregar algo
+            {TITLE_BY_KIND[kind]}
           </h2>
 
           <TextField
@@ -212,18 +251,27 @@ export function QuickCapture({
 
           <div className="grid gap-4 sm:grid-cols-2">
             <TextField
+              ref={dateRef}
               label="Fecha"
-              type="date"
+              placeholder="dd/mm/aaaa"
+              inputMode="numeric"
+              autoComplete="off"
               value={dueDate}
               onChange={(e) => setDueDate(e.target.value)}
+              onBlur={() => dueDate.trim() !== '' && setSubmitted(true)}
+              error={dateError}
             />
             <TextField
+              ref={timeRef}
               label="Hora"
-              type="time"
+              placeholder="hh:mm"
+              inputMode="numeric"
+              autoComplete="off"
               value={dueTime}
               onChange={(e) => setDueTime(e.target.value)}
-              hint="Si la dejás vacía, queda para el final del día."
-              disabled={!dueDate}
+              onBlur={() => dueTime.trim() !== '' && setSubmitted(true)}
+              error={timeError}
+              hint="Sin hora, queda para todo el día."
             />
           </div>
 

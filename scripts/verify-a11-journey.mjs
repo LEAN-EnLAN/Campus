@@ -26,7 +26,7 @@ const SUBJECT_ID = 'analisis-matematico-i-1'
 // Today rules rather than by bending them. Local date string, no timezone
 // arithmetic: Argentina is UTC-3 and a naive ISO conversion moves the day.
 const DUE = new Date(Date.now() + 7 * 24 * 3600 * 1000)
-const DUE_LOCAL = `${DUE.getFullYear()}-${String(DUE.getMonth() + 1).padStart(2, '0')}-${String(DUE.getDate()).padStart(2, '0')}`
+const DUE_LOCAL = `${String(DUE.getDate()).padStart(2, '0')}/${String(DUE.getMonth() + 1).padStart(2, '0')}/${DUE.getFullYear()}`
 const results = []
 const check = (n, ok, d = '') => {
   results.push(ok)
@@ -152,7 +152,7 @@ const authored = await session(async (page, server, supabaseCalls) => {
   // Scoped to the capture dialog. The Course page has its OWN "Guardar" for
   // material, and an unscoped locator matched both — which is the dialog
   // telling us its accessible name is doing its job.
-  const dialog = page.getByLabel('Agregar algo')
+  const dialog = page.getByRole('dialog', { name: /^Agregar / })
   await dialog.waitFor({ state: 'visible', timeout: 20_000 })
   await dialog.getByLabel('¿Qué es?').fill(DEADLINE_TITLE)
   await dialog.getByLabel('Tipo').selectOption('assignment')

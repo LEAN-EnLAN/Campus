@@ -63,7 +63,9 @@ export function Field({ label, hint, error, required, children, className }: Fie
       ) : null}
 
       {error ? (
-        <p id={errorId} className="text-danger text-xs font-medium">
+        // `role="alert"`: a message that appears next to a field the student
+        // cannot see (or is not looking at) has to be announced, not just drawn.
+        <p id={errorId} role="alert" className="text-danger text-xs font-medium">
           {error}
         </p>
       ) : null}

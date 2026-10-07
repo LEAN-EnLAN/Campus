@@ -14,6 +14,7 @@ import process from 'node:process'
 import { chromium } from '@playwright/test'
 
 import { startDevServer, waitForPortFree } from './lib/dev-server.mjs'
+import { openFolderByPath } from './lib/startup.mjs'
 
 const WORK = '/tmp/campus-unr'
 const VAULT = join(WORK, 'MiVault')
@@ -51,8 +52,7 @@ const browser = await chromium.launchPersistentContext(PROFILE, { headless: true
 const page = browser.pages()[0] ?? (await browser.newPage())
 
 await page.goto(server.url, { waitUntil: 'domcontentloaded' })
-await page.getByLabel('Ruta de la carpeta').fill(VAULT)
-await page.getByRole('button', { name: 'Abrir', exact: true }).click()
+await openFolderByPath(page, VAULT)
 await page.waitForURL(/onboarding|today/, { timeout: 25_000 })
 
 // UNR FCEIA — Licenciatura en Ciencias de la Computación — TO 2024
@@ -71,8 +71,9 @@ await page
   .first()
   .click()
   .catch(() => {})
-await page.waitForURL(/today/, { timeout: 25_000 }).catch(() => {})
-check('reached Today on the UNR plan', /today/.test(page.url()))
+// Saving a catalog career lands on the progress entry, not on Hoy.
+await page.waitForURL(/plan\/progress/, { timeout: 25_000 }).catch(() => {})
+check('reached the progress entry on the UNR plan', /plan\/progress/.test(page.url()))
 
 // ---- Plan ------------------------------------------------------------------
 await page.goto(`${server.url}/plan`, { waitUntil: 'domcontentloaded' })

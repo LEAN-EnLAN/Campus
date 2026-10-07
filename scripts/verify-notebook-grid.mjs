@@ -21,6 +21,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
 import { startDevServer, waitForPortFree } from './lib/dev-server.mjs'
+import { openFolderByPath } from './lib/startup.mjs'
 
 const VAULT = process.env.CAMPUS_VAULT ?? join(process.env.HOME, 'Documents/CampusVault')
 // CAMPUS_PROFILE reuses a browser profile that already holds an open vault.
@@ -90,8 +91,7 @@ try {
   await page.goto(`${server.url}/vault`, { waitUntil: 'domcontentloaded' })
   await page.waitForTimeout(2500)
   if (await opener.isVisible().catch(() => false)) {
-    await opener.fill(VAULT)
-    await page.getByRole('button', { name: 'Abrir', exact: true }).click()
+    await openFolderByPath(page, VAULT)
     // Wait on the workspace, not on a URL: where the app lands after opening a
     // vault is a product decision this check has no business encoding.
     await page.waitForTimeout(3000)

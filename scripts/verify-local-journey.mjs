@@ -47,7 +47,7 @@ async function main() {
   // died on "port in use".
   let server = null
   if (!BASE) {
-    await waitForPortFree(5173)
+    await waitForPortFree()
     server = await startDevServer({ args: ['dev'] })
     if (!server.ready) {
       console.error('dev server did not start:', server.output.slice(-600))

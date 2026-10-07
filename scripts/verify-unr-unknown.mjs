@@ -38,7 +38,7 @@ rmSync(WORK, { recursive: true, force: true })
 mkdirSync(VAULT, { recursive: true })
 mkdirSync(PROFILE, { recursive: true })
 
-await waitForPortFree(5173)
+await waitForPortFree()
 const server = await startDevServer({
   args: ['dev'],
   env: { VITE_SUPABASE_URL: 'http://127.0.0.1:1', VITE_SUPABASE_ANON_KEY: 'offline' },

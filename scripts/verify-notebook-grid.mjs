@@ -62,7 +62,7 @@ const existing = process.env.CAMPUS_URL
 const server = existing
   ? { url: existing, ready: true, stop: async () => {} }
   : await (async () => {
-      await waitForPortFree(5173)
+      await waitForPortFree()
       return startDevServer({
         args: ['dev'],
         // Point Supabase at a closed port: this check is about local layout,

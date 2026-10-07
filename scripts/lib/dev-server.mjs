@@ -20,6 +20,20 @@ import { delimiter, resolve } from 'node:path'
  * by pid.
  */
 
+/**
+ * The port the journeys use. 5173 unless CAMPUS_VERIFY_PORT names another, so a
+ * run on a machine whose own dev server holds 5173 neither tests nor kills it.
+ */
+export const DEV_PORT = (() => {
+  const wanted = Number(process.env.CAMPUS_VERIFY_PORT)
+  return Number.isInteger(wanted) && wanted > 0 && wanted < 65536 ? wanted : 5173
+})()
+
+/** vite is told its port only when it is not the one its config already names. */
+export function withPort(args, port) {
+  return port === 5173 ? args : [...args, '--port', String(port)]
+}
+
 /** Is something accepting TCP connections here? Cheaper and more honest than an HTTP probe. */
 function probe(port, host, timeoutMs = 500) {
   return new Promise((resolve) => {
@@ -69,12 +83,12 @@ export function devServerEnv(env = {}) {
 export async function startDevServer({
   args = ['dev'],
   env = {},
-  port = 5173,
+  port = DEV_PORT,
   timeoutMs = 30_000,
   cwd = process.cwd(),
   expectFailure = false,
 } = {}) {
-  const child = spawn('pnpm', args, {
+  const child = spawn('pnpm', withPort(args, port), {
     cwd,
     env: devServerEnv(env),
     stdio: ['ignore', 'pipe', 'pipe'],
@@ -116,7 +130,7 @@ export async function startDevServer({
 }
 
 /** Wait for whatever is on `port` to go away, so the next server can bind it. */
-export async function waitForPortFree(port = 5173, timeoutMs = 15_000) {
+export async function waitForPortFree(port = DEV_PORT, timeoutMs = 15_000) {
   const deadline = Date.now() + timeoutMs
   while (Date.now() < deadline) {
     if (!(await portInUse(port))) return true

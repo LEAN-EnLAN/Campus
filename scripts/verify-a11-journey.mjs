@@ -51,7 +51,7 @@ const tree = (dir, prefix = '') => {
 }
 
 async function session(run) {
-  await waitForPortFree(5173)
+  await waitForPortFree()
   const server = await startDevServer({ args: ['dev'], env: OFFLINE })
   if (!server.ready) {
     console.error('dev server did not start:', server.output.slice(-500))

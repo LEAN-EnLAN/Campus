@@ -80,6 +80,10 @@ describe.each(['light', 'dark'] as const)('%s theme', (theme) => {
       ['danger', 'paper'],
       ['danger', 'danger-soft'],
       ['warning', 'paper'],
+      // The primary button: label on its fill, and on its hover fill. The hover
+      // used to be `accent-ink`, a dark teal that made the dark label 2:1.
+      ['on-tint', 'accent'],
+      ['on-tint', 'accent-hover'],
     ])('%s on %s', (fg, bg) => {
       expect(ratio(theme, fg, bg)).toBeGreaterThanOrEqual(4.5)
     })

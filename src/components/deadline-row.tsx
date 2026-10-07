@@ -2,6 +2,7 @@ import { Link } from '@tanstack/react-router'
 import { Check } from 'lucide-react'
 
 import type { AcademicItem, AcademicItemKind } from '@/domain/types'
+import { dueTimeLabel } from '@/features/items/due'
 import { cn } from '@/lib/utils'
 
 const KIND_LABEL: Record<AcademicItemKind, string> = {
@@ -16,15 +17,6 @@ const KIND_LABEL: Record<AcademicItemKind, string> = {
 
 export function itemKindLabel(kind: AcademicItemKind): string {
   return KIND_LABEL[kind]
-}
-
-/** `HH:MM` in local time, or null for an all-day item. */
-function timeOf(item: AcademicItem): string | null {
-  const anchor = item.dueAt ?? item.startsAt
-  if (!anchor) return null
-  const date = new Date(anchor)
-  if (Number.isNaN(date.getTime())) return null
-  return date.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false })
 }
 
 /**
@@ -54,7 +46,9 @@ export function DeadlineRow({
   dayLabel?: string | null
   className?: string
 }) {
-  const time = timeOf(item)
+  // Only a time the student typed. An item saved with just a date has none, and
+  // showing the end-of-day that stands in for it would invent a deadline hour.
+  const time = dueTimeLabel(item)
   const done = item.status === 'done'
 
   return (
@@ -91,7 +85,12 @@ export function DeadlineRow({
           overdue ? 'text-danger font-medium' : 'text-ink-muted',
         )}
       >
-        {time ?? '—'}
+        {time ?? (
+          <>
+            <span aria-hidden="true">—</span>
+            <span className="sr-only">Sin hora</span>
+          </>
+        )}
       </span>
 
       <span className="min-w-0 flex-1">

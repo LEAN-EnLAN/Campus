@@ -6,10 +6,12 @@ import { EmptyState, ErrorState, LoadingRows } from '@/components/empty-state'
 import { PageHeader, SectionHeading } from '@/components/page-header'
 import { ProgressLine } from '@/components/progress-line'
 import { StatusGlyph } from '@/components/academic-status'
-import { buildAgenda, todayCount, type AgendaEntry } from '@/domain/agenda'
-import { activeSubjects } from '@/domain/progress'
+import { useToast } from '@/components/toast'
+import type { AgendaEntry } from '@/domain/agenda'
+import type { SubjectView } from '@/domain/types'
 import { useAcademicPlan } from '@/features/academic/queries'
 import { useAcademicItems, useToggleAcademicItem } from '@/features/items/queries'
+import { buildToday, daysLeftLabel, todayHeadline } from '@/features/items/today-model'
 
 export const Route = createFileRoute('/_app/today')({
   component: TodayScreen,
@@ -21,18 +23,16 @@ const DATE_FORMAT = new Intl.DateTimeFormat('es-AR', {
   month: 'long',
 })
 
-const WEEKDAY_FORMAT = new Intl.DateTimeFormat('es-AR', { weekday: 'long' })
+const SHORT_DATE = new Intl.DateTimeFormat('es-AR', { day: 'numeric', month: 'long' })
 
-/** "Mañana", "el lunes", "el 3 de septiembre" — how a person says when. */
-function whenLabel(entry: AgendaEntry): string | null {
-  if (entry.dayOffset === null || entry.dayOffset <= 0) return null
-  if (entry.dayOffset === 1) return 'Mañana'
+/** "Mañana", "En 10 días (17 de octubre)" — how a person says when. */
+function whenLabel(entry: AgendaEntry & { daysLeft?: number }): string | null {
+  if (entry.daysLeft === undefined) return null
   const anchor = entry.item.dueAt ?? entry.item.startsAt
-  if (!anchor) return null
-  const date = new Date(anchor)
-  if (Number.isNaN(date.getTime())) return null
-  if (entry.dayOffset <= 7) return capitalize(WEEKDAY_FORMAT.format(date))
-  return date.toLocaleDateString('es-AR', { day: 'numeric', month: 'long' })
+  const date = anchor ? new Date(anchor) : null
+  const base = daysLeftLabel(entry.daysLeft)
+  if (!date || Number.isNaN(date.getTime()) || entry.daysLeft === 1) return base
+  return `${base} (${SHORT_DATE.format(date)})`
 }
 
 function capitalize(text: string): string {
@@ -44,19 +44,47 @@ function TodayScreen() {
   const plan = useAcademicPlan()
   const itemsQuery = useAcademicItems()
   const toggleItem = useToggleAcademicItem()
+  const toast = useToast()
 
   // One clock read per render, passed into the pure domain function.
   const now = useMemo(() => new Date(), [])
-  const agenda = useMemo(() => buildAgenda(itemsQuery.data ?? [], now), [itemsQuery.data, now])
+  const today = useMemo(() => buildToday(itemsQuery.data ?? [], now), [itemsQuery.data, now])
 
-  const active = useMemo(() => activeSubjects(plan.views), [plan.views])
-  const count = todayCount(agenda)
+  // Straight from the stored status. Regularizada is "cursó, falta el final":
+  // counting it as Cursando overstates what the student is attending.
+  const cursando = useMemo(
+    () => plan.views.filter((v) => v.status === 'in_progress'),
+    [plan.views],
+  )
+  const finalPendiente = useMemo(
+    () => plan.views.filter((v) => v.status === 'regularized'),
+    [plan.views],
+  )
+
+  const count = today.overdue.length + today.today.length
   const isLoading = itemsQuery.isLoading || plan.isLoading
+  const headline = todayHeadline({
+    dueToday: count,
+    upcoming: today.upcoming.map((e) => ({ title: e.item.title, daysLeft: e.daysLeft })),
+    undated: today.undated.length,
+  })
 
   const subjectName = (id: string | null) =>
     id ? (plan.subjectById.get(id)?.name ?? null) : null
 
-  const renderRows = (entries: AgendaEntry[], overdue = false) =>
+  const complete = (id: string, done: boolean) => {
+    toggleItem.mutate({ id, done })
+    // Finishing something used to make the row vanish and the headline flip with
+    // no word. The way back is the confirmation.
+    if (done) {
+      toast.show({
+        message: 'Hecho',
+        action: { label: 'Deshacer', onAction: () => toggleItem.mutate({ id, done: false }) },
+      })
+    }
+  }
+
+  const renderRows = (entries: (AgendaEntry & { daysLeft?: number })[], overdue = false) =>
     entries.map((entry) => (
       <DeadlineRow
         key={entry.item.id}
@@ -65,7 +93,7 @@ function TodayScreen() {
         dayLabel={whenLabel(entry)}
         subjectName={subjectName(entry.item.curriculumSubjectId)}
         subjectId={entry.item.curriculumSubjectId}
-        onToggle={(done) => toggleItem.mutate({ id: entry.item.id, done })}
+        onToggle={(done) => complete(entry.item.id, done)}
       />
     ))
 
@@ -73,20 +101,8 @@ function TodayScreen() {
     <div className="flex flex-col gap-9">
       <PageHeader
         eyebrow={capitalize(DATE_FORMAT.format(now))}
-        title={
-          isLoading
-            ? '¿Qué tenés para hoy?'
-            : count === 0
-              ? 'No tenés nada para hoy.'
-              : count === 1
-                ? 'Tenés una cosa para hoy.'
-                : `Tenés ${count} cosas para hoy.`
-        }
-        description={
-          !isLoading && count === 0
-            ? 'Buen momento para adelantar algo, o para no hacer nada.'
-            : undefined
-        }
+        title={isLoading ? '¿Qué tenés para hoy?' : headline.title}
+        description={!isLoading ? headline.description : undefined}
       />
 
       {itemsQuery.error ? (
@@ -102,31 +118,34 @@ function TodayScreen() {
         </section>
       ) : (
         <>
-          {agenda.overdue.length > 0 ? (
+          {today.overdue.length > 0 ? (
             <section aria-labelledby="atrasadas" className="flex flex-col gap-1">
-              <SectionHeading id="atrasadas" aside={`${agenda.overdue.length}`}>
+              <SectionHeading id="atrasadas" aside={`${today.overdue.length}`}>
                 Atrasadas
               </SectionHeading>
-              <div>{renderRows(agenda.overdue, true)}</div>
+              <div>{renderRows(today.overdue, true)}</div>
             </section>
           ) : null}
 
-          <section aria-labelledby="hoy" className="flex flex-col gap-1">
-            <SectionHeading id="hoy">Hoy</SectionHeading>
-            {agenda.today.length > 0 ? (
-              <div>{renderRows(agenda.today)}</div>
-            ) : (
-              <p className="text-ink-muted py-3 text-sm">Nada agendado para hoy.</p>
-            )}
-          </section>
+          {/* Only when it has something to say: with nothing due, the headline
+              already said so, and a second "nada" under it was the same sentence twice. */}
+          {today.today.length > 0 || today.overdue.length > 0 ? (
+            <section aria-labelledby="hoy" className="flex flex-col gap-1">
+              <SectionHeading id="hoy">Hoy</SectionHeading>
+              {today.today.length > 0 ? (
+                <div>{renderRows(today.today)}</div>
+              ) : (
+                <p className="text-ink-muted py-3 text-sm">Nada más agendado para hoy.</p>
+              )}
+            </section>
+          ) : null}
 
-          {agenda.tomorrow.length > 0 || agenda.week.length > 0 ? (
-            <section aria-labelledby="proximamente" className="flex flex-col gap-1">
-              <SectionHeading id="proximamente">Próximamente</SectionHeading>
-              <div>
-                {renderRows(agenda.tomorrow)}
-                {renderRows(agenda.week)}
-              </div>
+          {today.upcoming.length > 0 ? (
+            <section aria-labelledby="proximas" className="flex flex-col gap-1">
+              <SectionHeading id="proximas" aside={`${today.upcoming.length}`}>
+                Próximas
+              </SectionHeading>
+              <div>{renderRows(today.upcoming)}</div>
               <Link
                 to="/calendar"
                 className="text-accent-ink mt-2 self-start text-sm font-medium underline-offset-4 hover:underline"
@@ -136,29 +155,25 @@ function TodayScreen() {
             </section>
           ) : null}
 
-          {active.length > 0 ? (
-            <section aria-labelledby="cursando" className="flex flex-col gap-1">
-              <SectionHeading id="cursando" aside={`${active.length}`}>
-                Cursando
+          {today.undated.length > 0 ? (
+            <section aria-labelledby="sin-fecha" className="flex flex-col gap-1">
+              <SectionHeading id="sin-fecha" aside={`${today.undated.length}`}>
+                Sin fecha
               </SectionHeading>
-              <ul>
-                {active.map((subject) => (
-                  <li key={subject.id}>
-                    <Link
-                      to="/courses/$courseId"
-                      params={{ courseId: subject.id }}
-                      className="border-rule-soft text-ink hover:bg-paper-elevated flex items-center gap-3 border-b py-3 text-sm transition-colors"
-                    >
-                      <StatusGlyph status={subject.status} />
-                      <span className="min-w-0 flex-1 truncate">{subject.name}</span>
-                      <span className="text-ink-muted shrink-0 text-xs">
-                        {subject.yearLevel}° año
-                      </span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
+              <div>{renderRows(today.undated)}</div>
             </section>
+          ) : null}
+
+          {cursando.length > 0 ? (
+            <SubjectGroup id="cursando" title="Cursando" subjects={cursando} />
+          ) : null}
+
+          {finalPendiente.length > 0 ? (
+            <SubjectGroup
+              id="final-pendiente"
+              title="Final pendiente"
+              subjects={finalPendiente}
+            />
           ) : null}
 
           {plan.hasContext && !plan.isUnmapped && plan.progress.total > 0 ? (
@@ -205,5 +220,38 @@ function TodayScreen() {
         </>
       )}
     </div>
+  )
+}
+
+function SubjectGroup({
+  id,
+  title,
+  subjects,
+}: {
+  id: string
+  title: string
+  subjects: readonly SubjectView[]
+}) {
+  return (
+    <section aria-labelledby={id} className="flex flex-col gap-1">
+      <SectionHeading id={id} aside={`${subjects.length}`}>
+        {title}
+      </SectionHeading>
+      <ul>
+        {subjects.map((subject) => (
+          <li key={subject.id}>
+            <Link
+              to="/courses/$courseId"
+              params={{ courseId: subject.id }}
+              className="border-rule-soft text-ink hover:bg-paper-elevated flex items-center gap-3 border-b py-3 text-sm transition-colors"
+            >
+              <StatusGlyph status={subject.status} />
+              <span className="min-w-0 flex-1 truncate">{subject.name}</span>
+              <span className="text-ink-muted shrink-0 text-xs">{subject.yearLevel}° año</span>
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </section>
   )
 }

@@ -62,6 +62,11 @@ export function ToastProvider({ children }: { children: ReactNode }) {
           <p className="border-rule bg-paper-elevated text-ink pointer-events-auto flex items-center gap-3 rounded-lg border px-4 py-2.5 text-sm shadow-lg">
             <span>{toast.message}</span>
             {toast.action ? (
+              <span aria-hidden="true" className="text-ink-muted -mx-1.5">
+                ·
+              </span>
+            ) : null}
+            {toast.action ? (
               <button
                 type="button"
                 onClick={() => {

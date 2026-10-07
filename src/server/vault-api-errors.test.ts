@@ -44,7 +44,7 @@ beforeEach(async () => {
   base = mkdtempSync(join(tmpdir(), 'campus-api-err-'))
   root = join(base, 'Campus')
   mkdirSync(join(root, 'Materias'), { recursive: true })
-  sessions = new VaultSessions()
+  sessions = new VaultSessions({ allowedRoots: [tmpdir()] })
   vaultId = (await sessions.open(root)).id
 })
 

@@ -1,9 +1,12 @@
 import { randomBytes } from 'node:crypto'
+import { homedir } from 'node:os'
+import { isAbsolute, resolve } from 'node:path'
 
 import { VaultConflictError, VaultError, vaultErrorFromSystem } from '../lib/vault/errors'
 import type { VaultErrorCode } from '../lib/vault/errors'
 import { nodeFileSystem } from '../lib/vault/node-fs'
 import { VaultRepository } from '../lib/vault/vault-repository'
+import { isInsideAny } from './vault-roots'
 
 /**
  * The local Vault API.
@@ -112,15 +115,73 @@ const header = (req: VaultRequest, name: string): string | null => {
  */
 export class VaultSessions {
   private readonly byId = new Map<string, { path: string; repo: VaultRepository }>()
+  /** The folders `open` may land in. Absolute and normalised; never empty by accident. */
+  readonly allowedRoots: readonly string[]
 
-  async open(path: string): Promise<{ id: string; name: string }> {
-    const stat = await nodeFileSystem.lstat(path)
+  constructor(options: { allowedRoots?: readonly string[] } = {}) {
+    this.allowedRoots = (options.allowedRoots ?? [homedir()]).map((root) => resolve(root))
+  }
+
+  /**
+   * Decide whether `path` may become a Vault, and where it really is.
+   *
+   * Judged TWICE, deliberately. First on the string the page sent: a path
+   * outside the roots is refused as `folder_outside_roots` WITHOUT touching the
+   * disk, so existing and missing folders look identical from outside (no
+   * existence oracle). Then on the real path: a link inside the home that points
+   * out of it is refused too, which is the other half of "refuses symlinks that
+   * escape" — the roots themselves are resolved first, because `/home` may
+   * itself be a link.
+   */
+  private async admit(path: string): Promise<string> {
+    if (!isAbsolute(path)) throw new VaultError('folder_not_absolute', 'path is not absolute')
+
+    const realRoots = await this.realRoots()
+    const textual = [...this.allowedRoots, ...realRoots]
+    if (!isInsideAny(textual, path)) {
+      throw new VaultError('folder_outside_roots', 'folder is outside the allowed roots')
+    }
+
+    let real: string
+    try {
+      const stat = await nodeFileSystem.lstat(path)
+      if (stat === null) throw new VaultError('folder_not_found', 'vault not found')
+      real = await nodeFileSystem.realpath(path)
+    } catch (error) {
+      if (error instanceof VaultError) throw error
+      const failure = vaultErrorFromSystem(error)
+      throw new VaultError(
+        failure.code === 'not_found' ? 'folder_not_found' : failure.code,
+        failure.message,
+      )
+    }
+    if (!isInsideAny(realRoots, real)) {
+      throw new VaultError('folder_outside_roots', 'folder is outside the allowed roots')
+    }
+
+    const stat = await nodeFileSystem.lstat(real)
     if (stat === null) throw new VaultError('folder_not_found', 'vault not found')
     if (stat.kind !== 'dir') throw new VaultError('folder_not_directory', 'not a directory')
+    return real
+  }
 
+  /** Allowed roots that exist, resolved. A root that is not there allows nothing. */
+  private async realRoots(): Promise<string[]> {
+    const out: string[] = []
+    for (const root of this.allowedRoots) {
+      try {
+        out.push(await nodeFileSystem.realpath(root))
+      } catch {
+        // Not there (yet): nothing can be inside it.
+      }
+    }
+    return out
+  }
+
+  async open(path: string): Promise<{ id: string; name: string }> {
     // Resolved once, on the privileged side, and stored resolved — so a symlink
     // swapped in afterwards cannot move the root out from under the repository.
-    const real = await nodeFileSystem.realpath(path)
+    const real = await this.admit(path)
     const id = randomBytes(16).toString('base64url')
     this.byId.set(id, { path: real, repo: new VaultRepository(nodeFileSystem, real) })
     return { id, name: real.split(/[/\\]/).pop() ?? real }
@@ -130,9 +191,14 @@ export class VaultSessions {
     return this.byId.get(id) ?? null
   }
 
+  /** True only for a folder that `open` would accept. Everything else — outside the roots, missing, a file — is the same `false`. */
   async exists(path: string): Promise<boolean> {
-    const stat = await nodeFileSystem.lstat(path)
-    return stat !== null && stat.kind === 'dir'
+    try {
+      await this.admit(path)
+      return true
+    } catch {
+      return false
+    }
   }
 }
 
@@ -205,7 +271,13 @@ export async function handleVaultRequest(
       return reply(200, await sessions.open(target))
     } catch (error) {
       const failure = vaultErrorFromSystem(error)
-      return reply(404, { ok: false, code: failure.code, error: failure.message })
+      const status =
+        failure.code === 'folder_outside_roots' || failure.code === 'permission_denied'
+          ? 403
+          : failure.code === 'folder_not_absolute'
+            ? 400
+            : 404
+      return reply(status, { ok: false, code: failure.code, error: failure.message })
     }
   }
 

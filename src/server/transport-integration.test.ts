@@ -42,7 +42,7 @@ beforeEach(async () => {
     nodeCatalogReader,
   )
 
-  const sessions = new VaultSessions()
+  const sessions = new VaultSessions({ allowedRoots: [tmpdir()] })
   server = createServer((req, res) => {
     const chunks: Buffer[] = []
     req.on('data', (c: Buffer) => chunks.push(c))

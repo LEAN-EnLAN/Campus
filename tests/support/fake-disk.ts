@@ -10,6 +10,10 @@ export class FakeDisk {
   files = new Map<string, { contents: string; mtimeMs: number }>()
   latency = 0
   writes: string[] = []
+  /** Every readNote path, in order — what a re-scan costs. */
+  reads: string[] = []
+  /** Every listDir path, in order. */
+  listings: string[] = []
   failNextWith: Error | null = null
   private clock = 1000
 
@@ -37,6 +41,7 @@ export class FakeDisk {
         : new Promise<void>((resolve) => setTimeout(resolve, this.latency))
     return {
       readNote: async (path) => {
+        this.reads.push(path)
         const file = this.files.get(path)
         if (!file) throw new VaultError('not_found', 'not found')
         return { contents: file.contents, mtimeMs: file.mtimeMs } satisfies LoadedNote
@@ -63,7 +68,23 @@ export class FakeDisk {
         this.writes.push(contents)
         this.put(path, contents)
       },
-      listDir: async () => [],
+      listDir: async (dir) => {
+        this.listings.push(dir)
+        const prefix = dir === '' ? '' : dir + '/'
+        const seen = new Map<string, 'file' | 'dir'>()
+        for (const path of this.files.keys()) {
+          if (!path.startsWith(prefix)) continue
+          const rest = path.slice(prefix.length)
+          const slash = rest.indexOf('/')
+          if (slash === -1) seen.set(rest, 'file')
+          else seen.set(rest.slice(0, slash), 'dir')
+        }
+        if (dir !== '' && seen.size === 0) throw new VaultError('not_found', 'not found')
+        return [...seen].map(([name, kind]) => {
+          const file = this.files.get(prefix + name)
+          return { name, kind, mtimeMs: file?.mtimeMs ?? 0, size: file?.contents.length ?? 0 }
+        })
+      },
       mkdir: async () => {},
       rename: async () => {},
       trash: async () => ({ trashedTo: '' }),

@@ -1,6 +1,8 @@
 import { Link } from '@tanstack/react-router'
 import { ChevronRight } from 'lucide-react'
 
+import { orderConflictOf } from '@/domain/consistency'
+import { isFinalBlocked, missingSummary } from '@/domain/requirements'
 import type { SubjectView } from '@/domain/types'
 import { cn } from '@/lib/utils'
 
@@ -30,6 +32,15 @@ export function SubjectRow({
 }) {
   const isActive = subject.status === 'in_progress' || subject.status === 'regularized'
   const isMuted = subject.status === 'blocked' || subject.status === 'pending'
+  const missing = missingSummary(subject)
+  // A subject we think is blocked says what is missing. One the student marked
+  // anyway is not "blocked": it carries the quiet "correlativas pendientes" flag.
+  const hints = [
+    subject.status === 'blocked' ? missing : null,
+    isFinalBlocked(subject) ? 'final bloqueado' : null,
+    orderConflictOf(subject) ? 'correlativas pendientes' : null,
+    subject.elective ? 'Electiva' : null,
+  ].filter((hint): hint is string => hint !== null)
 
   return (
     <Link
@@ -75,17 +86,12 @@ export function SubjectRow({
           ) : null}
           <span aria-hidden="true">·</span>
           <span>{TERM_LABEL[subject.term]}</span>
-          {subject.status === 'blocked' && subject.missingRequirements.length > 0 ? (
-            <>
+          {hints.map((hint) => (
+            <span key={hint} className="contents">
               <span aria-hidden="true">·</span>
-              <span>
-                falta {subject.missingRequirements[0]?.name}
-                {subject.missingRequirements.length > 1
-                  ? ` +${subject.missingRequirements.length - 1}`
-                  : ''}
-              </span>
-            </>
-          ) : null}
+              <span>{hint}</span>
+            </span>
+          ))}
           {subject.grade !== null ? (
             <>
               <span aria-hidden="true">·</span>

@@ -1,3 +1,4 @@
+import { listOrderConflicts } from './consistency'
 import type { ProgressSummary, SubjectStatus, SubjectView } from './types'
 
 /** Statuses that count as academic credit earned. */
@@ -10,7 +11,10 @@ const EARNED: ReadonlySet<SubjectStatus> = new Set<SubjectStatus>(['passed', 'eq
  * Credits are only reported when *every* subject declares them; a partial credit
  * total is worse than none, because it silently understates the plan.
  */
-export function computeProgress(views: readonly SubjectView[]): ProgressSummary {
+export function computeProgress(allViews: readonly SubjectView[]): ProgressSummary {
+  // Distinct by id: a denominator that counts one slot twice overstates the plan.
+  const views = [...new Map(allViews.map((v) => [v.id, v])).values()]
+
   const summary: ProgressSummary = {
     total: views.length,
     passed: 0,
@@ -21,6 +25,7 @@ export function computeProgress(views: readonly SubjectView[]): ProgressSummary 
     pending: 0,
     failed: 0,
     equivalent: 0,
+    flagged: listOrderConflicts(views).length,
     ratio: 0,
     creditsEarned: null,
     creditsTotal: null,

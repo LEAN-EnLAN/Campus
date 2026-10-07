@@ -171,11 +171,12 @@ export function useAcademicPlan(): AcademicPlan {
   const subjects = bundleQuery.data?.subjects
   const prerequisites = bundleQuery.data?.prerequisites
   const states = statesQuery.data
+  const prerequisitesKnown = bundleQuery.data?.prerequisitesKnown ?? true
 
   const views = useMemo(() => {
     if (!subjects || !prerequisites || !states) return []
-    return computeSubjectViews({ subjects, prerequisites, states })
-  }, [subjects, prerequisites, states])
+    return computeSubjectViews({ subjects, prerequisites, states, prerequisitesKnown })
+  }, [subjects, prerequisites, states, prerequisitesKnown])
 
   const byYear = useMemo(() => groupByYear(views), [views])
   const progress = useMemo(() => computeProgress(views), [views])
@@ -185,7 +186,7 @@ export function useAcademicPlan(): AcademicPlan {
     context,
     curriculum: bundleQuery.data?.curriculum ?? null,
     programName: bundleQuery.data?.programName ?? null,
-    prerequisitesKnown: bundleQuery.data?.prerequisitesKnown ?? true,
+    prerequisitesKnown,
     prerequisitesNote: bundleQuery.data?.prerequisitesNote ?? null,
     views,
     byYear,

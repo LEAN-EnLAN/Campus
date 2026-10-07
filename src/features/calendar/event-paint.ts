@@ -65,12 +65,12 @@ const SHADE: Record<
   Record<EventEmphasis, { l: number; c: number; ink: number }>
 > = {
   light: {
-    strong: { l: 62, c: 0.085, ink: 99 },
+    strong: { l: 53, c: 0.085, ink: 99 },
     medium: { l: 80, c: 0.055, ink: 35 },
     quiet: { l: 92, c: 0.028, ink: 40 },
   },
   dark: {
-    strong: { l: 58, c: 0.085, ink: 97 },
+    strong: { l: 50, c: 0.085, ink: 97 },
     medium: { l: 38, c: 0.055, ink: 88 },
     quiet: { l: 26, c: 0.03, ink: 80 },
   },
@@ -80,8 +80,12 @@ export interface EventPaint {
   hue: number
   /** Lightness of the fill, exposed so tests can assert the ordering. */
   l: number
+  /** Chroma of the fill. */
+  c: number
   /** Lightness of the ink on it. */
   inkL: number
+  /** Chroma of the ink on it. */
+  inkC: number
   bg: string
   ink: string
   line: string
@@ -104,13 +108,16 @@ export function eventPaint(
   void done
   const shade = SHADE[theme][emphasisOf(kind)]
   const c = Math.min(shade.c, HARMONY.maxChroma)
+  const inkC = shade.ink > 60 ? 0.02 : 0.05
 
   return {
     hue,
     l: shade.l,
+    c,
     inkL: shade.ink,
+    inkC,
     bg: toCss({ l: shade.l, c, h: hue }),
-    ink: toCss({ l: shade.ink, c: shade.ink > 60 ? 0.02 : 0.05, h: hue }),
+    ink: toCss({ l: shade.ink, c: inkC, h: hue }),
     line: toCss({ l: theme === 'light' ? shade.l - 12 : shade.l + 14, c, h: hue }),
   }
 }

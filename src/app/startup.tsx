@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { CircularDotMatrix } from '@/components/ui/dot-matrix'
 
 import { useRuntime } from '@/lib/runtime/context'
+import { cloudUnreachableMessage } from '@/features/auth/auth-errors'
 import { descriptorFor } from '@/lib/runtime/resolve'
 import { vaultErrorMessage } from '@/lib/vault/error-messages'
 
@@ -21,6 +22,7 @@ export function Startup() {
   const [path, setPath] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [cloudError, setCloudError] = useState<string | null>(null)
 
   // Still looking. NOT the same as "nothing configured": showing the picker
   // here would flash it at a student whose vault is about to open, and teach
@@ -55,6 +57,21 @@ export function Startup() {
     }
   }
 
+  // Campus Cloud is a choice that can fail on its own terms, and the failure
+  // has to say whose it is: no connection is the student's to fix, a silent
+  // service is not. (The Vault form above keeps its own error.)
+  const startCloud = async () => {
+    setBusy(true)
+    setCloudError(null)
+    try {
+      await chooseCloud()
+    } catch {
+      setCloudError(cloudUnreachableMessage(navigator.onLine))
+    } finally {
+      setBusy(false)
+    }
+  }
+
   // A hosted build has no Vault API, so a Vault is not a choice here: offering
   // one would only ever end in an error. Cloud is the primary action, and one
   // sentence says where the local Vault does work. The decision was made once,
@@ -75,10 +92,15 @@ export function Startup() {
             variant="primary"
             size="lg"
             disabled={busy}
-            onClick={() => void chooseCloud()}
+            onClick={() => void startCloud()}
           >
             Usar Campus Cloud
           </Button>
+          {cloudError ? (
+            <p className="text-danger text-sm" role="alert">
+              {cloudError}
+            </p>
+          ) : null}
         </section>
 
         <p className="text-ink-muted border-t pt-6 text-sm">
@@ -230,16 +252,22 @@ export function Startup() {
       <section className="space-y-2 border-t pt-6">
         <h2 className="font-medium">Campus Cloud</h2>
         <p className="text-ink-muted text-sm">
-          Sincronizado, con cuenta. Es una elección, no un plan B.
+          Tus datos quedan en la nube y se sincronizan entre dispositivos. Necesitás una cuenta:
+          la creás o entrás con la tuya en el paso siguiente.
         </p>
         <button
           type="button"
           disabled={busy}
-          onClick={() => void chooseCloud()}
+          onClick={() => void startCloud()}
           className="rounded-md border px-3 py-1.5 text-sm"
         >
           Usar Campus Cloud
         </button>
+        {cloudError ? (
+          <p className="text-danger text-sm" role="alert">
+            {cloudError}
+          </p>
+        ) : null}
       </section>
     </main>
   )

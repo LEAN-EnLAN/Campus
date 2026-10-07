@@ -1,14 +1,24 @@
-import { createContext, use, useCallback, useEffect, useState, type ReactNode } from 'react'
+import {
+  createContext,
+  use,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react'
 
 import { BackendProvider } from '@/lib/backends/context'
 import { FilesProvider } from '@/lib/files/context'
 
 import { RequiresAccountProvider } from './identity'
+import { WorkspaceProvider } from './workspace'
 
 import {
   forgetVault,
   readDeviceConfig,
   rememberCloud,
+  leaveRuntime,
   rememberVault,
   writeDeviceConfig,
 } from './device-config'
@@ -35,6 +45,11 @@ interface RuntimeValue {
   chooseVault(vault: VaultDescriptor): Promise<void>
   /** Choose Campus Cloud. An explicit choice, never an error fallback. */
   chooseCloud(): Promise<void>
+  /**
+   * Close the open workspace and return to the picker. Keeps the folder in the
+   * recent list; only stops reopening it by itself on the next launch.
+   */
+  changeWorkspace(): void
   /** Drop a vault we can no longer find. Removes the ENTRY, never the folder. */
   forget(path: string): void
   /** Recent vaults on THIS device. */
@@ -54,9 +69,16 @@ export function RuntimeProvider({
   capabilities,
   /** What to show while startup has not answered, and when it answers "nothing". */
   fallback,
+  /**
+   * Called when an open workspace is closed. Anything keyed by "the current
+   * workspace" and cached above this provider (a query cache) belongs to the
+   * workspace being left and must not be shown in the next one.
+   */
+  onWorkspaceClosed,
 }: {
   children: ReactNode
   capabilities: RuntimeCapabilities
+  onWorkspaceClosed?: () => void
   fallback: (value: RuntimeValue) => ReactNode
 }) {
   // `resolving` is the honest initial value. Starting at `needs-choice` would
@@ -111,6 +133,25 @@ export function RuntimeProvider({
     setState({ status: 'ready', runtime })
   }, [capabilities])
 
+  const changeWorkspace = useCallback(() => {
+    writeDeviceConfig(capabilities.store, leaveRuntime(readDeviceConfig(capabilities.store)))
+    setState({ status: 'needs-choice' })
+  }, [capabilities])
+
+  // Fired AFTER the closed workspace has unmounted, not inside `changeWorkspace`:
+  // clearing a cache while its observers are still mounted makes them refetch
+  // against the backend being left, and that answer would land in the next
+  // workspace's cache.
+  const wasReady = useRef(false)
+  useEffect(() => {
+    if (state.status === 'ready') {
+      wasReady.current = true
+    } else if (wasReady.current) {
+      wasReady.current = false
+      onWorkspaceClosed?.()
+    }
+  }, [state.status, onWorkspaceClosed])
+
   const forget = useCallback(
     (path: string) => {
       writeDeviceConfig(
@@ -131,6 +172,7 @@ export function RuntimeProvider({
     state,
     chooseVault,
     chooseCloud,
+    changeWorkspace,
     forget,
     recent,
     vaultAvailable: capabilities.vaultAvailable,
@@ -145,13 +187,22 @@ export function RuntimeProvider({
       {/* The only fact about the runtime that reaches routes, and it is a
           capability rather than an identity: LOCAL needs no account. */}
       <RequiresAccountProvider value={state.runtime.mode === 'cloud'}>
-        <BackendProvider backend={state.runtime.backend}>
-          {/* Files are a capability, not a mode: cloud simply has none, and
+        <WorkspaceProvider
+          value={{
+            folder: state.runtime.mode === 'local' ? state.runtime.vault : null,
+            change: changeWorkspace,
+          }}
+        >
+          <BackendProvider backend={state.runtime.backend}>
+            {/* Files are a capability, not a mode: cloud simply has none, and
               every file surface renders its no-vault state from that null. */}
-          <FilesProvider access={state.runtime.mode === 'local' ? state.runtime.access : null}>
-            {children}
-          </FilesProvider>
-        </BackendProvider>
+            <FilesProvider
+              access={state.runtime.mode === 'local' ? state.runtime.access : null}
+            >
+              {children}
+            </FilesProvider>
+          </BackendProvider>
+        </WorkspaceProvider>
       </RequiresAccountProvider>
     </RuntimeContext>
   )

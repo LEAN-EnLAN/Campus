@@ -1,12 +1,15 @@
-import { createFileRoute, Outlet, useNavigate } from '@tanstack/react-router'
+import { createFileRoute, Outlet, useNavigate, useRouterState } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 
 import { AcademicShell } from '@/components/academic-shell'
 import { QuickCapture, type QuickCaptureValues } from '@/components/quick-capture'
+import { titleForPath } from '@/components/nav-model'
+import { ToastProvider, useToast } from '@/components/toast'
 import { SearchPalette } from '@/features/search/search-palette'
 import { useAcademicPlan } from '@/features/academic/queries'
 import { useRequiresAccount } from '@/lib/runtime/identity'
 import { useAuth } from '@/features/auth/auth-context'
+import { useDocumentTitle } from '@/lib/hooks/use-document-title'
 import { useAcademicItems, useCreateAcademicItem, useResources } from '@/features/items/queries'
 
 export const Route = createFileRoute('/_app')({
@@ -21,6 +24,21 @@ export const Route = createFileRoute('/_app')({
  * than repeated per route.
  */
 function AppLayout() {
+  return (
+    <ToastProvider>
+      <AppFrame />
+    </ToastProvider>
+  )
+}
+
+/** `/courses/<id>` → `<id>`; anywhere else, nothing. */
+function courseIdOf(pathname: string): string | null {
+  return /^\/courses\/([^/]+)/.exec(pathname)?.[1] ?? null
+}
+
+function AppFrame() {
+  const toast = useToast()
+  const pathname = useRouterState({ select: (state) => state.location.pathname })
   const { session, loading } = useAuth()
   // LOCAL mode has no account and never will. Gating on a Supabase session
   // here sent those students to a login screen they cannot satisfy.
@@ -31,6 +49,10 @@ function AppLayout() {
   const [searchOpen, setSearchOpen] = useState(false)
 
   const plan = useAcademicPlan()
+  const courseId = courseIdOf(pathname)
+  useDocumentTitle(
+    titleForPath(pathname, courseId ? (plan.subjectById.get(courseId)?.name ?? null) : null),
+  )
   const itemsQuery = useAcademicItems()
   const resourcesQuery = useResources()
   const createItem = useCreateAcademicItem()
@@ -105,6 +127,7 @@ function AppLayout() {
         dueAt: values.dueAt,
       })
       setCaptureOpen(false)
+      toast.show({ message: `Guardado: ${values.title}` })
     } catch {
       /* surfaced through createItem.error */
     }
@@ -123,6 +146,9 @@ function AppLayout() {
         open={captureOpen}
         onOpenChange={setCaptureOpen}
         subjects={plan.views}
+        items={itemsQuery.data ?? []}
+        // Opened from a course, the dialog stays about that course.
+        defaultSubjectId={courseIdOf(pathname)}
         onSubmit={handleCapture}
         isPending={createItem.isPending}
         error={createItem.error ? (createItem.error as Error).message : null}

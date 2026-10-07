@@ -38,6 +38,12 @@
   --color-ink-faint: oklch(62% 0.01 50);
   --color-rule: oklch(85% 0.014 66);
   --color-rule-soft: oklch(90% 0.012 66);
+  /* The edge of a form control. NOT --color-rule: that is a divider, and a
+     divider is allowed to be quiet (1.3:1). A control's boundary is
+     information the student needs to find it, and WCAG 1.4.11 asks 3:1 against
+     both the page and the field's own surface. Measured, not guessed — see
+     lib/design/tokens-contrast.test.ts. */
+  --color-field: oklch(56% 0.012 66);
 
   /* Accent — exactly one, and deliberately NOT Tomato Jam.
      The accent is on every selected nav item, every primary button and the
@@ -48,6 +54,9 @@
   --color-accent: oklch(72% 0.075 202); /* Tropical Teal #7ebdc2 */
   --color-accent-soft: oklch(93% 0.03 202);
   --color-accent-ink: oklch(42% 0.07 202);
+  /* The keyboard focus ring. --color-accent is a FILL colour (72% lightness) and
+     was 1.95:1 on the page; the ring needs 3:1 on page, field and soft surfaces. */
+  --color-focus: oklch(42% 0.07 202);
   /* The ink for anything painted with a FILLED palette colour — accent,
      success, a subject's own hue. One token rather than a habit: every filled
      colour in this system sits in the same lightness band, so they all take the
@@ -59,6 +68,9 @@
   /* Academic status. Hues 32 / 92 / 160 / 202 — every pair at least 42° apart,
      so no two states are ever a shade of each other. */
   --color-success: oklch(70% 0.075 160);
+  /* Success as TEXT (a ✓, "Aprobada"). --color-success is a fill, and as 12px
+     text on paper it was 2.1:1; this is the same hue at 4.5:1 or better. */
+  --color-success-ink: oklch(45% 0.08 160);
   --color-success-soft: oklch(93% 0.03 160);
   --color-warning: oklch(50% 0.085 92); /* Vanilla Custard's hue, ink-dark to read as text */
   --color-warning-soft: oklch(91% 0.06 92); /* Vanilla Custard #f3dfa2 */
@@ -144,15 +156,18 @@
   --color-ink-faint: oklch(52% 0.01 45);
   --color-rule: oklch(34% 0.01 40);
   --color-rule-soft: oklch(28% 0.009 38);
+  --color-field: oklch(58% 0.012 55);
 
   /* Teal lifts off a dark floor instead of sinking into it; the pairing token
      flips with it, so nothing that paints `bg-accent` has to know. */
   --color-accent: oklch(76% 0.08 202);
   --color-accent-soft: oklch(28% 0.035 202);
   --color-accent-ink: oklch(84% 0.06 202);
+  --color-focus: oklch(84% 0.06 202);
   --color-on-tint: oklch(18% 0.006 30);
 
   --color-success: oklch(74% 0.08 160);
+  --color-success-ink: oklch(74% 0.08 160);
   --color-success-soft: oklch(27% 0.035 160);
   /* Warning inverts: dark-on-light by day, the custard itself by night. */
   --color-warning: oklch(84% 0.085 92);
@@ -606,7 +621,7 @@
 
   /* Focus is never removed, only restyled. */
   :focus-visible {
-    outline: 2px solid var(--color-accent);
+    outline: 2px solid var(--color-focus);
     outline-offset: 2px;
     border-radius: 3px;
   }

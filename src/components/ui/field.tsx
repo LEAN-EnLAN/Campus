@@ -18,9 +18,9 @@ import { cn } from '@/lib/utils'
  */
 
 const controlClass =
-  'w-full rounded-md border border-rule bg-paper-elevated px-3 text-sm text-ink ' +
+  'w-full rounded-md border border-field bg-paper-elevated px-3 text-sm text-ink ' +
   'placeholder:text-ink-faint transition-colors duration-150 ' +
-  'hover:border-ink-faint focus:border-accent ' +
+  'hover:border-ink focus:border-focus ' +
   'aria-[invalid=true]:border-danger disabled:cursor-not-allowed disabled:opacity-55'
 
 interface FieldShellProps {
@@ -63,7 +63,9 @@ export function Field({ label, hint, error, required, children, className }: Fie
       ) : null}
 
       {error ? (
-        <p id={errorId} className="text-danger text-xs font-medium">
+        // `role="alert"`: a message that appears next to a field the student
+        // cannot see (or is not looking at) has to be announced, not just drawn.
+        <p id={errorId} role="alert" className="text-danger text-xs font-medium">
           {error}
         </p>
       ) : null}

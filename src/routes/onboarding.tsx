@@ -1,6 +1,6 @@
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { Check } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import { ErrorState } from '@/components/empty-state'
 import { Button } from '@/components/ui/button'
@@ -13,7 +13,9 @@ import {
   usePrograms,
   useSaveAcademicContext,
 } from '@/features/academic/queries'
+import { useDocumentTitle } from '@/lib/hooks/use-document-title'
 import { useRequiresAccount } from '@/lib/runtime/identity'
+import { useWorkspace } from '@/lib/runtime/workspace'
 import { useAuth } from '@/features/auth/auth-context'
 import { cn } from '@/lib/utils'
 
@@ -34,6 +36,8 @@ const STEPS = ['Universidad', 'Facultad', 'Carrera', 'Plan'] as const
 function OnboardingScreen() {
   const { session, loading } = useAuth()
   const requiresAccount = useRequiresAccount()
+  const workspace = useWorkspace()
+  useDocumentTitle('Tu carrera · Campus')
   const navigate = useNavigate()
 
   const [institutionId, setInstitutionId] = useState<string | null>(null)
@@ -56,6 +60,25 @@ function OnboardingScreen() {
     if (requiresAccount && !loading && !session) void navigate({ to: '/login' })
   }, [loading, session, navigate])
 
+  // Coming back: start from what the student already chose, not from a blank
+  // form that reads like "start over". Once, and only if they have not touched
+  // anything yet — a late answer must never overwrite a click.
+  const seeded = useRef(false)
+  useEffect(() => {
+    const current = existing.data
+    if (!current || seeded.current) return
+    seeded.current = true
+    if (current.unmappedLabel) {
+      setManual(true)
+      setManualLabel(current.unmappedLabel)
+      return
+    }
+    setInstitutionId(current.institutionId)
+    setUnitId(current.academicUnitId)
+    setProgramId(current.programId)
+    setCurriculumId(current.curriculumId)
+  }, [existing.data])
+
   // Pre-select when there is only one option — a list of one is not a decision.
   useEffect(() => {
     if (units.data?.length === 1 && !unitId) setUnitId(units.data[0]!.id)
@@ -64,17 +87,13 @@ function OnboardingScreen() {
     if (curricula.data?.length === 1 && !curriculumId) setCurriculumId(curricula.data[0]!.id)
   }, [curricula.data, curriculumId])
 
-  const step = manual
-    ? 4
-    : curriculumId
-      ? 4
-      : programId
-        ? 3
-        : unitId
-          ? 2
-          : institutionId
-            ? 1
-            : 0
+  // A step is done when the student has a choice there — the radio on screen is
+  // checked — and never otherwise. It used to be derived from "how far along",
+  // which put four green checks on the free-text path where nothing was chosen.
+  const stepDone = [institutionId, unitId, programId, curriculumId].map((id) => id !== null)
+  const currentStep = stepDone.findIndex((isDone) => !isDone)
+
+  const coverage = coverageLine((institutions.data ?? []).map((i) => i.shortName))
 
   async function confirm() {
     await save.mutateAsync({
@@ -98,39 +117,62 @@ function OnboardingScreen() {
         Campus
       </p>
 
+      {existing.data ? (
+        <Link
+          to="/settings"
+          className="text-ink-muted hover:text-ink mt-6 -mb-4 inline-flex min-h-8 items-center self-start text-sm underline-offset-4 hover:underline"
+        >
+          Volver
+        </Link>
+      ) : null}
+
       <h1 className="text-ink mt-8 font-serif text-2xl leading-tight">
-        {existing.data ? '¿Dónde estudiás?' : 'Contanos dónde estudiás.'}
+        Contanos dónde estudiás.
       </h1>
       <p className="text-ink-muted mt-2 text-sm">
-        Con esto armamos tu plan, tus materias y tus correlativas. Son cuatro pasos.
+        Con esto armamos tu plan, tus materias y tus correlativas.{' '}
+        {manual ? null : 'Son cuatro pasos.'}
       </p>
+      {coverage ? <p className="text-ink mt-1 text-sm font-medium">{coverage}</p> : null}
 
-      <ol className="mt-6 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
-        {STEPS.map((label, index) => (
-          <li key={label} className="flex items-center gap-2">
-            <span
-              className={cn(
-                'flex items-center gap-1.5',
-                index < step ? 'text-success' : index === step ? 'text-ink' : 'text-ink-muted',
-              )}
-            >
-              {index < step ? (
-                <Check aria-hidden="true" className="size-3.5" />
-              ) : (
-                <span aria-hidden="true" className="w-3.5 text-center">
-                  {index + 1}
-                </span>
-              )}
-              {label}
-            </span>
-            {index < STEPS.length - 1 ? (
-              <span aria-hidden="true" className="text-ink-muted">
-                ·
+      {manual ? null : (
+        <ol
+          aria-label="Pasos"
+          className="mt-6 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs"
+        >
+          {STEPS.map((label, index) => (
+            <li key={label} className="flex items-center gap-2">
+              <span
+                className={cn(
+                  'flex items-center gap-1.5',
+                  stepDone[index]
+                    ? 'text-success-ink'
+                    : index === currentStep
+                      ? 'text-ink'
+                      : 'text-ink-muted',
+                )}
+              >
+                {stepDone[index] ? (
+                  <>
+                    <Check aria-hidden="true" className="size-3.5" />
+                    <span className="sr-only">(listo)</span>
+                  </>
+                ) : (
+                  <span aria-hidden="true" className="w-3.5 text-center">
+                    {index + 1}
+                  </span>
+                )}
+                {label}
               </span>
-            ) : null}
-          </li>
-        ))}
-      </ol>
+              {index < STEPS.length - 1 ? (
+                <span aria-hidden="true" className="text-ink-muted">
+                  ·
+                </span>
+              ) : null}
+            </li>
+          ))}
+        </ol>
+      )}
 
       {institutions.error ? (
         <ErrorState
@@ -192,7 +234,9 @@ function OnboardingScreen() {
               options={(curricula.data ?? []).map((c) => ({
                 id: c.id,
                 label: c.version,
-                hint: c.name,
+                // The full resolution text is a citation, not a choice: one tap
+                // away, not three lines under every option.
+                detail: c.name,
               }))}
               loading={curricula.isLoading}
               value={curriculumId}
@@ -203,11 +247,11 @@ function OnboardingScreen() {
       ) : (
         <div className="mt-8 flex flex-col gap-4">
           <TextField
-            label="¿Qué estudiás?"
-            placeholder="Ingeniería Industrial — UNC"
+            label="Carrera y universidad"
+            placeholder="Psicología — UBA"
             value={manualLabel}
             onChange={(e) => setManualLabel(e.target.value)}
-            hint="Vamos a anotar que nos falta este plan. No lo vamos a inventar."
+            hint={`Esto queda guardado solo en ${workspace.folder ? 'tu carpeta' : 'tu cuenta'}: todavía no le avisamos a nadie que falta tu plan. No inventamos materias ni correlativas que no pudimos verificar.`}
           />
         </div>
       )}
@@ -245,7 +289,21 @@ function OnboardingScreen() {
 interface Option {
   id: string
   label: string
+  /** Always visible, small, under the label. */
   hint?: string
+  /** Long reference text, collapsed behind "Ver detalle". */
+  detail?: string
+}
+
+/** "Por ahora tenemos planes de UNR y UTN." — from the data, so it stays true. */
+function coverageLine(shortNames: string[]): string | null {
+  const names = [...shortNames].sort((a, b) => a.localeCompare(b, 'es'))
+  if (names.length === 0) return null
+  const list =
+    names.length === 1
+      ? names[0]!
+      : `${names.slice(0, -1).join(', ')} y ${names[names.length - 1]}`
+  return `Por ahora tenemos planes de ${list}.`
 }
 
 /**
@@ -282,30 +340,39 @@ function Choice({
         </p>
       ) : (
         options.map((option) => (
-          <label
-            key={option.id}
-            className={cn(
-              'flex cursor-pointer items-center gap-3 rounded-md border px-3 py-2.5 transition-colors',
-              value === option.id
-                ? 'border-accent bg-accent-soft'
-                : 'border-rule hover:border-ink-faint hover:bg-paper-elevated',
-            )}
-          >
-            <input
-              type="radio"
-              name={legend}
-              value={option.id}
-              checked={value === option.id}
-              onChange={() => onChange(option.id)}
-              className="size-4 shrink-0 accent-[var(--color-accent)]"
-            />
-            <span className="min-w-0 flex-1">
-              <span className="text-ink block text-sm">{option.label}</span>
-              {option.hint ? (
-                <span className="text-ink-muted block text-xs">{option.hint}</span>
-              ) : null}
-            </span>
-          </label>
+          <div key={option.id}>
+            <label
+              className={cn(
+                'flex cursor-pointer items-center gap-3 rounded-md border px-3 py-2.5 transition-colors',
+                value === option.id
+                  ? 'border-accent bg-accent-soft'
+                  : 'border-rule hover:border-ink-faint hover:bg-paper-elevated',
+              )}
+            >
+              <input
+                type="radio"
+                name={legend}
+                value={option.id}
+                checked={value === option.id}
+                onChange={() => onChange(option.id)}
+                className="size-4 shrink-0 accent-[var(--color-accent)]"
+              />
+              <span className="min-w-0 flex-1">
+                <span className="text-ink block text-sm">{option.label}</span>
+                {option.hint ? (
+                  <span className="text-ink-muted block text-xs">{option.hint}</span>
+                ) : null}
+              </span>
+            </label>
+            {option.detail ? (
+              <details className="text-ink-muted px-3 pt-1 text-xs">
+                <summary className="min-h-8 cursor-pointer py-1.5 underline-offset-4 hover:underline">
+                  Ver detalle
+                </summary>
+                <p className="pb-1">{option.detail}</p>
+              </details>
+            ) : null}
+          </div>
         ))
       )}
     </fieldset>

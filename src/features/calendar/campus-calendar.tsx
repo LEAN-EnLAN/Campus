@@ -1,5 +1,4 @@
 import {
-  createAgendaView,
   createMonthView,
   createWeekView,
   DayFlowCalendar,
@@ -8,24 +7,27 @@ import {
   registerLocale,
   ViewType,
   type CalendarType,
-  type CalendarViewType,
   type EventContentSlotArgs,
   type EventDetailContentProps,
   type Locale,
 } from '@dayflow/react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
-import { useCallback, useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { itemKindLabel } from '@/components/deadline-row'
 import { Button } from '@/components/ui/button'
 import type { AcademicItem } from '@/domain/types'
 import { useAcademicPlan } from '@/features/academic/queries'
-import { useAcademicItems, useToggleAcademicItem } from '@/features/items/queries'
+import { dueTimeLabel } from '@/features/items/due'
+import { useAcademicItems } from '@/features/items/queries'
+import { useCompleteItem } from '@/features/items/use-complete-item'
 import type { PaletteTheme } from '@/lib/design/palette'
 import { useTheme } from '@/lib/theme/theme-context'
 import { cn } from '@/lib/utils'
 
 import { projectAcademicItems, UNASSIGNED_CALENDAR } from './academic-events'
+import { AgendaList } from './agenda-list'
+import { undatedNote } from './undated-note'
 import { eventPaint, hueForSubject, type EventPaint } from './event-paint'
 
 /**
@@ -42,12 +44,21 @@ import { eventPaint, hueForSubject, type EventPaint } from './event-paint'
  * matters — see `event-paint.ts`.
  */
 
-/** Chrome strings DayFlow renders itself, in the app's language. */
-const VIEW_LABEL: Record<string, string> = {
-  [ViewType.MONTH]: 'Mes',
-  [ViewType.WEEK]: 'Semana',
-  [ViewType.AGENDA]: 'Agenda',
-}
+/**
+ * The three ways to read the calendar. Month and week are DayFlow's; the agenda
+ * is a list of our own (see `agenda-list.tsx`), so it is not a DayFlow view.
+ */
+type Mode = 'month' | 'week' | 'agenda'
+
+const MODES: { value: Mode; label: string }[] = [
+  { value: 'month', label: 'Mes' },
+  { value: 'week', label: 'Semana' },
+  { value: 'agenda', label: 'Agenda' },
+]
+
+/** Where the week grid opens: a student's day starts in the morning, not at midnight. */
+const WEEK_OPENS_AT_HOUR = 7
+const HOUR_HEIGHT_PX = 72
 
 /**
  * Spanish chrome.
@@ -139,11 +150,6 @@ function buildCalendars(
   ]
 }
 
-const TIME_FORMAT = new Intl.DateTimeFormat('es-AR', {
-  hour: '2-digit',
-  minute: '2-digit',
-  hour12: false,
-})
 const TITLE_FORMAT = new Intl.DateTimeFormat('es-AR', { month: 'long', year: 'numeric' })
 
 /** The domain object every slot needs, recovered from the event we built. */
@@ -152,19 +158,11 @@ function itemOf(meta: Record<string, unknown> | undefined): AcademicItem | null 
   return item ? (item as AcademicItem) : null
 }
 
-function timeLabel(item: AcademicItem): string | null {
-  const anchor = item.dueAt ?? item.startsAt
-  if (!anchor) return null
-  const date = new Date(anchor)
-  if (Number.isNaN(date.getTime())) return null
-  if (date.getHours() === 0 && date.getMinutes() === 0) return null
-  return TIME_FORMAT.format(date)
-}
+const timeLabel = dueTimeLabel
 
 export function CampusCalendar() {
   const plan = useAcademicPlan()
   const itemsQuery = useAcademicItems()
-  const toggleItem = useToggleAcademicItem()
   const { theme } = useTheme()
 
   // The ORDER is the colour assignment, so it has to be the plan's own order —
@@ -206,14 +204,17 @@ export function CampusCalendar() {
         // through the config because the height is written as an INLINE style
         // — CSS could only win it with `!important`.
         createMonthView({ startOfWeek: 1, gridDateClick: 'week-view', eventHeight: 22 }),
-        createWeekView({ startOfWeek: 1, scrollToCurrentTime: true }),
-        createAgendaView(),
+        // Not `scrollToCurrentTime`: opened at 04:00 or at 23:40 it parks the
+        // grid on a night-time window. The effect below opens it at the morning.
+        createWeekView({ startOfWeek: 1, scrollToCurrentTime: false }),
       ],
       defaultView: ViewType.MONTH,
       events,
       calendars,
       locale: ES_AR.code,
-      useCalendarHeader: true,
+      // The header is ours and lives outside the grid (see below), so the agenda
+      // list can share it.
+      useCalendarHeader: false,
       // Dragging an event would move a deadline, and the items capability has
       // no way to persist a new date — only `setDone`. A grid that lets you
       // move something and silently forgets is worse than one that does not.
@@ -230,62 +231,120 @@ export function CampusCalendar() {
       ? (plan.subjectById.get(item.curriculumSubjectId)?.name ?? null)
       : null
 
+  const { complete, dialog } = useCompleteItem((id) =>
+    id ? (plan.subjectById.get(id)?.name ?? null) : null,
+  )
+
+  const [agendaOpen, setAgendaOpen] = useState(false)
+  const mode: Mode = agendaOpen
+    ? 'agenda'
+    : calendar.currentView === ViewType.WEEK
+      ? 'week'
+      : 'month'
+  const now = useMemo(() => new Date(), [])
+
+  const gridRef = useRef<HTMLDivElement>(null)
+  useSpanishVendorLabels(gridRef)
+  useEffect(() => {
+    if (mode !== 'week') return
+    const frame = window.requestAnimationFrame(() => {
+      const scroller = gridRef.current?.querySelector<HTMLElement>(
+        '.df-week-time-grid-scroller',
+      )
+      if (scroller) scroller.scrollTop = WEEK_OPENS_AT_HOUR * HOUR_HEIGHT_PX
+    })
+    return () => window.cancelAnimationFrame(frame)
+  }, [mode])
+
+  const selectMode = (next: Mode) => {
+    setAgendaOpen(next === 'agenda')
+    if (next === 'month') calendar.changeView(ViewType.MONTH)
+    if (next === 'week') calendar.changeView(ViewType.WEEK)
+  }
+
   return (
-    <div className="flex min-h-0 flex-1 flex-col [&>*]:min-h-0 [&>*]:flex-1">
-      <DayFlowCalendar
-        calendar={calendar}
-        calendarHeader={() => (
-          <CalendarChrome
-            title={TITLE_FORMAT.format(calendar.currentDate)}
-            view={calendar.currentView}
-            onView={calendar.changeView}
-            onPrevious={() => calendar.app.goToPrevious()}
-            onNext={() => calendar.app.goToNext()}
-            onToday={() => calendar.app.goToToday()}
-          />
-        )}
-        eventContentMonth={(args) => (
-          <MonthChip args={args} subjectName={subjectName} paintFor={paintFor} />
-        )}
-        eventContentWeek={(args) => (
-          <GridChip args={args} subjectName={subjectName} paintFor={paintFor} />
-        )}
-        eventContentDay={(args) => (
-          <GridChip args={args} subjectName={subjectName} paintFor={paintFor} />
-        )}
-        eventDetailContent={(args) => (
-          <EventDetail
-            args={args}
-            subjectName={subjectName}
-            onToggle={(id, done) => toggleItem.mutate({ id, done })}
-          />
-        )}
+    <div className="flex min-h-0 flex-1 flex-col">
+      {dialog}
+      <CalendarChrome
+        // The agenda names its own period in its own header; a month title
+        // above it would say something else.
+        title={mode === 'agenda' ? null : TITLE_FORMAT.format(calendar.currentDate)}
+        mode={mode}
+        onMode={selectMode}
+        onPrevious={() => calendar.app.goToPrevious()}
+        onNext={() => calendar.app.goToNext()}
+        onToday={() => calendar.app.goToToday()}
       />
 
+      {mode === 'agenda' ? (
+        <AgendaList
+          items={itemsQuery.data ?? []}
+          now={now}
+          subjectName={subjectName}
+          onToggle={complete}
+        />
+      ) : null}
+
+      {/* The stretch rule is scoped to THIS box. It used to sit on the outer
+          column, where `[&>*]:flex-1` also caught the "sin fecha" footnote and
+          split the viewport 50/50 between it and the grid — the "400px blank
+          band" whenever an undated item existed. */}
+      <div
+        ref={gridRef}
+        data-testid="calendar-grid"
+        hidden={mode === 'agenda'}
+        className="flex min-h-0 flex-1 flex-col [&>*]:min-h-0 [&>*]:flex-1"
+      >
+        <DayFlowCalendar
+          calendar={calendar}
+          eventContentMonth={(args) => (
+            <MonthChip args={args} subjectName={subjectName} paintFor={paintFor} />
+          )}
+          // All-day items (a date with no time) are one-line chips in every view;
+          // left to the library they were painted with its own light-on-light
+          // style and, in the week header, were close to invisible.
+          eventContentAllDayMonth={(args) => (
+            <MonthChip args={args} subjectName={subjectName} paintFor={paintFor} />
+          )}
+          eventContentAllDayWeek={(args) => (
+            <MonthChip args={args} subjectName={subjectName} paintFor={paintFor} />
+          )}
+          eventContentAllDayDay={(args) => (
+            <MonthChip args={args} subjectName={subjectName} paintFor={paintFor} />
+          )}
+          eventContentWeek={(args) => (
+            <GridChip args={args} subjectName={subjectName} paintFor={paintFor} />
+          )}
+          eventContentDay={(args) => (
+            <GridChip args={args} subjectName={subjectName} paintFor={paintFor} />
+          )}
+          eventDetailContent={(args) => (
+            <EventDetail args={args} subjectName={subjectName} onToggle={complete} />
+          )}
+        />
+      </div>
+
       {undated.length > 0 && (
-        <p className="text-ink-muted border-rule border-t px-4 py-2 text-xs">
-          {undated.length === 1
-            ? '1 cosa sin fecha no entra en el calendario.'
-            : `${undated.length} cosas sin fecha no entran en el calendario.`}{' '}
-          <span className="text-ink-faint">Se ven en Hoy.</span>
+        <p className="text-ink-muted border-rule border-t py-2 pr-20 pl-4 text-xs md:pr-4">
+          {undatedNote(undated.length)}
         </p>
       )}
     </div>
   )
 }
 
-/** Our header, our controls. DayFlow only tells us where it goes. */
+/** Our header, our controls. DayFlow only draws the grid under it. */
 function CalendarChrome({
   title,
-  view,
-  onView,
+  mode,
+  onMode,
   onPrevious,
   onNext,
   onToday,
 }: {
-  title: string
-  view: CalendarViewType
-  onView: (view: CalendarViewType) => void
+  title: string | null
+  mode: Mode
+  onMode: (mode: Mode) => void
   onPrevious: () => void
   onNext: () => void
   onToday: () => void
@@ -293,30 +352,45 @@ function CalendarChrome({
   return (
     <div className="border-rule flex flex-wrap items-center justify-between gap-3 border-b px-4 py-3">
       <div className="flex items-center gap-1">
-        <Button variant="ghost" size="icon" aria-label="Período anterior" onClick={onPrevious}>
-          <ChevronLeft aria-hidden="true" />
-        </Button>
-        <Button variant="ghost" size="icon" aria-label="Período siguiente" onClick={onNext}>
-          <ChevronRight aria-hidden="true" />
-        </Button>
-        <Button variant="ghost" size="sm" onClick={onToday}>
-          Hoy
-        </Button>
-        <h2 className="text-ink ml-2 font-serif text-lg font-semibold first-letter:uppercase">
-          {title}
-        </h2>
+        {mode === 'agenda' ? null : (
+          <>
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label="Período anterior"
+              onClick={onPrevious}
+            >
+              <ChevronLeft aria-hidden="true" />
+            </Button>
+            <Button variant="ghost" size="icon" aria-label="Período siguiente" onClick={onNext}>
+              <ChevronRight aria-hidden="true" />
+            </Button>
+            <Button variant="ghost" onClick={onToday} className="h-8 px-3 text-xs">
+              Hoy
+            </Button>
+          </>
+        )}
+        {title ? (
+          <h2 className="text-ink ml-2 font-serif text-lg font-semibold first-letter:uppercase">
+            {title}
+          </h2>
+        ) : null}
       </div>
 
-      <div className="border-rule flex items-center gap-px rounded-md border p-0.5">
-        {Object.entries(VIEW_LABEL).map(([value, label]) => (
+      <div
+        role="group"
+        aria-label="Vista del calendario"
+        className="border-rule flex items-center gap-px rounded-md border p-0.5"
+      >
+        {MODES.map(({ value, label }) => (
           <button
             key={value}
             type="button"
-            aria-current={view === value ? 'true' : undefined}
-            onClick={() => onView(value)}
+            aria-pressed={mode === value}
+            onClick={() => onMode(value)}
             className={cn(
-              'rounded-sm px-2.5 py-1 text-xs',
-              view === value
+              'min-h-8 rounded-sm px-3 text-xs',
+              mode === value
                 ? 'bg-accent-soft text-accent-ink font-medium'
                 : 'text-ink-muted hover:text-ink',
             )}
@@ -327,6 +401,35 @@ function CalendarChrome({
       </div>
     </div>
   )
+}
+
+/**
+ * The calendar library's navigation buttons carry English `aria-label`s
+ * ("Previous month") that no locale dictionary reaches. They sit inside a header
+ * we hide, so a screen reader should never meet them — but "should never" is not
+ * a guarantee worth leaving to a stylesheet, so they are translated as they appear.
+ */
+const VENDOR_LABELS: Record<string, string> = {
+  'Previous month': 'Mes anterior',
+  'Next month': 'Mes siguiente',
+}
+
+function useSpanishVendorLabels(ref: React.RefObject<HTMLElement | null>) {
+  useEffect(() => {
+    const root = ref.current
+    if (!root) return
+    const translate = () => {
+      for (const [english, spanish] of Object.entries(VENDOR_LABELS)) {
+        for (const el of root.querySelectorAll(`[aria-label="${english}"]`)) {
+          el.setAttribute('aria-label', spanish)
+        }
+      }
+    }
+    translate()
+    const observer = new MutationObserver(translate)
+    observer.observe(root, { childList: true, subtree: true })
+    return () => observer.disconnect()
+  }, [ref])
 }
 
 /**
@@ -415,7 +518,7 @@ function EventDetail({
 }: {
   args: EventDetailContentProps
   subjectName: (item: AcademicItem) => string | null
-  onToggle: (id: string, done: boolean) => void
+  onToggle: (item: AcademicItem, done: boolean) => void
 }) {
   const item = itemOf(args.event.meta)
   if (!item) return null
@@ -443,7 +546,7 @@ function EventDetail({
         variant={done ? 'ghost' : 'primary'}
         size="sm"
         onClick={() => {
-          onToggle(item.id, !done)
+          onToggle(item, !done)
           args.onClose?.()
         }}
       >

@@ -194,7 +194,7 @@ async function main() {
       await dialog.getByLabel('¿Qué es?').fill('TP 1 · integrales')
 
       const today = new Date()
-      const iso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+      const iso = `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`
       await dialog.getByLabel('Fecha').fill(iso)
       await dialog.getByLabel('Hora').fill('18:00')
       await dialog.getByRole('button', { name: 'Guardar' }).click()

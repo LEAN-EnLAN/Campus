@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import type { CampusBackend } from '@/lib/backends/types'
+import { VaultError } from '@/lib/vault/errors'
+import { vaultErrorText } from '@/lib/vault/error-messages'
 
 import {
   forgetVault,
@@ -220,6 +222,37 @@ describe('resolution always answers — a loading screen is not a destination', 
 
     expect(state).toMatchObject({ status: 'vault-unavailable', vault: VAULT })
     expect(state.status === 'vault-unavailable' && state.reason).toContain('permiso denegado')
+  })
+
+  it('explains a refusal by its Vault code, in Spanish, not by the server English', async () => {
+    const state = await resolveCampusRuntime(
+      withVault({
+        vaultExists: async () => true,
+        openLocal: async () => {
+          throw new VaultError('folder_outside_roots', 'folder is outside the allowed roots')
+        },
+      }),
+    )
+
+    expect(state).toMatchObject({
+      status: 'vault-unavailable',
+      reason: vaultErrorText('folder_outside_roots'),
+    })
+  })
+
+  it('does the same when the existence check itself is refused with a code', async () => {
+    const state = await resolveCampusRuntime(
+      withVault({
+        vaultExists: async () => {
+          throw new VaultError('folder_outside_roots', 'folder is outside the allowed roots')
+        },
+      }),
+    )
+
+    expect(state).toMatchObject({
+      status: 'vault-unavailable',
+      reason: vaultErrorText('folder_outside_roots'),
+    })
   })
 
   it('still reports vault-missing when the check succeeds and says no', async () => {

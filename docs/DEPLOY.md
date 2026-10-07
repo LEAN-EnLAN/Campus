@@ -69,7 +69,7 @@ commit the result, then push again.
 - **Sign In / Providers > Email > Confirm email**: your choice, both work.
   - **Off**: a new student is signed in immediately and lands on `/today`. Simplest
     for a first deploy; consider CAPTCHA/rate limits against throwaway signups.
-  - **On**: sign-up shows "Te mandamos un email a ... Confirmalo y despues entra".
+  - **On**: sign-up shows "Te mandamos un email a ... Confirmalo y después entrá".
     The link goes to `<origin>/login` (the app sends `emailRedirectTo` from
     `window.location.origin`, so that origin **must** be in Redirect URLs above or
     Supabase falls back to the Site URL), and the app consumes the tokens in the

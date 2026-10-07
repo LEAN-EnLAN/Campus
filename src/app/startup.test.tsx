@@ -94,3 +94,22 @@ describe('Startup on a hosted build (no Vault API)', () => {
     expect(screen.queryByRole('button', { name: 'Campus' })).toBeNull()
   })
 })
+
+describe('Campus Cloud failing to open', () => {
+  it('says the service is not answering, not that the connection is bad, and stays on the picker', async () => {
+    const user = userEvent.setup()
+    mount({
+      store: memoryStore(),
+      openCloud: async () => {
+        throw new Error('Failed to fetch')
+      },
+    })
+
+    await user.click(await screen.findByRole('button', { name: 'Usar Campus Cloud' }))
+
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent('Campus Cloud no responde ahora')
+    expect(alert).not.toHaveTextContent('Revisá tu conexión')
+    expect(screen.getByRole('heading', { name: 'Abrir un Vault' })).toBeTruthy()
+  })
+})

@@ -3,6 +3,8 @@ import { createContext, use, useEffect, useMemo, useState, type ReactNode } from
 
 import { supabase } from '@/lib/supabase'
 
+import { translateAuthError } from './auth-errors'
+
 interface AuthValue {
   session: Session | null
   userId: string | null
@@ -18,27 +20,6 @@ interface AuthValue {
 }
 
 const AuthContext = createContext<AuthValue | null>(null)
-
-/** Supabase error messages are in English; students are not. */
-function translateAuthError(message: string): string {
-  const m = message.toLowerCase()
-  if (m.includes('invalid login credentials')) return 'Email o contraseña incorrectos.'
-  if (m.includes('user already registered')) return 'Ya existe una cuenta con ese email.'
-  if (m.includes('password should be at least'))
-    return 'La contraseña tiene que tener al menos 6 caracteres.'
-  if (m.includes('unable to validate email')) return 'Revisá el email, no parece válido.'
-  if (
-    m.includes('email rate limit') ||
-    m.includes('rate limit') ||
-    m.includes('for security purposes')
-  )
-    return 'Demasiados intentos. Probá de nuevo en un rato.'
-  if (m.includes('signups not allowed') || m.includes('signup is disabled'))
-    return 'El registro de cuentas está deshabilitado por ahora.'
-  if (m.includes('failed to fetch') || m.includes('network'))
-    return 'No pudimos conectarnos. Revisá tu conexión.'
-  return 'No pudimos completar la operación. Probá de nuevo.'
-}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
@@ -69,23 +50,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       userId: session?.user.id ?? null,
       loading,
       signIn: async (email, password) => {
-        const { error } = await supabase.auth.signInWithPassword({ email, password })
-        return { error: error ? translateAuthError(error.message) : null }
+        try {
+          const { error } = await supabase.auth.signInWithPassword({ email, password })
+          return { error: error ? translateAuthError(error.message, navigator.onLine) : null }
+        } catch (cause) {
+          // A fetch that throws instead of returning an error is still "no answer".
+          return { error: translateAuthError(String(cause), navigator.onLine) }
+        }
       },
       signUp: async (email, password, displayName) => {
-        const { data, error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            data: { display_name: displayName },
-            // The confirmation link must come back to wherever Campus is served
-            // from, not to the project's configured Site URL (a localhost
-            // default until someone edits it). The origin must also be listed in
-            // the project's Redirect URLs — see docs/DEPLOY.md.
-            emailRedirectTo: `${window.location.origin}/login`,
-          },
-        })
-        if (error) return { error: translateAuthError(error.message), needsConfirmation: false }
+        let result
+        try {
+          result = await supabase.auth.signUp({
+            email,
+            password,
+            options: {
+              data: { display_name: displayName },
+              // The confirmation link must come back to wherever Campus is served
+              // from, not to the project's configured Site URL (a localhost
+              // default until someone edits it). The origin must also be listed in
+              // the project's Redirect URLs — see docs/DEPLOY.md.
+              emailRedirectTo: `${window.location.origin}/login`,
+            },
+          })
+        } catch (cause) {
+          return {
+            error: translateAuthError(String(cause), navigator.onLine),
+            needsConfirmation: false,
+          }
+        }
+        const { data, error } = result
+        if (error) {
+          return {
+            error: translateAuthError(error.message, navigator.onLine),
+            needsConfirmation: false,
+          }
+        }
         // With "Confirm email" on, the account exists but there is no session
         // until the link is followed.
         return { error: null, needsConfirmation: data.session === null }

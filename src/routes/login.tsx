@@ -1,9 +1,10 @@
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { TextField } from '@/components/ui/field'
 import { useAuth } from '@/features/auth/auth-context'
+import { useWorkspace } from '@/lib/runtime/workspace'
 
 export const Route = createFileRoute('/login')({
   component: LoginScreen,
@@ -13,6 +14,7 @@ type Mode = 'signin' | 'signup'
 
 function LoginScreen() {
   const { signIn, signUp, session, loading } = useAuth()
+  const workspace = useWorkspace()
   const navigate = useNavigate()
 
   const [mode, setMode] = useState<Mode>('signup')
@@ -22,15 +24,29 @@ function LoginScreen() {
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   const [pending, setPending] = useState(false)
+  const [submitted, setSubmitted] = useState(false)
 
   useEffect(() => {
     if (!loading && session) void navigate({ to: '/today' })
   }, [loading, session, navigate])
 
+  const emailError =
+    email.trim() === ''
+      ? 'Escribí tu email.'
+      : !/^\S+@\S+\.\S+$/.test(email.trim())
+        ? 'Revisá el email, no parece válido.'
+        : null
+  const passwordError =
+    password.length < 6 ? 'La contraseña tiene que tener al menos 6 caracteres.' : null
+
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault()
     setError(null)
     setNotice(null)
+    setSubmitted(true)
+    // Our own checks, in our own words. The form opts out of the browser's
+    // (`noValidate`), whose text follows the browser language.
+    if (emailError || passwordError) return
     setPending(true)
 
     const result =
@@ -61,6 +77,16 @@ function LoginScreen() {
   return (
     <main className="flex min-h-dvh flex-col justify-center px-5 py-10 sm:px-6">
       <div className="mx-auto w-full max-w-sm">
+        {/* Choosing Campus Cloud was a choice, not a sentence: the way back to the
+            picker (a local folder, another account) has to be on this screen. */}
+        <button
+          type="button"
+          onClick={workspace.change}
+          className="text-ink-muted hover:text-ink mb-6 -ml-1 inline-flex min-h-8 items-center gap-1 text-sm underline-offset-4 hover:underline"
+        >
+          Volver a elegir dónde trabajar
+        </button>
+
         <div className="mb-8">
           <p className="text-ink flex items-center gap-2 font-serif text-xl">
             <span aria-hidden="true" className="bg-accent inline-block h-5 w-1 rounded-full" />
@@ -76,7 +102,7 @@ function LoginScreen() {
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
           {mode === 'signup' ? (
             <TextField
               label="¿Cómo te llamás?"
@@ -93,6 +119,7 @@ function LoginScreen() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             autoComplete="email"
+            error={submitted ? emailError : null}
             required
           />
 
@@ -103,7 +130,7 @@ function LoginScreen() {
             onChange={(e) => setPassword(e.target.value)}
             autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
             hint={mode === 'signup' ? 'Mínimo 6 caracteres.' : undefined}
-            minLength={6}
+            error={submitted ? passwordError : null}
             required
           />
 
@@ -140,10 +167,7 @@ function LoginScreen() {
 
         <p className="text-ink-muted mt-10 text-xs">
           Campus no te pide las credenciales de tu autogestión universitaria, y nunca lo va a
-          hacer.{' '}
-          <Link to="/settings" className="text-accent-ink underline underline-offset-4">
-            Más info
-          </Link>
+          hacer.
         </p>
       </div>
     </main>

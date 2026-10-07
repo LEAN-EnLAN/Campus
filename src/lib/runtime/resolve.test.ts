@@ -27,6 +27,7 @@ function caps(
   over: Partial<RuntimeCapabilities> & { store: DeviceStore },
 ): RuntimeCapabilities {
   return {
+    vaultAvailable: true,
     vaultExists: async () => true,
     openLocal: async (vault) =>
       ({ mode: 'local', vault, backend: localBackend }) as CampusRuntime,
@@ -271,5 +272,36 @@ describe('resolution always answers — a loading screen is not a destination', 
         }),
       ),
     ).resolves.toBeDefined()
+  })
+})
+
+describe('resolveCampusRuntime — a hosted build has no Vault API', () => {
+  it('lands on the picker, not a broken state, when the device remembered a vault', async () => {
+    const store = memoryStore(rememberVault({ recentVaults: [], lastRuntime: null }, VAULT))
+    const vaultExists = vi.fn(async () => true)
+    const openLocal = vi.fn()
+
+    const state = await resolveCampusRuntime(
+      caps({ store, vaultAvailable: false, vaultExists, openLocal }),
+    )
+
+    expect(state.status).toBe('needs-choice')
+    // Asking a server that does not exist is exactly the failure being avoided.
+    expect(vaultExists).not.toHaveBeenCalled()
+    expect(openLocal).not.toHaveBeenCalled()
+  })
+
+  it('leaves the remembered vault in the device config for when Campus runs locally', async () => {
+    const store = memoryStore(rememberVault({ recentVaults: [], lastRuntime: null }, VAULT))
+    await resolveCampusRuntime(caps({ store, vaultAvailable: false }))
+    expect(readDeviceConfig(store).recentVaults).toEqual([VAULT])
+  })
+
+  it('still reopens a cloud session', async () => {
+    const store = memoryStore(rememberCloud({ recentVaults: [], lastRuntime: null }))
+    const state = await resolveCampusRuntime(
+      caps({ store, vaultAvailable: false, cloudSession: async () => true }),
+    )
+    expect(state.status).toBe('ready')
   })
 })

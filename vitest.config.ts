@@ -14,5 +14,12 @@ export default defineConfig({
     setupFiles: ['./tests/setup.ts'],
     include: ['src/**/*.test.{ts,tsx}', 'tests/unit/**/*.test.{ts,tsx}'],
     css: false,
+    // Hermetic: `src/lib/supabase.ts` throws at import time without these, which
+    // made any test that reaches it fail on a fresh clone (no `.env`). The
+    // client is never called, so any well-formed values do.
+    env: {
+      VITE_SUPABASE_URL: 'http://127.0.0.1:54321',
+      VITE_SUPABASE_ANON_KEY: 'test-anon-key',
+    },
   },
 })

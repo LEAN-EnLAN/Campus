@@ -1,5 +1,6 @@
 import { useState } from 'react'
 
+import { Button } from '@/components/ui/button'
 import { CircularDotMatrix } from '@/components/ui/dot-matrix'
 
 import { useRuntime } from '@/lib/runtime/context'
@@ -15,7 +16,7 @@ import { descriptorFor } from '@/lib/runtime/resolve'
  * setting up a degree are different acts, and onboarding owns the second one.
  */
 export function Startup() {
-  const { state, chooseVault, chooseCloud, forget, recent } = useRuntime()
+  const { state, chooseVault, chooseCloud, forget, recent, vaultAvailable } = useRuntime()
   const [path, setPath] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -30,7 +31,9 @@ export function Startup() {
             carries the meaning, and it is announced once when it appears. */}
         <div role="status" className="flex flex-col items-center gap-4">
           <CircularDotMatrix size={56} dotSize={6} />
-          <p className="text-ink-muted text-sm">Buscando tu Vault…</p>
+          <p className="text-ink-muted text-sm">
+            {vaultAvailable ? 'Buscando tu Vault…' : 'Cargando…'}
+          </p>
         </div>
       </main>
     )
@@ -46,6 +49,39 @@ export function Startup() {
     } finally {
       setBusy(false)
     }
+  }
+
+  // A hosted build has no Vault API, so a Vault is not a choice here: offering
+  // one would only ever end in an error. Cloud is the primary action, and one
+  // sentence says where the local Vault does work. The decision was made once,
+  // in the composition root — this branch only renders it.
+  if (!vaultAvailable) {
+    return (
+      <main className="mx-auto grid min-h-dvh max-w-xl content-center gap-8 p-6">
+        <header className="space-y-2">
+          <h1 className="text-3xl font-semibold">Campus</h1>
+          <p className="text-ink-muted">Entrá con tu cuenta para trabajar.</p>
+        </header>
+
+        <section className="space-y-3">
+          <h2 className="font-medium">Campus Cloud</h2>
+          <p className="text-ink-muted text-sm">Sincronizado, con cuenta.</p>
+          <Button
+            type="button"
+            variant="primary"
+            size="lg"
+            disabled={busy}
+            onClick={() => void chooseCloud()}
+          >
+            Usar Campus Cloud
+          </Button>
+        </section>
+
+        <p className="text-ink-muted border-t pt-6 text-sm">
+          El Vault local funciona cuando corrés Campus en tu propia computadora.
+        </p>
+      </main>
+    )
   }
 
   return (

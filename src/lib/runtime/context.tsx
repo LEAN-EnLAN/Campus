@@ -39,6 +39,12 @@ interface RuntimeValue {
   forget(path: string): void
   /** Recent vaults on THIS device. */
   recent(): VaultDescriptor[]
+  /**
+   * Whether this build can open a Vault at all (false on a hosted build). The
+   * picker uses it to stop offering what can only fail; it is a capability, not
+   * a mode, so it says nothing about which runtime is active.
+   */
+  vaultAvailable: boolean
 }
 
 const RuntimeContext = createContext<RuntimeValue | null>(null)
@@ -79,6 +85,14 @@ export function RuntimeProvider({
 
   const chooseVault = useCallback(
     async (vault: VaultDescriptor) => {
+      // The picker does not offer this on a hosted build, but the guard lives
+      // here too: a stale tab or a hand-written call must fail with a reason
+      // rather than with a network error against a server that does not exist.
+      if (!capabilities.vaultAvailable) {
+        throw new Error(
+          'Esta versión de Campus no puede abrir un Vault. Funciona cuando corrés Campus en tu propia computadora.',
+        )
+      }
       const runtime = await capabilities.openLocal(vault)
       // Recorded only AFTER the vault opened. Remembering first would leave a
       // broken path in the recent list for a vault that never worked.
@@ -113,7 +127,14 @@ export function RuntimeProvider({
     [capabilities],
   )
 
-  const value: RuntimeValue = { state, chooseVault, chooseCloud, forget, recent }
+  const value: RuntimeValue = {
+    state,
+    chooseVault,
+    chooseCloud,
+    forget,
+    recent,
+    vaultAvailable: capabilities.vaultAvailable,
+  }
 
   if (state.status !== 'ready') {
     return <RuntimeContext value={value}>{fallback(value)}</RuntimeContext>

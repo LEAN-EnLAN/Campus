@@ -21,7 +21,7 @@ export function normalize(text: string): string {
   )
 }
 
-export type SearchResultKind = 'subject' | 'item' | 'resource'
+export type SearchResultKind = 'subject' | 'item' | 'resource' | 'note'
 
 export interface SearchResult {
   kind: SearchResultKind
@@ -36,6 +36,12 @@ export interface SearchInput {
   subjects: readonly SubjectView[]
   items: readonly AcademicItem[]
   resources: readonly Resource[]
+  /**
+   * Whether the plan's correlativas are known. When they are not, nothing may be
+   * called "available": that would claim a subject can be taken on the strength
+   * of prerequisites nobody has. Defaults to true.
+   */
+  prerequisitesKnown?: boolean
 }
 
 /**
@@ -56,14 +62,20 @@ const SUBJECT_LABEL: Record<string, string> = {
   equivalent: 'Equivalencia',
   in_progress: 'Cursando',
   regularized: 'Regularizada',
-  available: 'Disponible',
+  available: 'Disponible para cursar',
   blocked: 'Bloqueada',
-  pending: 'Pendiente',
+  pending: 'Sin marcar',
   failed: 'Desaprobada',
 }
 
+/** The status as the student reads it. Unknown correlativas never read as "available". */
+function statusWording(status: string, prerequisitesKnown: boolean): string {
+  const effective = status === 'available' && !prerequisitesKnown ? 'pending' : status
+  return SUBJECT_LABEL[effective] ?? effective
+}
+
 export function search(
-  { subjects, items, resources }: SearchInput,
+  { subjects, items, resources, prerequisitesKnown = true }: SearchInput,
   query: string,
   limit = 20,
 ): SearchResult[] {
@@ -81,7 +93,7 @@ export function search(
       kind: 'subject',
       id: subject.id,
       title: subject.name,
-      subtitle: `${subject.yearLevel}° año · ${SUBJECT_LABEL[subject.status] ?? subject.status}`,
+      subtitle: `${subject.yearLevel}° año · ${statusWording(subject.status, prerequisitesKnown)}`,
       score: s,
     })
   }
@@ -113,4 +125,32 @@ export function search(
   return results
     .sort((a, b) => a.score - b.score || a.title.localeCompare(b.title, 'es'))
     .slice(0, limit)
+}
+
+/** What the note index hands back for a query: a path, a title, a line of context. */
+export interface NoteHit {
+  path: string
+  title: string
+  snippet: string
+}
+
+/**
+ * Notes as search results. Notes live in the Vault, not in the academic model,
+ * so they are found by the note index and only SHAPED here: the result's `id`
+ * is the vault path (what the workspace opens), and the subtitle is the matching
+ * line, or the folder when there is none. The `.md` extension is never shown.
+ */
+export function noteResults(hits: readonly NoteHit[], limit = 8): SearchResult[] {
+  return hits.slice(0, limit).map((hit, rank) => {
+    const slash = hit.path.lastIndexOf('/')
+    const folder = slash === -1 ? null : hit.path.slice(0, slash)
+    return {
+      kind: 'note',
+      id: hit.path,
+      title: hit.title,
+      subtitle: hit.snippet !== '' ? hit.snippet : folder,
+      // After every academic result; the index already ranked these among themselves.
+      score: 10_000 + rank,
+    }
+  })
 }

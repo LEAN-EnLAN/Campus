@@ -7,12 +7,19 @@ import { PageHeader, SectionHeading } from '@/components/page-header'
 import { SubjectRow } from '@/components/subject-row'
 import { Button } from '@/components/ui/button'
 import {
+  AddManualSubjectForm,
+  RemoveManualSubjectButton,
+  manualSubjectsBanner,
+} from '@/features/academic/manual-subjects'
+import { SubjectStatusControl } from '@/features/academic/subject-status-control'
+import {
   STATUS_GROUPS,
   defaultStatusFilter,
   groupByStatus,
   statusGroupOf,
   type StatusGroupId,
 } from '@/domain/status-groups'
+import type { SubjectView } from '@/domain/types'
 import { useAcademicPlan } from '@/features/academic/queries'
 import { SubjectBoardView } from '@/features/courses/subject-board-view'
 
@@ -32,6 +39,10 @@ function CoursesScreen() {
   const plan = useAcademicPlan()
   const [chosen, setChosen] = useState<Filter | null>(null)
   const [view, setView] = useState<View>('list')
+  // Subjects whose status the student changed while on this filter. They stay in
+  // place until the filter changes: a row that vanishes the moment it is marked
+  // takes its "Guardado" with it, and looks like the tap did nothing.
+  const [pinned, setPinned] = useState<ReadonlySet<string>>(new Set())
 
   const groups = useMemo(() => groupByStatus(plan.views), [plan.views])
   const counts = useMemo(() => {
@@ -67,9 +78,20 @@ function CoursesScreen() {
     () =>
       filter === 'todas'
         ? plan.views
-        : plan.views.filter((v) => statusGroupOf(v.status) === filter),
-    [plan.views, filter],
+        : plan.views.filter((v) => statusGroupOf(v.status) === filter || pinned.has(v.id)),
+    [plan.views, filter, pinned],
   )
+
+  function chooseFilter(next: Filter) {
+    setChosen(next)
+    setPinned(new Set())
+  }
+
+  /** A status was changed in the list: freeze the filter and the row where they are. */
+  function keepInPlace(changed: SubjectView) {
+    setChosen((current) => current ?? filter)
+    setPinned((current) => new Set(current).add(changed.id))
+  }
 
   if (plan.isLoading) {
     return (
@@ -89,27 +111,19 @@ function CoursesScreen() {
     )
   }
 
-  if (!plan.hasContext || plan.isUnmapped) {
+  if (!plan.hasContext) {
     return (
       <div className="flex flex-col gap-8">
         <PageHeader title="Tus materias" />
         <EmptyState
-          title={
-            plan.isUnmapped
-              ? 'Todavía no tenemos tu plan de estudios'
-              : 'Todavía no elegiste tu carrera'
-          }
-          description={
-            plan.isUnmapped
-              ? 'Cuando tengamos tu plan verificado vas a ver acá todas tus materias.'
-              : 'Elegí universidad, facultad, carrera y plan para ver tus materias.'
-          }
+          title="Todavía no elegiste tu carrera"
+          description="Elegí universidad, facultad, carrera y plan para ver tus materias."
           action={
             <Link
               to="/onboarding"
               className="text-accent-ink text-sm font-medium underline-offset-4 hover:underline"
             >
-              {plan.isUnmapped ? 'Cambiar mi carrera' : 'Elegir mi carrera'}
+              Elegir mi carrera
             </Link>
           }
         />
@@ -120,9 +134,13 @@ function CoursesScreen() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        eyebrow={plan.curriculum?.version}
+        eyebrow={plan.isUnmapped ? plan.context?.unmappedLabel : plan.curriculum?.version}
         title="Tus materias"
-        description="Marcá en qué estás y Campus recalcula qué se te habilita."
+        description={
+          plan.isUnmapped
+            ? manualSubjectsBanner
+            : 'Marcá en qué estás y Campus recalcula qué se te habilita.'
+        }
       />
 
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -138,7 +156,7 @@ function CoursesScreen() {
                 size="sm"
                 variant={filter === f.value ? 'primary' : 'secondary'}
                 aria-pressed={filter === f.value}
-                onClick={() => setChosen(f.value)}
+                onClick={() => chooseFilter(f.value)}
               >
                 {f.label}
                 {/* No opacity at all. opacity-70 composited to 3.84:1 and failed; 90%
@@ -185,24 +203,28 @@ function CoursesScreen() {
           <EmptyState
             className="mt-2"
             title={
-              filter === 'cursando'
-                ? 'No estás cursando nada todavía'
-                : filter === 'final_pendiente'
-                  ? 'No tenés finales pendientes'
-                  : 'No hay materias acá'
+              plan.isUnmapped && plan.views.length === 0
+                ? 'Todavía no cargaste materias'
+                : filter === 'cursando'
+                  ? 'No estás cursando nada todavía'
+                  : filter === 'final_pendiente'
+                    ? 'No tenés finales pendientes'
+                    : 'No hay materias acá'
             }
             description={
-              filter === 'cursando'
-                ? 'Abrí una materia desde tu plan y marcala como "Cursando" para que aparezca en Hoy.'
-                : undefined
+              plan.isUnmapped && plan.views.length === 0
+                ? 'Agregalas más abajo y marcá en qué estás.'
+                : filter === 'cursando'
+                  ? 'Pasá a "Todas" y marcá una materia como "Cursando" para que aparezca en Hoy, o cargá todo tu avance de una.'
+                  : undefined
             }
             action={
-              filter === 'cursando' ? (
+              filter === 'cursando' && plan.views.length > 0 ? (
                 <Link
-                  to="/plan"
+                  to="/plan/progress"
                   className="text-accent-ink text-sm font-medium underline-offset-4 hover:underline"
                 >
-                  Ver tu plan
+                  Cargar mi avance
                 </Link>
               ) : undefined
             }
@@ -211,12 +233,28 @@ function CoursesScreen() {
           <ul>
             {visible.map((subject) => (
               <li key={subject.id}>
-                <SubjectRow subject={subject} showYear />
+                <SubjectRow
+                  subject={subject}
+                  showYear
+                  control={
+                    <span className="flex items-center gap-1">
+                      <SubjectStatusControl subject={subject} onChange={keepInPlace} />
+                      {subject.manual ? <RemoveManualSubjectButton subject={subject} /> : null}
+                    </span>
+                  }
+                />
               </li>
             ))}
           </ul>
         )}
       </section>
+
+      {plan.isUnmapped ? (
+        <section aria-labelledby="agregar-materia" className="flex flex-col gap-3">
+          <SectionHeading id="agregar-materia">Agregar una materia</SectionHeading>
+          <AddManualSubjectForm />
+        </section>
+      ) : null}
     </div>
   )
 }

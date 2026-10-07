@@ -30,6 +30,11 @@ const STATUS: Record<SubjectStatus, StatusSpec> = {
 // The wording lives in the domain; re-exported so screens keep one import.
 export { statusLabel }
 
+/** The glyph character, for controls that colour it themselves. */
+export function statusGlyph(status: SubjectStatus): string {
+  return STATUS[status].glyph
+}
+
 /**
  * The status glyph on its own.
  *

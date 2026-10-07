@@ -13,7 +13,7 @@ import { sortByDate } from '@/domain/item-dates'
 import type { StoredSubjectStatus } from '@/domain/types'
 import { OrderConflictNote } from '@/features/academic/order-conflict-note'
 import { useAcademicPlan, useSetSubjectStatus } from '@/features/academic/queries'
-import { CorrelativasPanel } from '@/features/courses/correlativas-panel'
+import { CorrelativasPanel, correlativasNote } from '@/features/courses/correlativas-panel'
 import { SubjectDateRow } from '@/features/courses/subject-dates'
 import {
   useAcademicItems,
@@ -153,6 +153,7 @@ function CourseDetailScreen() {
               setStatus.mutate({
                 curriculumSubjectId: subject.id,
                 status: (e.target.value || null) as StoredSubjectStatus | null,
+                ...(subject.manual ? { manual: true } : {}),
               })
             }
           >
@@ -217,9 +218,7 @@ function CourseDetailScreen() {
           <p className="text-ink-muted text-sm">
             {/* Saying "no te falta ninguna" when we never had the graph would be
                 asserting an academic fact we do not have. */}
-            {!plan.prerequisitesKnown
-              ? 'Esta facultad todavía no publicó las correlatividades de este plan. No sabemos qué te piden para cursarla, y no lo vamos a inventar.'
-              : 'No te falta ninguna correlativa para cursar esta materia.'}
+            {correlativasNote(subject, plan.prerequisitesKnown)}
           </p>
         )}
 

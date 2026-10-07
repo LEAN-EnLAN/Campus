@@ -2,13 +2,25 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useMemo } from 'react'
 
 import { computeSubjectViews, groupByYear } from '@/domain/availability'
+import { manualStates, manualToCurriculumSubject } from '@/domain/manual-subjects'
 import { computeProgress } from '@/domain/progress'
-import type { AcademicContext, Curriculum, SubjectView, UserSubjectState } from '@/domain/types'
+import type {
+  AcademicContext,
+  Curriculum,
+  ManualSubject,
+  SubjectView,
+  UserSubjectState,
+} from '@/domain/types'
 import { useBackend } from '@/lib/backends/context'
-import type { SaveContextInput, SetSubjectStatusInput } from '@/lib/backends/types'
+import { applyManualBatch, applyStatusBatch } from '@/lib/backends/normalize'
+import type {
+  AddManualSubjectInput,
+  SaveContextInput,
+  SetSubjectStatusInput,
+} from '@/lib/backends/types'
 import { queryKeys } from '@/lib/query-keys'
 
-export type { SaveContextInput, SetSubjectStatusInput }
+export type { AddManualSubjectInput, SaveContextInput, SetSubjectStatusInput }
 
 /** Academic reference data does not change during a session. */
 const REFERENCE = { staleTime: Number.POSITIVE_INFINITY, gcTime: Number.POSITIVE_INFINITY }
@@ -101,14 +113,123 @@ export function useSubjectStates() {
   })
 }
 
-export function useSetSubjectStatus() {
+// --- Marking subjects ---------------------------------------------------------
+
+/**
+ * Every status write shares one scope, so TanStack runs them strictly one after
+ * another. Two quick clicks would otherwise read the same vault file, and the
+ * second write would be refused as a lost update.
+ */
+const STATUS_MUTATION = { mutationKey: ['subject-status'], scope: { id: 'subject-status' } }
+
+interface StatusSnapshot {
+  states: UserSubjectState[] | undefined
+  manual: ManualSubject[] | undefined
+}
+
+/**
+ * One mutation for one or many subjects.
+ *
+ * The cache is updated BEFORE the write, with the same function the local
+ * backend writes with, so a row answers the click at once and a year of 13 rows
+ * does not wait on 13 round trips. A failed write puts the old values back.
+ */
+function useStatusMutation<TInput>(toInputs: (input: TInput) => SetSubjectStatusInput[]) {
   const queryClient = useQueryClient()
   const backend = useBackend()
 
   return useMutation({
-    mutationFn: (input: SetSubjectStatusInput) => backend.academic.setSubjectStatus(input),
-    onSuccess: () => {
+    ...STATUS_MUTATION,
+    mutationFn: (input: TInput) => {
+      const inputs = toInputs(input)
+      return inputs.length === 1
+        ? backend.academic.setSubjectStatus(inputs[0]!)
+        : backend.academic.setSubjectStatuses(inputs)
+    },
+    onMutate: async (input: TInput): Promise<StatusSnapshot> => {
+      const inputs = toInputs(input)
+      await queryClient.cancelQueries({ queryKey: queryKeys.subjectStates })
+      await queryClient.cancelQueries({ queryKey: queryKeys.manualSubjects })
+      const snapshot: StatusSnapshot = {
+        states: queryClient.getQueryData<UserSubjectState[]>(queryKeys.subjectStates),
+        manual: queryClient.getQueryData<ManualSubject[]>(queryKeys.manualSubjects),
+      }
+
+      const manualInputs = inputs.filter((i) => i.manual)
+      const catalogInputs = inputs.filter((i) => !i.manual)
+      if (snapshot.states && catalogInputs.length > 0) {
+        queryClient.setQueryData(
+          queryKeys.subjectStates,
+          applyStatusBatch(snapshot.states, catalogInputs, new Date()),
+        )
+      }
+      if (snapshot.manual && manualInputs.length > 0) {
+        queryClient.setQueryData(
+          queryKeys.manualSubjects,
+          applyManualBatch(snapshot.manual, manualInputs),
+        )
+      }
+      return snapshot
+    },
+    onError: (_error, _input, snapshot) => {
+      if (snapshot?.states) queryClient.setQueryData(queryKeys.subjectStates, snapshot.states)
+      if (snapshot?.manual) queryClient.setQueryData(queryKeys.manualSubjects, snapshot.manual)
+    },
+    onSettled: () => {
+      // Refetch once the LAST queued write is done. Refetching in between would
+      // overwrite the optimistic value of a write that has not happened yet.
+      if (queryClient.isMutating({ mutationKey: STATUS_MUTATION.mutationKey }) > 1) return
       void queryClient.invalidateQueries({ queryKey: queryKeys.subjectStates })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.manualSubjects })
+    },
+  })
+}
+
+export function useSetSubjectStatus() {
+  return useStatusMutation<SetSubjectStatusInput>((input) => [input])
+}
+
+/** "Aprobé todo 2° año": many subjects, one write. */
+export function useSetSubjectStatuses() {
+  return useStatusMutation<SetSubjectStatusInput[]>((inputs) => inputs)
+}
+
+// --- Subjects typed in by hand -------------------------------------------------
+
+export function useManualSubjects(enabled = true) {
+  const backend = useBackend()
+  return useQuery({
+    queryKey: queryKeys.manualSubjects,
+    enabled,
+    queryFn: () => backend.academic.manualSubjects(),
+  })
+}
+
+export function useAddManualSubject() {
+  const queryClient = useQueryClient()
+  const backend = useBackend()
+
+  return useMutation({
+    mutationFn: (input: AddManualSubjectInput) => backend.academic.addManualSubject(input),
+    onSuccess: (added) => {
+      queryClient.setQueryData<ManualSubject[]>(queryKeys.manualSubjects, (all) => [
+        ...(all ?? []),
+        added,
+      ])
+      void queryClient.invalidateQueries({ queryKey: queryKeys.manualSubjects })
+    },
+  })
+}
+
+export function useRemoveManualSubject() {
+  const queryClient = useQueryClient()
+  const backend = useBackend()
+
+  return useMutation({
+    mutationFn: (id: string) => backend.academic.removeManualSubject(id),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.manualSubjects })
+      // Entregas and material it had are kept, so their lists are untouched.
     },
   })
 }
@@ -136,6 +257,8 @@ export interface AcademicPlan {
    */
   prerequisitesKnown: boolean
   prerequisitesNote: string | null
+  /** Only meaningful while `isUnmapped`: what the student typed in. */
+  manualSubjects: ManualSubject[]
   views: SubjectView[]
   byYear: ReturnType<typeof groupByYear>
   progress: ReturnType<typeof computeProgress>
@@ -168,15 +291,36 @@ export function useAcademicPlan(): AcademicPlan {
   const bundleQuery = useCurriculumBundle(context?.curriculumId ?? null)
   const statesQuery = useSubjectStates()
 
-  const subjects = bundleQuery.data?.subjects
-  const prerequisites = bundleQuery.data?.prerequisites
+  // A student whose carrera is not in the catalog builds their own plan. Manual
+  // subjects belong to that situation only: once a real plan is chosen they are
+  // not mixed into it.
+  const isUnmapped = context !== null && context.curriculumId === null
+  const manualQuery = useManualSubjects(isUnmapped)
+  const manualSubjects = manualQuery.data
+
+  const bundleSubjects = bundleQuery.data?.subjects
+  const prerequisites = isUnmapped ? [] : bundleQuery.data?.prerequisites
   const states = statesQuery.data
-  const prerequisitesKnown = bundleQuery.data?.prerequisitesKnown ?? true
+  const prerequisitesKnown = isUnmapped ? false : (bundleQuery.data?.prerequisitesKnown ?? true)
 
   const views = useMemo(() => {
-    if (!subjects || !prerequisites || !states) return []
-    return computeSubjectViews({ subjects, prerequisites, states, prerequisitesKnown })
-  }, [subjects, prerequisites, states, prerequisitesKnown])
+    if (isUnmapped) {
+      if (!manualSubjects) return []
+      return computeSubjectViews({
+        subjects: manualSubjects.map(manualToCurriculumSubject),
+        prerequisites: [],
+        states: manualStates(manualSubjects),
+        prerequisitesKnown: false,
+      })
+    }
+    if (!bundleSubjects || !prerequisites || !states) return []
+    return computeSubjectViews({
+      subjects: bundleSubjects,
+      prerequisites,
+      states,
+      prerequisitesKnown,
+    })
+  }, [isUnmapped, manualSubjects, bundleSubjects, prerequisites, states, prerequisitesKnown])
 
   const byYear = useMemo(() => groupByYear(views), [views])
   const progress = useMemo(() => computeProgress(views), [views])
@@ -187,19 +331,22 @@ export function useAcademicPlan(): AcademicPlan {
     curriculum: bundleQuery.data?.curriculum ?? null,
     programName: bundleQuery.data?.programName ?? null,
     prerequisitesKnown,
-    prerequisitesNote: bundleQuery.data?.prerequisitesNote ?? null,
+    prerequisitesNote: isUnmapped ? null : (bundleQuery.data?.prerequisitesNote ?? null),
+    manualSubjects: manualSubjects ?? [],
     views,
     byYear,
     progress,
     subjectById,
     isLoading:
       contextQuery.isLoading ||
-      (context?.curriculumId != null && (bundleQuery.isLoading || statesQuery.isLoading)),
+      (context?.curriculumId != null && (bundleQuery.isLoading || statesQuery.isLoading)) ||
+      (isUnmapped && manualQuery.isLoading),
     error:
       (contextQuery.error as Error | null) ??
       (bundleQuery.error as Error | null) ??
-      (statesQuery.error as Error | null),
-    isUnmapped: context !== null && context.curriculumId === null,
+      (statesQuery.error as Error | null) ??
+      (manualQuery.error as Error | null),
+    isUnmapped,
     hasContext: context !== null,
     contextSettled: !contextQuery.isLoading && !contextQuery.isFetching,
     contextError: (contextQuery.error as Error | null) ?? null,

@@ -41,6 +41,7 @@ export type Database = {
           due_at: string | null
           id: string
           kind: Database["public"]["Enums"]["academic_item_kind"]
+          manual_subject_id: string | null
           notes: string | null
           starts_at: string | null
           status: Database["public"]["Enums"]["academic_item_status"]
@@ -54,6 +55,7 @@ export type Database = {
           due_at?: string | null
           id?: string
           kind?: Database["public"]["Enums"]["academic_item_kind"]
+          manual_subject_id?: string | null
           notes?: string | null
           starts_at?: string | null
           status?: Database["public"]["Enums"]["academic_item_status"]
@@ -67,6 +69,7 @@ export type Database = {
           due_at?: string | null
           id?: string
           kind?: Database["public"]["Enums"]["academic_item_kind"]
+          manual_subject_id?: string | null
           notes?: string | null
           starts_at?: string | null
           status?: Database["public"]["Enums"]["academic_item_status"]
@@ -81,6 +84,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "curriculum_subjects"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "academic_items_manual_subject_owner_fkey"
+            columns: ["manual_subject_id", "user_id"]
+            isOneToOne: false
+            referencedRelation: "user_manual_subjects"
+            referencedColumns: ["id", "user_id"]
           },
         ]
       }
@@ -365,6 +375,7 @@ export type Database = {
           curriculum_subject_id: string | null
           id: string
           kind: Database["public"]["Enums"]["resource_kind"]
+          manual_subject_id: string | null
           storage_path: string | null
           title: string
           updated_at: string
@@ -377,6 +388,7 @@ export type Database = {
           curriculum_subject_id?: string | null
           id?: string
           kind?: Database["public"]["Enums"]["resource_kind"]
+          manual_subject_id?: string | null
           storage_path?: string | null
           title: string
           updated_at?: string
@@ -389,6 +401,7 @@ export type Database = {
           curriculum_subject_id?: string | null
           id?: string
           kind?: Database["public"]["Enums"]["resource_kind"]
+          manual_subject_id?: string | null
           storage_path?: string | null
           title?: string
           updated_at?: string
@@ -402,6 +415,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "curriculum_subjects"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "resources_manual_subject_owner_fkey"
+            columns: ["manual_subject_id", "user_id"]
+            isOneToOne: false
+            referencedRelation: "user_manual_subjects"
+            referencedColumns: ["id", "user_id"]
           },
         ]
       }
@@ -496,6 +516,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_manual_subjects: {
+        Row: {
+          created_at: string
+          grade: number | null
+          id: string
+          name: string
+          status: Database["public"]["Enums"]["subject_status"] | null
+          term: Database["public"]["Enums"]["academic_term"]
+          updated_at: string
+          user_id: string
+          year_level: number
+        }
+        Insert: {
+          created_at?: string
+          grade?: number | null
+          id?: string
+          name: string
+          status?: Database["public"]["Enums"]["subject_status"] | null
+          term?: Database["public"]["Enums"]["academic_term"]
+          updated_at?: string
+          user_id: string
+          year_level: number
+        }
+        Update: {
+          created_at?: string
+          grade?: number | null
+          id?: string
+          name?: string
+          status?: Database["public"]["Enums"]["subject_status"] | null
+          term?: Database["public"]["Enums"]["academic_term"]
+          updated_at?: string
+          user_id?: string
+          year_level?: number
+        }
+        Relationships: []
       }
       user_subject_states: {
         Row: {

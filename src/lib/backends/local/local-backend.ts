@@ -4,18 +4,24 @@ import type {
   AcademicUnit,
   Curriculum,
   Institution,
+  ManualSubject,
   Program,
   Resource,
   UserSubjectState,
 } from '@/domain/types'
 import {
-  nextSubjectState,
+  applyManualBatch,
+  applyStatusBatch,
+  assertUniformBatch,
   normalizeContextInput,
   normalizeItemInput,
+  normalizeManualSubjectInput,
   normalizeResourceInput,
+  unknownManualIds,
 } from '@/lib/backends/normalize'
 import { backendError } from '@/lib/backends/types'
 import type {
+  AddManualSubjectInput,
   CampusBackend,
   CreateItemInput,
   CreateResourceInput,
@@ -40,8 +46,8 @@ import { ulid } from './ulid'
 /**
  * LOCAL-003 — the whole backend, over a folder the student chose.
  *
- * No account, no network, no Supabase. The sixteen methods are the sixteen the
- * hooks already had; there is nothing here that a screen does not call.
+ * No account, no network, no Supabase. Every method here has a hook calling it;
+ * there is nothing a screen does not use.
  *
  * Reference data (institutions → curricula) is READ from the portable catalog.
  * The student's own data lives in four readable JSON files under
@@ -158,26 +164,79 @@ export class LocalBackend implements CampusBackend {
     },
 
     setSubjectStatus: async (input: SetSubjectStatusInput): Promise<void> => {
+      await this.academic.setSubjectStatuses([input])
+    },
+
+    setSubjectStatuses: async (inputs: SetSubjectStatusInput[]): Promise<void> => {
+      if (inputs.length === 0) return
+      // One file per call: a batch is all catalog or all manual, so the write
+      // below is a single atomic replace and never a half-saved year.
+      if (assertUniformBatch(inputs)) {
+        await store.update<ManualSubject[]>(
+          this.vault,
+          'manual-subjects',
+          'subjects',
+          [],
+          (subjects) => {
+            const [unknown] = unknownManualIds(subjects, inputs)
+            if (unknown !== undefined) {
+              backendError(
+                'No encontramos esa materia en tu vault',
+                `unknown manual subject ${unknown}`,
+              )
+            }
+            return applyManualBatch(subjects, inputs)
+          },
+        )
+        return
+      }
+
       await store.update<UserSubjectState[]>(
         this.vault,
         'subject-state',
         'states',
         [],
-        (states) => {
-          const rest = states.filter((s) => s.curriculumSubjectId !== input.curriculumSubjectId)
-          // `null` clears the row. `available` and `pending` are derived from
-          // the prerequisite graph, so a cleared subject must be ABSENT here —
-          // storing a placeholder would let the file drift from the graph.
-          if (input.status === null) return rest
+        (states) => applyStatusBatch(states, inputs, new Date()),
+      )
+    },
 
-          const previous = states.find(
-            (s) => s.curriculumSubjectId === input.curriculumSubjectId,
-          )
-          return [
-            ...rest,
-            nextSubjectState(previous, { ...input, status: input.status }, new Date()),
-          ]
-        },
+    manualSubjects: async (): Promise<ManualSubject[]> => {
+      const { value } = await store.read<ManualSubject[]>(
+        this.vault,
+        'manual-subjects',
+        'subjects',
+        [],
+      )
+      return value
+    },
+
+    addManualSubject: async (input: AddManualSubjectInput): Promise<ManualSubject> => {
+      const clean = normalizeManualSubjectInput(input)
+      const subject: ManualSubject = {
+        id: ulid(),
+        name: clean.name,
+        yearLevel: clean.yearLevel,
+        term: clean.term,
+        status: null,
+        grade: null,
+      }
+      await store.update<ManualSubject[]>(
+        this.vault,
+        'manual-subjects',
+        'subjects',
+        [],
+        (subjects) => [...subjects, subject],
+      )
+      return subject
+    },
+
+    removeManualSubject: async (id: string): Promise<void> => {
+      await store.update<ManualSubject[]>(
+        this.vault,
+        'manual-subjects',
+        'subjects',
+        [],
+        (subjects) => subjects.filter((s) => s.id !== id),
       )
     },
   }

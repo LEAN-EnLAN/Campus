@@ -5,6 +5,7 @@ import {
   toCurriculum,
   toCurriculumSubject,
   toInstitution,
+  toManualSubject,
   toPrerequisiteEdge,
   toProgram,
   toResource,
@@ -15,6 +16,7 @@ import {
   type CurriculumRow,
   type CurriculumSubjectRow,
   type InstitutionRow,
+  type ManualSubjectRow,
   type PrerequisiteRow,
   type ProgramRow,
   type ResourceRow,
@@ -26,12 +28,20 @@ import { supabase as defaultClient } from '@/lib/supabase'
 import type { PrerequisiteEdge } from '@/domain/types'
 
 import {
+  assertUniformBatch,
   completedAtFor,
+  nextManualStatus,
   normalizeContextInput,
   normalizeItemInput,
+  normalizeManualSubjectInput,
   normalizeResourceInput,
 } from './normalize'
-import { backendError, type CampusBackend, type CurriculumBundle } from './types'
+import {
+  backendError,
+  type CampusBackend,
+  type CurriculumBundle,
+  type SetSubjectStatusInput,
+} from './types'
 
 /**
  * The CLOUD backend: Supabase Auth + Postgres + RLS.
@@ -45,9 +55,11 @@ import { backendError, type CampusBackend, type CurriculumBundle } from './types
  * column names.
  */
 
-const ITEM_COLUMNS = 'id, curriculum_subject_id, kind, title, starts_at, due_at, status, notes'
+const ITEM_COLUMNS =
+  'id, curriculum_subject_id, manual_subject_id, kind, title, starts_at, due_at, status, notes'
 const RESOURCE_COLUMNS =
-  'id, curriculum_subject_id, kind, title, url, storage_path, body, created_at'
+  'id, curriculum_subject_id, manual_subject_id, kind, title, url, storage_path, body, created_at'
+const MANUAL_COLUMNS = 'id, name, year_level, term, status, grade'
 const CONTEXT_COLUMNS =
   'id, institution_id, academic_unit_id, program_id, curriculum_id, unmapped_label, is_active'
 
@@ -58,11 +70,105 @@ async function requireUserId(supabase: SupabaseClient): Promise<string> {
   return id
 }
 
+/**
+ * Which column holds an item's or resource's subject.
+ *
+ * `curriculum_subject_id` references the catalog and cannot hold a subject the
+ * student typed in, so those live in `manual_subject_id`. The domain sees one
+ * `curriculumSubjectId` either way.
+ */
+async function subjectColumns(supabase: SupabaseClient, subjectId: string | null) {
+  if (subjectId === null) return { curriculum_subject_id: null, manual_subject_id: null }
+  const { data, error } = await supabase
+    .from('user_manual_subjects')
+    .select('id')
+    .eq('id', subjectId)
+    .maybeSingle()
+  if (error) backendError('No pudimos verificar la materia', error.message)
+  return data
+    ? { curriculum_subject_id: null, manual_subject_id: subjectId }
+    : { curriculum_subject_id: subjectId, manual_subject_id: null }
+}
+
 export function createSupabaseBackend(client?: SupabaseClient): CampusBackend {
   // Injected only by the conformance suite, which needs a client carrying a
   // real test user's JWT so RLS applies exactly as it does in the app. The
   // default is the module singleton, so production behaviour is unchanged.
   const supabase = client ?? defaultClient
+
+  async function setSubjectStatuses(inputs: SetSubjectStatusInput[]): Promise<void> {
+    if (inputs.length === 0) return
+    const userId = await requireUserId(supabase)
+
+    if (assertUniformBatch(inputs)) {
+      // Read the rows, change them in memory, write them back as ONE upsert:
+      // a year is entirely saved or not at all, and an unknown id is an error
+      // instead of an update that quietly matched nothing.
+      const { data, error } = await supabase.from('user_manual_subjects').select(MANUAL_COLUMNS)
+      if (error) backendError('No pudimos actualizar la materia', error.message)
+      const byId = new Map((data as ManualSubjectRow[]).map((r) => [r.id, r]))
+
+      const rows = inputs.map((input) => {
+        const row = byId.get(input.curriculumSubjectId)
+        if (!row) {
+          backendError(
+            'No encontramos esa materia',
+            `unknown manual subject ${input.curriculumSubjectId}`,
+          )
+        }
+        const next = nextManualStatus(toManualSubject(row), input)
+        return {
+          id: row.id,
+          user_id: userId,
+          name: row.name,
+          year_level: row.year_level,
+          term: row.term,
+          status: next.status,
+          grade: next.grade,
+        }
+      })
+      const { error: writeError } = await supabase
+        .from('user_manual_subjects')
+        .upsert(rows, { onConflict: 'id' })
+      if (writeError) backendError('No pudimos actualizar la materia', writeError.message)
+      return
+    }
+
+    // `null` clears the row: `available` and `pending` are derived, never stored.
+    const cleared = inputs.filter((i) => i.status === null)
+    if (cleared.length > 0) {
+      const { error } = await supabase
+        .from('user_subject_states')
+        .delete()
+        .eq('user_id', userId)
+        .in(
+          'curriculum_subject_id',
+          cleared.map((i) => i.curriculumSubjectId),
+        )
+      if (error) backendError('No pudimos actualizar la materia', error.message)
+    }
+
+    // Rows that carry a grade and rows that do not are written separately: one
+    // upsert with mixed keys would send `null` for the missing grade and wipe it.
+    const now = new Date()
+    const set = inputs.filter((i) => i.status !== null)
+    for (const withGrade of [false, true]) {
+      const group = set.filter((i) => (i.grade !== undefined) === withGrade)
+      if (group.length === 0) continue
+      const { error } = await supabase.from('user_subject_states').upsert(
+        group.map((input) => ({
+          user_id: userId,
+          curriculum_subject_id: input.curriculumSubjectId,
+          status: input.status!,
+          ...(input.grade === undefined ? {} : { grade: input.grade }),
+          completed_at: completedAtFor(input.status!, now),
+        })),
+        { onConflict: 'user_id,curriculum_subject_id' },
+      )
+      if (error) backendError('No pudimos actualizar la materia', error.message)
+    }
+  }
+
   return {
     kind: 'cloud',
 
@@ -259,32 +365,39 @@ export function createSupabaseBackend(client?: SupabaseClient): CampusBackend {
         return (data as UserSubjectStateRow[]).map(toUserSubjectState)
       },
 
-      async setSubjectStatus({ curriculumSubjectId, status, grade }) {
+      setSubjectStatus: (input) => setSubjectStatuses([input]),
+
+      setSubjectStatuses,
+
+      async manualSubjects() {
+        const { data, error } = await supabase
+          .from('user_manual_subjects')
+          .select(MANUAL_COLUMNS)
+          .order('created_at', { ascending: true })
+        if (error) backendError('No pudimos cargar tus materias', error.message)
+        return (data as ManualSubjectRow[]).map(toManualSubject)
+      },
+
+      async addManualSubject(rawInput) {
+        const input = normalizeManualSubjectInput(rawInput)
         const userId = await requireUserId(supabase)
-
-        if (status === null) {
-          const { error } = await supabase
-            .from('user_subject_states')
-            .delete()
-            .eq('user_id', userId)
-            .eq('curriculum_subject_id', curriculumSubjectId)
-          if (error) backendError('No pudimos actualizar la materia', error.message)
-          return
-        }
-
-        const { error } = await supabase.from('user_subject_states').upsert(
-          {
+        const { data, error } = await supabase
+          .from('user_manual_subjects')
+          .insert({
             user_id: userId,
-            curriculum_subject_id: curriculumSubjectId,
-            status,
-            // Omitted when not given, so an upsert keeps the grade that is there;
-            // `null` is the explicit "clear it".
-            ...(grade === undefined ? {} : { grade }),
-            completed_at: completedAtFor(status, new Date()),
-          },
-          { onConflict: 'user_id,curriculum_subject_id' },
-        )
-        if (error) backendError('No pudimos actualizar la materia', error.message)
+            name: input.name,
+            year_level: input.yearLevel,
+            term: input.term,
+          })
+          .select(MANUAL_COLUMNS)
+          .single()
+        if (error) backendError('No pudimos guardar la materia', error.message)
+        return toManualSubject(data as ManualSubjectRow)
+      },
+
+      async removeManualSubject(id) {
+        const { error } = await supabase.from('user_manual_subjects').delete().eq('id', id)
+        if (error) backendError('No pudimos borrar la materia', error.message)
       },
     },
 
@@ -307,7 +420,7 @@ export function createSupabaseBackend(client?: SupabaseClient): CampusBackend {
             user_id: userId,
             title: clean.title,
             kind: clean.kind,
-            curriculum_subject_id: clean.curriculumSubjectId,
+            ...(await subjectColumns(supabase, clean.curriculumSubjectId)),
             due_at: clean.dueAt,
             notes: clean.notes,
           })
@@ -350,7 +463,7 @@ export function createSupabaseBackend(client?: SupabaseClient): CampusBackend {
             user_id: userId,
             title: clean.title,
             kind: clean.kind,
-            curriculum_subject_id: clean.curriculumSubjectId,
+            ...(await subjectColumns(supabase, clean.curriculumSubjectId)),
             url: clean.url,
             body: clean.body,
           })

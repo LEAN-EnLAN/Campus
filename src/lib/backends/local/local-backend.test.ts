@@ -46,7 +46,7 @@ afterEach(() => {
 // ---------------------------------------------------------------- the contract
 
 describe('the seam', () => {
-  it('declares itself local and exposes exactly the sixteen methods', () => {
+  it('declares itself local and exposes exactly the methods the hooks call', () => {
     const b = fresh()
     expect(b.kind).toBe('local')
     const shape = {
@@ -59,12 +59,21 @@ describe('the seam', () => {
     // get written, and one that appears here without a hook is dead weight.
     expect(shape).toEqual({
       catalog: ['academicUnits', 'curricula', 'curriculumBundle', 'institutions', 'programs'],
-      academic: ['context', 'saveContext', 'subjectStates', 'setSubjectStatus'].sort(),
+      academic: [
+        'context',
+        'saveContext',
+        'subjectStates',
+        'setSubjectStatus',
+        'setSubjectStatuses',
+        'manualSubjects',
+        'addManualSubject',
+        'removeManualSubject',
+      ].sort(),
       items: ['create', 'list', 'remove', 'setDone'],
       resources: ['create', 'list', 'remove'],
     })
     const count = Object.values(shape).reduce((n, k) => n + k.length, 0)
-    expect(count).toBe(16)
+    expect(count).toBe(20)
   })
 })
 

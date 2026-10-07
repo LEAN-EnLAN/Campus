@@ -1,10 +1,13 @@
-import type { StoredSubjectStatus, UserSubjectState } from '@/domain/types'
+import { manualProblem } from '@/domain/manual-subjects'
+import type { ManualSubject, StoredSubjectStatus, UserSubjectState } from '@/domain/types'
 
-import type {
-  CreateItemInput,
-  CreateResourceInput,
-  SaveContextInput,
-  SetSubjectStatusInput,
+import {
+  backendError,
+  type AddManualSubjectInput,
+  type CreateItemInput,
+  type CreateResourceInput,
+  type SaveContextInput,
+  type SetSubjectStatusInput,
 } from './types'
 
 /**
@@ -80,4 +83,92 @@ export function normalizeResourceInput(input: CreateResourceInput) {
 
 export function normalizeContextInput(input: SaveContextInput): SaveContextInput {
   return { ...input, unmappedLabel: blankToNull(input.unmappedLabel) }
+}
+
+/** Trims the name and refuses what cannot be stored, in a sentence the student can act on. */
+export function normalizeManualSubjectInput(
+  input: AddManualSubjectInput,
+): AddManualSubjectInput {
+  const problem = manualProblem(input)
+  if (problem) backendError('No pudimos guardar la materia', problem)
+  return { name: input.name.trim(), yearLevel: input.yearLevel, term: input.term }
+}
+
+/**
+ * A manual subject's next status and grade. Same rule as a catalog row:
+ * `grade: undefined` keeps the grade, `grade: null` clears it.
+ */
+export function nextManualStatus(
+  previous: { grade: number | null },
+  input: SetSubjectStatusInput,
+): { status: StoredSubjectStatus | null; grade: number | null } {
+  return {
+    status: input.status,
+    grade: input.grade === undefined ? previous.grade : input.grade,
+  }
+}
+
+/** A bulk write is one file or one table, never both. */
+export function assertUniformBatch(inputs: readonly SetSubjectStatusInput[]): boolean {
+  const manual = inputs.filter((i) => i.manual === true).length
+  if (manual !== 0 && manual !== inputs.length) {
+    backendError(
+      'No pudimos guardar tu avance',
+      'no se pueden mezclar materias del plan y materias cargadas a mano en una misma carga',
+    )
+  }
+  return manual > 0
+}
+
+/**
+ * The whole next list of stored states after a batch of changes.
+ *
+ * `null` removes the row: `available` and `pending` are derived from the
+ * prerequisite graph, so a cleared subject must be ABSENT, never a placeholder.
+ * Shared by LocalBackend (what gets written) and the screens (what is shown
+ * while the write is in flight), so both can never disagree about the result.
+ */
+export function applyStatusBatch(
+  states: readonly UserSubjectState[],
+  inputs: readonly SetSubjectStatusInput[],
+  now: Date,
+): UserSubjectState[] {
+  const next = new Map(states.map((s) => [s.curriculumSubjectId, s]))
+  for (const input of inputs) {
+    if (input.status === null) {
+      next.delete(input.curriculumSubjectId)
+      continue
+    }
+    next.set(
+      input.curriculumSubjectId,
+      nextSubjectState(
+        next.get(input.curriculumSubjectId),
+        { ...input, status: input.status },
+        now,
+      ),
+    )
+  }
+  return [...next.values()]
+}
+
+/** Ids in a batch that name no manual subject. */
+export function unknownManualIds(
+  subjects: readonly ManualSubject[],
+  inputs: readonly SetSubjectStatusInput[],
+): string[] {
+  const known = new Set(subjects.map((s) => s.id))
+  return inputs.map((i) => i.curriculumSubjectId).filter((id) => !known.has(id))
+}
+
+/** The manual subjects after a batch. Unknown ids are skipped; see `unknownManualIds`. */
+export function applyManualBatch(
+  subjects: readonly ManualSubject[],
+  inputs: readonly SetSubjectStatusInput[],
+): ManualSubject[] {
+  const byId = new Map(subjects.map((s) => [s.id, s]))
+  for (const input of inputs) {
+    const current = byId.get(input.curriculumSubjectId)
+    if (current) byId.set(current.id, { ...current, ...nextManualStatus(current, input) })
+  }
+  return subjects.map((s) => byId.get(s.id) ?? s)
 }

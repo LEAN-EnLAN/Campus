@@ -6,11 +6,13 @@ import type {
   Curriculum,
   CurriculumSubject,
   Institution,
+  ManualSubject,
   PrerequisiteEdge,
   Program,
   Resource,
   ResourceKind,
   StoredSubjectStatus,
+  Term,
   UserSubjectState,
 } from '@/domain/types'
 
@@ -18,7 +20,7 @@ import type {
  * The one seam between the app and wherever its data actually lives.
  *
  * See `docs/adr/ADR-local-first-backend.md`. The shape is deliberately not a
- * generic repository: it is exactly the sixteen use cases the sixteen existing
+ * generic repository: it is exactly the use cases the existing
  * hooks already had, so there is nothing to misuse and nothing dead to maintain.
  * A method with no caller does not get written.
  *
@@ -48,6 +50,16 @@ export interface CampusBackend {
     saveContext(input: SaveContextInput): Promise<AcademicContext>
     subjectStates(): Promise<UserSubjectState[]>
     setSubjectStatus(input: SetSubjectStatusInput): Promise<void>
+    /**
+     * Many statuses in ONE write ("Aprobé todo 2° año"), so a year is either
+     * entirely saved or not at all. A batch is all catalog or all manual.
+     */
+    setSubjectStatuses(inputs: SetSubjectStatusInput[]): Promise<void>
+    /** Subjects the student typed in because their carrera is not in the catalog. */
+    manualSubjects(): Promise<ManualSubject[]>
+    addManualSubject(input: AddManualSubjectInput): Promise<ManualSubject>
+    /** Quiet about a subject that is already gone. Entregas and material it had are kept. */
+    removeManualSubject(id: string): Promise<void>
   }
 
   items: {
@@ -109,6 +121,14 @@ export interface SetSubjectStatusInput {
   /** `null` clears the stored status, returning the subject to derived state. */
   status: StoredSubjectStatus | null
   grade?: number | null
+  /** The subject is one the student typed in, not a catalog row. */
+  manual?: boolean
+}
+
+export interface AddManualSubjectInput {
+  name: string
+  yearLevel: number
+  term: Term
 }
 
 export interface CreateItemInput {

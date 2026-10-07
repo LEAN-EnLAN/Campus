@@ -22,6 +22,7 @@ import { Route as AppTodayRouteImport } from './routes/_app/today'
 import { Route as AppVaultRouteImport } from './routes/_app/vault'
 import { Route as AppCoursesIndexRouteImport } from './routes/_app/courses.index'
 import { Route as AppCoursesCourseIdRouteImport } from './routes/_app/courses.$courseId'
+import { Route as AppPlanProgressRouteImport } from './routes/_app/plan_.progress'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -87,6 +88,11 @@ const AppCoursesCourseIdRoute = AppCoursesCourseIdRouteImport.update({
   path: '/courses/$courseId',
   getParentRoute: () => AppRoute,
 } as any)
+const AppPlanProgressRoute = AppPlanProgressRouteImport.update({
+  id: '/plan_/progress',
+  path: '/plan/progress',
+  getParentRoute: () => AppRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -100,6 +106,7 @@ export interface FileRoutesByFullPath {
   '/today': typeof AppTodayRoute
   '/vault': typeof AppVaultRoute
   '/courses/$courseId': typeof AppCoursesCourseIdRoute
+  '/plan/progress': typeof AppPlanProgressRoute
   '/courses/': typeof AppCoursesIndexRoute
 }
 export interface FileRoutesByTo {
@@ -114,6 +121,7 @@ export interface FileRoutesByTo {
   '/today': typeof AppTodayRoute
   '/vault': typeof AppVaultRoute
   '/courses/$courseId': typeof AppCoursesCourseIdRoute
+  '/plan/progress': typeof AppPlanProgressRoute
   '/courses': typeof AppCoursesIndexRoute
 }
 export interface FileRoutesById {
@@ -130,6 +138,7 @@ export interface FileRoutesById {
   '/_app/today': typeof AppTodayRoute
   '/_app/vault': typeof AppVaultRoute
   '/_app/courses/$courseId': typeof AppCoursesCourseIdRoute
+  '/_app/plan_/progress': typeof AppPlanProgressRoute
   '/_app/courses/': typeof AppCoursesIndexRoute
 }
 export interface FileRouteTypes {
@@ -146,6 +155,7 @@ export interface FileRouteTypes {
     | '/today'
     | '/vault'
     | '/courses/$courseId'
+    | '/plan/progress'
     | '/courses/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -160,6 +170,7 @@ export interface FileRouteTypes {
     | '/today'
     | '/vault'
     | '/courses/$courseId'
+    | '/plan/progress'
     | '/courses'
   id:
     | '__root__'
@@ -175,6 +186,7 @@ export interface FileRouteTypes {
     | '/_app/today'
     | '/_app/vault'
     | '/_app/courses/$courseId'
+    | '/_app/plan_/progress'
     | '/_app/courses/'
   fileRoutesById: FileRoutesById
 }
@@ -279,6 +291,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppCoursesCourseIdRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/plan_/progress': {
+      id: '/_app/plan_/progress'
+      path: '/plan/progress'
+      fullPath: '/plan/progress'
+      preLoaderRoute: typeof AppPlanProgressRouteImport
+      parentRoute: typeof AppRoute
+    }
   }
 }
 
@@ -290,6 +309,7 @@ interface AppRouteChildren {
   AppTodayRoute: typeof AppTodayRoute
   AppVaultRoute: typeof AppVaultRoute
   AppCoursesCourseIdRoute: typeof AppCoursesCourseIdRoute
+  AppPlanProgressRoute: typeof AppPlanProgressRoute
   AppCoursesIndexRoute: typeof AppCoursesIndexRoute
 }
 
@@ -301,6 +321,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppTodayRoute: AppTodayRoute,
   AppVaultRoute: AppVaultRoute,
   AppCoursesCourseIdRoute: AppCoursesCourseIdRoute,
+  AppPlanProgressRoute: AppPlanProgressRoute,
   AppCoursesIndexRoute: AppCoursesIndexRoute,
 }
 

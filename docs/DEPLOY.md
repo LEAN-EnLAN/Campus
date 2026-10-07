@@ -66,14 +66,17 @@ commit the result, then push again.
   Vercel domain, e.g. `https://campus.vercel.app` or your custom domain).
 - **URL Configuration > Redirect URLs**: add `https://<your-domain>/**`. For
   preview deployments also add `https://*-<team-slug>.vercel.app/**`.
-- **Sign In / Providers > Email > Confirm email**: recommended **off** for now.
-  The app signs a new student in and goes straight to `/today`; it has no
-  "check your inbox" screen and does not consume the confirmation link
-  (`detectSessionInUrl: false`). With confirmation **on**, a new account gets no
-  session and lands back on login without an explanation, and the student has to
-  confirm by e-mail and then sign in by hand. If you need confirmation, add that
-  screen first. With it off, consider enabling CAPTCHA/rate limits against
-  throwaway signups.
+- **Sign In / Providers > Email > Confirm email**: your choice, both work.
+  - **Off**: a new student is signed in immediately and lands on `/today`. Simplest
+    for a first deploy; consider CAPTCHA/rate limits against throwaway signups.
+  - **On**: sign-up shows "Te mandamos un email a ... Confirmalo y despues entra".
+    The link goes to `<origin>/login` (the app sends `emailRedirectTo` from
+    `window.location.origin`, so that origin **must** be in Redirect URLs above or
+    Supabase falls back to the Site URL), and the app consumes the tokens in the
+    link (`detectSessionInUrl: true`), signing the student in. The default Supabase
+    SMTP is heavily rate limited (a few e-mails per hour): configure a custom SMTP
+    under Authentication > SMTP before a public launch.
+- There is no password-reset flow yet.
 - Leave anonymous sign-ins disabled (the local config does too).
 
 ## 3. Vercel environment variables

@@ -5,6 +5,7 @@ import { CircularDotMatrix } from '@/components/ui/dot-matrix'
 
 import { useRuntime } from '@/lib/runtime/context'
 import { descriptorFor } from '@/lib/runtime/resolve'
+import { vaultErrorMessage } from '@/lib/vault/error-messages'
 
 /**
  * The startup surface — the ONE place allowed to talk about local and cloud as
@@ -45,7 +46,10 @@ export function Startup() {
     try {
       await chooseVault(descriptorFor(target))
     } catch (cause) {
-      setError((cause as Error).message)
+      // A Spanish sentence chosen by the error's CODE: which mistake it was
+      // (no such folder, a file, outside the allowed folders, no permission).
+      // The server's own text is English and never reaches the student.
+      setError(vaultErrorMessage(cause))
     } finally {
       setBusy(false)
     }
@@ -153,31 +157,47 @@ export function Startup() {
         <p className="text-ink-muted text-sm">
           Un Vault es una carpeta común y corriente. Campus es un invitado en ella.
         </p>
-        <div className="flex gap-2">
-          <label className="sr-only" htmlFor="vault-path">
-            Ruta de la carpeta
-          </label>
-          <input
-            id="vault-path"
-            value={path}
-            onChange={(e) => setPath(e.target.value)}
-            placeholder="/home/vos/Campus"
-            className="flex-1 rounded-md border px-3 py-1.5 text-sm"
-          />
-          <button
-            type="button"
-            disabled={busy || path.trim().length === 0}
-            onClick={() => void open(path.trim())}
-            className="rounded-md border px-3 py-1.5 text-sm disabled:opacity-50"
-          >
-            Abrir
-          </button>
-        </div>
-        {error && (
-          <p className="text-danger text-sm" role="alert">
+        <form
+          className="space-y-1"
+          onSubmit={(event) => {
+            event.preventDefault()
+            if (!busy && path.trim().length > 0) void open(path.trim())
+          }}
+        >
+          <div className="flex gap-2">
+            <label className="sr-only" htmlFor="vault-path">
+              Ruta de la carpeta
+            </label>
+            <input
+              id="vault-path"
+              value={path}
+              onChange={(e) => {
+                setPath(e.target.value)
+                // The error was about the OLD text; left under a new one it
+                // reads as if the new path had failed too.
+                setError(null)
+              }}
+              placeholder="/home/vos/Campus"
+              aria-invalid={error ? true : undefined}
+              aria-describedby={error ? 'vault-path-error' : undefined}
+              className="flex-1 rounded-md border px-3 py-1.5 text-sm"
+            />
+            <button
+              type="submit"
+              disabled={busy || path.trim().length === 0}
+              className="rounded-md border px-3 py-1.5 text-sm disabled:opacity-50"
+            >
+              Abrir
+            </button>
+          </div>
+          {/* Always in the page, with a line of height reserved: the card is
+              vertically centred, so an error that ADDED a line moved everything
+              up. Being a live region from the start, the sentence is announced
+              when it appears. */}
+          <p id="vault-path-error" role="alert" className="text-danger min-h-5 text-sm">
             {error}
           </p>
-        )}
+        </form>
       </section>
 
       {recent().length > 0 && (

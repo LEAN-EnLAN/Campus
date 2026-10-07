@@ -54,8 +54,10 @@ export function isVaultErrorCode(value: unknown): value is VaultErrorCode {
 }
 
 /**
- * A refusal with a code. `message` is English, for logs and developers only: it
- * must never be shown to a student and never contain an absolute host path.
+ * A refusal with a code. The code is the contract. `message` must never contain
+ * an absolute host path. Server-side it is English, for logs; the HTTP client
+ * replaces it with the Spanish sentence for the code, so anything that prints
+ * `error.message` as-is still reads in Spanish.
  */
 export class VaultError extends Error {
   readonly code: VaultErrorCode

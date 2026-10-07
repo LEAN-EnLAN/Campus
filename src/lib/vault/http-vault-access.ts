@@ -5,6 +5,7 @@ import type {
   VaultEntry,
   VaultStat,
 } from './vault-access'
+import { vaultErrorText } from './error-messages'
 import { isVaultErrorCode, VaultConflictError, VaultError, type VaultErrorCode } from './errors'
 
 /**
@@ -52,14 +53,14 @@ async function post<T extends { httpOk?: boolean }>(
       body: JSON.stringify(payload),
     })
   } catch {
-    throw new VaultError('unavailable', 'the Vault API could not be reached')
+    throw new VaultError('unavailable', vaultErrorText('unavailable'))
   }
   try {
     const body = (await response.json()) as T | null
     if (typeof body !== 'object' || body === null) throw new Error('not an object')
     return Object.assign(body, { httpOk: response.ok })
   } catch {
-    throw new VaultError('unavailable', `the Vault API sent no JSON (${response.status})`)
+    throw new VaultError('unavailable', vaultErrorText('unavailable'))
   }
 }
 
@@ -104,7 +105,10 @@ async function call(
           : 'conflict_changed',
       )
     }
-    throw new VaultError(codeOf(body), detail)
+    // The message is the Spanish sentence for the code: anything that shows
+    // `error.message` as-is (the startup banner does) stays in Spanish. The
+    // server's English `detail` stays out of the message.
+    throw new VaultError(codeOf(body), vaultErrorText(codeOf(body)))
   }
   return body.value
 }
@@ -142,7 +146,7 @@ export async function openVaultSession(
     { path },
   )
   if (!payload.httpOk || !payload.id) {
-    throw new VaultError(codeOf(payload), payload.error ?? 'the vault could not be opened')
+    throw new VaultError(codeOf(payload), vaultErrorText(codeOf(payload)))
   }
   return { id: payload.id, name: payload.name ?? path }
 }

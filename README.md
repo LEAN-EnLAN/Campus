@@ -64,6 +64,8 @@ Creá una cuenta con cualquier email (el stack local no manda mails), elegí UTN
 Ingeniería en Sistemas de Información → Plan 2023, y ya tenés 40 materias con sus
 correlativas.
 
+Para publicarlo (Vercel + Supabase hosteado) mirá [`docs/DEPLOY.md`](docs/DEPLOY.md).
+
 ## Probarlo a mano
 
 Hay seis cuentas de prueba sembradas que cubren todos los estados, **incluidos los que

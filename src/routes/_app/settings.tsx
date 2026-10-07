@@ -81,7 +81,7 @@ function SettingsScreen() {
               aria-pressed={preference === value}
               onClick={() => setPreference(value)}
               className={cn(
-                'flex items-center gap-1.5 rounded-sm px-3 py-1.5 text-sm transition-colors duration-150',
+                'flex min-h-8 items-center gap-1.5 rounded-sm px-3 py-1.5 text-sm transition-colors duration-150',
                 preference === value
                   ? 'bg-accent-soft text-accent-ink font-medium'
                   : 'text-ink-muted hover:text-ink',

@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { ExternalLink, Trash2 } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 
 import { EmptyState, ErrorState, LoadingRows } from '@/components/empty-state'
 import { PageHeader, SectionHeading } from '@/components/page-header'
@@ -25,6 +25,8 @@ function LibraryScreen() {
   const [url, setUrl] = useState('')
   const [body, setBody] = useState('')
   const [subjectId, setSubjectId] = useState('')
+  const [submitted, setSubmitted] = useState(false)
+  const titleRef = useRef<HTMLInputElement>(null)
 
   const resources = resourcesQuery.data ?? []
 
@@ -43,13 +45,23 @@ function LibraryScreen() {
     }))
   }, [resources, plan.subjectById])
 
-  const canSubmit =
-    title.trim().length > 0 &&
-    (kind === 'link' ? url.trim().length > 0 : body.trim().length > 0)
+  // Our own checks and our own words: the form opts out of the browser's
+  // (`noValidate`), and Guardar is never silently disabled — it says what is missing.
+  const titleError = title.trim().length === 0 ? 'Poné un título.' : null
+  const linkError =
+    kind !== 'link'
+      ? null
+      : url.trim().length === 0
+        ? 'Pegá el link.'
+        : !/^https?:\/\/\S+$/i.test(url.trim())
+          ? 'El link tiene que empezar con http:// o https://.'
+          : null
+  const bodyError = kind === 'note' && body.trim().length === 0 ? 'Escribí la nota.' : null
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault()
-    if (!canSubmit) return
+    setSubmitted(true)
+    if (titleError || linkError || bodyError) return
     await createResource.mutateAsync({
       title,
       kind,
@@ -60,6 +72,9 @@ function LibraryScreen() {
     setTitle('')
     setUrl('')
     setBody('')
+    setSubmitted(false)
+    // Ready for the next one: focus used to stay in the (now empty) last field.
+    titleRef.current?.focus()
   }
 
   return (
@@ -75,7 +90,7 @@ function LibraryScreen() {
       >
         <SectionHeading id="agregar-material">Agregar</SectionHeading>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
           <div className="grid gap-4 sm:grid-cols-2">
             <SelectField
               label="Tipo"
@@ -101,10 +116,12 @@ function LibraryScreen() {
           </div>
 
           <TextField
+            ref={titleRef}
             label="Título"
             placeholder={kind === 'link' ? 'Apunte de la cátedra' : 'Fórmulas de la unidad 3'}
             value={title}
             onChange={(e) => setTitle(e.target.value)}
+            error={submitted ? titleError : null}
             required
           />
 
@@ -115,6 +132,7 @@ function LibraryScreen() {
               placeholder="https://…"
               value={url}
               onChange={(e) => setUrl(e.target.value)}
+              error={submitted ? linkError : null}
               required
             />
           ) : (
@@ -123,6 +141,7 @@ function LibraryScreen() {
               placeholder="Escribí lo que no querés olvidarte."
               value={body}
               onChange={(e) => setBody(e.target.value)}
+              error={submitted ? bodyError : null}
               required
             />
           )}
@@ -137,7 +156,7 @@ function LibraryScreen() {
             type="submit"
             variant="primary"
             className="self-start"
-            disabled={!canSubmit || createResource.isPending}
+            disabled={createResource.isPending}
           >
             {createResource.isPending ? 'Guardando…' : 'Guardar'}
           </Button>

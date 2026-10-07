@@ -73,7 +73,7 @@ export function AcademicShell({
         >
           <Link
             to="/today"
-            className="text-ink mb-4 flex items-center gap-2 px-2 font-serif text-lg"
+            className="text-ink mb-4 flex min-h-8 items-center gap-2 px-2 font-serif text-lg"
           >
             <span aria-hidden="true" className="bg-accent inline-block h-5 w-1 rounded-full" />
             Campus

@@ -137,7 +137,7 @@ function TodayScreen() {
               <div>{renderRows(today.upcoming)}</div>
               <Link
                 to="/calendar"
-                className="text-accent-ink mt-2 self-start text-sm font-medium underline-offset-4 hover:underline"
+                className="text-accent-ink mt-2 inline-flex min-h-8 items-center self-start text-sm font-medium underline-offset-4 hover:underline"
               >
                 Ver el calendario
               </Link>
@@ -174,7 +174,7 @@ function TodayScreen() {
               />
               <Link
                 to="/plan"
-                className="text-accent-ink self-start text-sm font-medium underline-offset-4 hover:underline"
+                className="text-accent-ink inline-flex min-h-8 items-center self-start text-sm font-medium underline-offset-4 hover:underline"
               >
                 Ver tu plan
               </Link>

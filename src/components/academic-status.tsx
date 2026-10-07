@@ -21,8 +21,8 @@ const STATUS: Record<SubjectStatus, StatusSpec> = {
   equivalent: { glyph: '≡', label: 'Equivalencia', className: 'text-success' },
   in_progress: { glyph: '●', label: 'Cursando', className: 'text-accent-ink' },
   regularized: { glyph: '◐', label: 'Regularizada', className: 'text-accent-ink' },
-  available: { glyph: '○', label: 'Disponible', className: 'text-ink' },
-  pending: { glyph: '◌', label: 'Pendiente', className: 'text-ink-muted' },
+  available: { glyph: '○', label: 'Disponible para cursar', className: 'text-ink' },
+  pending: { glyph: '◌', label: 'Sin marcar', className: 'text-ink-muted' },
   blocked: { glyph: '', label: 'Bloqueada', className: 'text-ink-muted' },
   failed: { glyph: '✕', label: 'Desaprobada', className: 'text-danger' },
 }

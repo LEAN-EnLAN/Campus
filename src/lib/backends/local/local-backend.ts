@@ -8,6 +8,12 @@ import type {
   Resource,
   UserSubjectState,
 } from '@/domain/types'
+import {
+  nextSubjectState,
+  normalizeContextInput,
+  normalizeItemInput,
+  normalizeResourceInput,
+} from '@/lib/backends/normalize'
 import { backendError } from '@/lib/backends/types'
 import type {
   CampusBackend,
@@ -121,13 +127,14 @@ export class LocalBackend implements CampusBackend {
     },
 
     saveContext: async (input: SaveContextInput): Promise<AcademicContext> => {
+      const clean = normalizeContextInput(input)
       const next: AcademicContext = {
         id: 'local',
-        institutionId: input.institutionId,
-        academicUnitId: input.academicUnitId,
-        programId: input.programId,
-        curriculumId: input.curriculumId,
-        unmappedLabel: input.unmappedLabel,
+        institutionId: clean.institutionId,
+        academicUnitId: clean.academicUnitId,
+        programId: clean.programId,
+        curriculumId: clean.curriculumId,
+        unmappedLabel: clean.unmappedLabel,
         isActive: true,
       }
       await store.update<AcademicContext | null>(
@@ -168,14 +175,7 @@ export class LocalBackend implements CampusBackend {
           )
           return [
             ...rest,
-            {
-              curriculumSubjectId: input.curriculumSubjectId,
-              status: input.status,
-              grade: input.grade ?? previous?.grade ?? null,
-              startedAt: previous?.startedAt ?? null,
-              completedAt: previous?.completedAt ?? null,
-              notes: previous?.notes ?? null,
-            },
+            nextSubjectState(previous, { ...input, status: input.status }, new Date()),
           ]
         },
       )
@@ -191,15 +191,16 @@ export class LocalBackend implements CampusBackend {
     },
 
     create: async (input: CreateItemInput): Promise<AcademicItem> => {
+      const clean = normalizeItemInput(input)
       const item: AcademicItem = {
         id: ulid(),
-        curriculumSubjectId: input.curriculumSubjectId,
-        kind: input.kind,
-        title: input.title,
+        curriculumSubjectId: clean.curriculumSubjectId,
+        kind: clean.kind,
+        title: clean.title,
         startsAt: null,
-        dueAt: input.dueAt,
+        dueAt: clean.dueAt,
         status: 'open',
-        notes: input.notes ?? null,
+        notes: clean.notes,
       }
       await store.update<AcademicItem[]>(this.vault, 'items', 'items', [], (items) => [
         ...items,
@@ -233,14 +234,15 @@ export class LocalBackend implements CampusBackend {
     },
 
     create: async (input: CreateResourceInput): Promise<Resource> => {
+      const clean = normalizeResourceInput(input)
       const resource: Resource = {
         id: ulid(),
-        curriculumSubjectId: input.curriculumSubjectId,
-        kind: input.kind,
-        title: input.title,
-        url: input.url,
+        curriculumSubjectId: clean.curriculumSubjectId,
+        kind: clean.kind,
+        title: clean.title,
+        url: clean.url,
         storagePath: null,
-        body: input.body,
+        body: clean.body,
         createdAt: new Date().toISOString(),
       }
       await store.update<Resource[]>(this.vault, 'resources', 'resources', [], (all) => [

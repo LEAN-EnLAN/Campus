@@ -35,6 +35,7 @@ function subject(over: Partial<SubjectView> & { id: string }): SubjectView {
     grade: null,
     notes: null,
     missingRequirements: [],
+    requirements: [],
     unlocks: [],
     ...over,
   }
@@ -56,7 +57,7 @@ describe('columnOf', () => {
   const CASES: { status: SubjectStatus; column: BoardColumnId | null }[] = [
     { status: 'available', column: 'disponibles' },
     { status: 'in_progress', column: 'cursando' },
-    { status: 'regularized', column: 'cursando' },
+    { status: 'regularized', column: 'final_pendiente' },
     { status: 'passed', column: 'aprobadas' },
     { status: 'equivalent', column: 'aprobadas' },
     { status: 'blocked', column: null },
@@ -87,6 +88,7 @@ describe('statusForColumn', () => {
 
   it('maps cursando to in_progress and aprobadas to passed', () => {
     expect(statusForColumn('cursando')).toBe('in_progress')
+    expect(statusForColumn('final_pendiente')).toBe('regularized')
     expect(statusForColumn('aprobadas')).toBe('passed')
   })
 
@@ -98,7 +100,7 @@ describe('statusForColumn', () => {
       'failed',
       'equivalent',
     ]
-    const columns: BoardColumnId[] = ['disponibles', 'cursando', 'aprobadas']
+    const columns: BoardColumnId[] = ['disponibles', 'cursando', 'final_pendiente', 'aprobadas']
 
     for (const column of columns) {
       const stored = statusForColumn(column)
@@ -108,11 +110,21 @@ describe('statusForColumn', () => {
 })
 
 describe('buildSubjectBoard', () => {
-  it('returns the three columns in board order even when empty', () => {
+  it('returns the four columns in board order even when empty', () => {
     const board = buildSubjectBoard([])
 
-    expect(board.columns.map((c) => c.id)).toEqual(['disponibles', 'cursando', 'aprobadas'])
-    expect(board.columns.map((c) => c.name)).toEqual(['Disponibles', 'Cursando', 'Aprobadas'])
+    expect(board.columns.map((c) => c.id)).toEqual([
+      'disponibles',
+      'cursando',
+      'final_pendiente',
+      'aprobadas',
+    ])
+    expect(board.columns.map((c) => c.name)).toEqual([
+      'Disponibles',
+      'Cursando',
+      'Final pendiente',
+      'Aprobadas',
+    ])
     expect(board.offBoard).toEqual([])
   })
 
@@ -129,7 +141,8 @@ describe('buildSubjectBoard', () => {
       board.columns.find((c) => c.id === column)!.subjects.map((s) => s.id)
 
     expect(ids('disponibles')).toEqual(['a'])
-    expect(ids('cursando')).toEqual(['b', 'c'])
+    expect(ids('cursando')).toEqual(['b'])
+    expect(ids('final_pendiente')).toEqual(['c'])
     expect(ids('aprobadas')).toEqual(['d', 'e'])
   })
 

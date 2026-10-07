@@ -148,8 +148,17 @@ export interface SubjectView extends CurriculumSubject {
   status: SubjectStatus
   grade: number | null
   notes: string | null
-  /** Prerequisites that are not yet satisfied. Empty unless status is `blocked`. */
+  /**
+   * Prerequisites that are not yet satisfied. Populated whenever the correlativa
+   * data says something is missing, whatever the stored status: a conflict is
+   * surfaced, never overwritten.
+   */
   missingRequirements: MissingRequirement[]
+  /**
+   * Every `to_take` / `to_pass` requirement of this subject with whether it is
+   * met. A subset of these is `missingRequirements`. Advisory edges are omitted.
+   */
+  requirements: RequirementItem[]
   /** Curriculum subject ids this one unlocks. */
   unlocks: string[]
 }
@@ -160,6 +169,10 @@ export interface MissingRequirement {
   kind: PrerequisiteKind
   /** What the student still has to reach. */
   needs: 'cursar' | 'aprobar'
+}
+
+export interface RequirementItem extends MissingRequirement {
+  met: boolean
 }
 
 export interface YearGroup {
@@ -177,6 +190,12 @@ export interface ProgressSummary {
   pending: number
   failed: number
   equivalent: number
+  /**
+   * Subjects the student marked Regularizada/Aprobada while the plan says a
+   * requirement is still unmet. They count in the totals — the student knows
+   * about equivalencias and exceptions — but the screen says how many.
+   */
+  flagged: number
   /** Passed + equivalent over total, 0–1. */
   ratio: number
   creditsEarned: number | null

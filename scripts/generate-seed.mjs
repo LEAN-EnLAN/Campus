@@ -163,6 +163,7 @@ for (const file of files) {
 
   // Subjects are shared across plans, keyed by normalised name.
   const csIdByName = new Map()
+  const seenSlotIds = new Set()
 
   for (const subject of plan.subjects) {
     const normalized = normalize(subject.name)
@@ -179,6 +180,15 @@ for (const file of files) {
     // display_order is part of the key: a plan can legitimately list the same
     // subject twice (e.g. two "Horas electivas" blocks in different cuatrimestres).
     const csId = uuid5(`cs:${curriculumId}:${normalized}:${subject.display_order ?? 0}`)
+    if (seenSlotIds.has(csId)) {
+      console.error(
+        `[generate-seed] DUPLICATE curriculum_subject id in ${file}: "${subject.name}" ` +
+          `at display_order ${subject.display_order ?? 0} is listed twice. ` +
+          'Give the repeated slots different display_order values.',
+      )
+      process.exit(1)
+    }
+    seenSlotIds.add(csId)
 
     // A duplicate name makes prerequisite resolution ambiguous. Record it as such
     // rather than silently keeping the last one.

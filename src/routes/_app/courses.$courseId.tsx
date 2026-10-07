@@ -3,14 +3,18 @@ import { ArrowLeft, ExternalLink, Trash2 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
 import { AcademicStatus, StatusGlyph } from '@/components/academic-status'
-import { DeadlineRow } from '@/components/deadline-row'
 import { EmptyState, ErrorState, LoadingRows } from '@/components/empty-state'
 import { PageHeader, SectionHeading } from '@/components/page-header'
 import { QuickCapture, type QuickCaptureValues } from '@/components/quick-capture'
 import { Button } from '@/components/ui/button'
 import { SelectField, TextField } from '@/components/ui/field'
+import { finalBlockedSentence } from '@/domain/requirements'
+import { sortByDate } from '@/domain/item-dates'
 import type { StoredSubjectStatus } from '@/domain/types'
+import { OrderConflictNote } from '@/features/academic/order-conflict-note'
 import { useAcademicPlan, useSetSubjectStatus } from '@/features/academic/queries'
+import { CorrelativasPanel } from '@/features/courses/correlativas-panel'
+import { SubjectDateRow } from '@/features/courses/subject-dates'
 import {
   useAcademicItems,
   useCreateAcademicItem,
@@ -63,7 +67,7 @@ function CourseDetailScreen() {
   const subject = plan.subjectById.get(courseId)
 
   const items = useMemo(
-    () => (itemsQuery.data ?? []).filter((i) => i.curriculumSubjectId === courseId),
+    () => sortByDate((itemsQuery.data ?? []).filter((i) => i.curriculumSubjectId === courseId)),
     [itemsQuery.data, courseId],
   )
   const resources = useMemo(
@@ -158,10 +162,16 @@ function CourseDetailScreen() {
               </option>
             ))}
           </SelectField>
-          <p className="pb-2.5">
-            <AcademicStatus status={subject.status} />
-          </p>
+          <div className="flex flex-col gap-0.5 pb-2.5">
+            <p>
+              <AcademicStatus status={subject.status} />
+            </p>
+            {finalBlockedSentence(subject) ? (
+              <p className="text-ink-muted text-sm">{finalBlockedSentence(subject)}</p>
+            ) : null}
+          </div>
         </div>
+        <OrderConflictNote subject={subject} dismissible />
         {setStatus.error ? (
           <p role="alert" className="text-danger text-sm font-medium">
             {(setStatus.error as Error).message}
@@ -188,7 +198,7 @@ function CourseDetailScreen() {
         ) : (
           <div>
             {items.map((item) => (
-              <DeadlineRow
+              <SubjectDateRow
                 key={item.id}
                 item={item}
                 onToggle={(done) => toggleItem.mutate({ id: item.id, done })}
@@ -201,26 +211,8 @@ function CourseDetailScreen() {
       <section aria-labelledby="correlativas" className="flex flex-col gap-3">
         <SectionHeading id="correlativas">Correlativas</SectionHeading>
 
-        {subject.missingRequirements.length > 0 ? (
-          <div className="flex flex-col gap-1.5">
-            <p className="text-ink-muted text-xs font-medium tracking-wide uppercase">
-              Te falta
-            </p>
-            <ul className="flex flex-col gap-1">
-              {subject.missingRequirements.map((requirement) => (
-                <li key={`${requirement.curriculumSubjectId}-${requirement.kind}`}>
-                  <Link
-                    to="/courses/$courseId"
-                    params={{ courseId: requirement.curriculumSubjectId }}
-                    className="text-ink text-sm underline-offset-4 hover:underline"
-                  >
-                    {requirement.name}
-                  </Link>
-                  <span className="text-ink-muted text-sm"> — {requirement.needs}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
+        {subject.requirements.length > 0 ? (
+          <CorrelativasPanel subject={subject} />
         ) : (
           <p className="text-ink-muted text-sm">
             {/* Saying "no te falta ninguna" when we never had the graph would be
@@ -301,21 +293,28 @@ function CourseDetailScreen() {
           onSubmit={handleAddResource}
           className="flex flex-col gap-3 sm:flex-row sm:items-end"
         >
-          <TextField
-            label="Título"
-            placeholder="Apunte de la cátedra"
-            value={resourceTitle}
-            onChange={(e) => setResourceTitle(e.target.value)}
-            className="sm:w-56"
-          />
-          <TextField
-            label="Link"
-            type="url"
-            placeholder="https://…"
-            value={resourceUrl}
-            onChange={(e) => setResourceUrl(e.target.value)}
-            className="flex-1"
-          />
+          {/* The layout classes go on a wrapper: `TextField` applies `className` to
+              the <input>, so a width on the field itself left the Link field's
+              wrapper to shrink to its content (22px). */}
+          <div className="sm:w-56">
+            <TextField
+              label="Título"
+              placeholder="Apunte de la cátedra"
+              value={resourceTitle}
+              onChange={(e) => setResourceTitle(e.target.value)}
+              required
+            />
+          </div>
+          <div className="min-w-0 sm:flex-1">
+            <TextField
+              label="Link"
+              type="url"
+              placeholder="https://…"
+              value={resourceUrl}
+              onChange={(e) => setResourceUrl(e.target.value)}
+              required
+            />
+          </div>
           <Button
             type="submit"
             variant="secondary"

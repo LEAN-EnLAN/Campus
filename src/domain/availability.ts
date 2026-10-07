@@ -3,6 +3,7 @@ import type {
   MissingRequirement,
   PrerequisiteEdge,
   PrerequisiteKind,
+  RequirementItem,
   StoredSubjectStatus,
   SubjectStatus,
   SubjectView,
@@ -57,6 +58,56 @@ export interface AvailabilityInput {
   subjects: readonly CurriculumSubject[]
   prerequisites: readonly PrerequisiteEdge[]
   states: readonly UserSubjectState[]
+  /**
+   * Does the source publish this plan's correlativas at all? Defaults to true.
+   *
+   * When false, an empty edge list means "nobody told us", and deriving
+   * `available` from it would be Campus asserting that nothing blocks the
+   * student — the one claim the plan banner itself refuses to make.
+   */
+  prerequisitesKnown?: boolean
+}
+
+const TERM_SUFFIX: Record<CurriculumSubject['term'], string> = {
+  anual: 'anual',
+  '1c': '1° cuatr.',
+  '2c': '2° cuatr.',
+}
+
+/**
+ * Display names, unique within the plan.
+ *
+ * A plan can list the same placeholder twice (UNR has two "Horas electivas",
+ * one per cuatrimestre). Two rows with one name are indistinguishable in a
+ * select, in search and in the plan, so the duplicates are told apart by term,
+ * then by their position in the plan. Unique names are left exactly as the
+ * source wrote them.
+ */
+function displayNames(subjects: readonly CurriculumSubject[]): Map<string, string> {
+  const byName = new Map<string, CurriculumSubject[]>()
+  for (const s of subjects) {
+    const bucket = byName.get(s.name)
+    if (bucket) bucket.push(s)
+    else byName.set(s.name, [s])
+  }
+
+  const names = new Map<string, string>()
+  for (const [name, group] of byName) {
+    if (group.length === 1) {
+      names.set(group[0]!.id, name)
+      continue
+    }
+    const termsDistinguish = new Set(group.map((s) => s.term)).size === group.length
+    for (const s of group) {
+      names.set(
+        s.id,
+        termsDistinguish
+          ? `${name} (${TERM_SUFFIX[s.term]})`
+          : `${name} (${TERM_SUFFIX[s.term]}, n.º ${s.displayOrder})`,
+      )
+    }
+  }
+  return names
 }
 
 /**
@@ -70,12 +121,14 @@ export function computeSubjectViews({
   subjects,
   prerequisites,
   states,
+  prerequisitesKnown = true,
 }: AvailabilityInput): SubjectView[] {
   const stateById = new Map<string, UserSubjectState>()
   for (const state of states) stateById.set(state.curriculumSubjectId, state)
 
   const subjectById = new Map<string, CurriculumSubject>()
   for (const subject of subjects) subjectById.set(subject.id, subject)
+  const nameOf = displayNames(subjects)
 
   // Only consider edges whose endpoints both exist in this curriculum. A dangling
   // edge (bad seed, subject from another plan version) must not block a student.
@@ -111,35 +164,46 @@ export function computeSubjectViews({
     const stored = state?.status ?? null
 
     const missing: MissingRequirement[] = []
+    const requirements: RequirementItem[] = []
     for (const edge of requirementsOf.get(subject.id) ?? []) {
       const requiredStatus: SubjectStatus =
         storedStatusOf(edge.requiredCurriculumSubjectId) ?? 'pending'
-      if (satisfies(edge.kind, requiredStatus)) continue
+      const met = satisfies(edge.kind, requiredStatus)
 
       const required = subjectById.get(edge.requiredCurriculumSubjectId)
       // Guarded above, but keep the narrowing explicit rather than asserting.
       if (!required) continue
 
-      missing.push({
+      const requirement: MissingRequirement = {
         curriculumSubjectId: required.id,
-        name: required.name,
+        name: nameOf.get(required.id) ?? required.name,
         kind: edge.kind,
         needs: needsLabel(edge.kind),
-      })
+      }
+      // Advisory edges never block and are never listed as something to do.
+      if (edge.kind !== 'recommended') requirements.push({ ...requirement, met })
+      if (!met) missing.push(requirement)
     }
 
     // A `to_take` gap is what actually blocks a cursada. A `to_pass` gap only
     // matters at final time and must not hide the subject from the plan.
     const blockedToTake = missing.some((m) => m.kind === 'to_take')
 
-    const status: SubjectStatus = stored ?? (blockedToTake ? 'blocked' : 'available')
+    // `available` is a claim: "nothing stops you from taking this today". It is
+    // only made when we KNOW the plan's correlativas, and never for an elective
+    // slot, which is a placeholder for a choice rather than a subject to take.
+    const claimsNothing = !prerequisitesKnown || subject.elective
+    const status: SubjectStatus =
+      stored ?? (blockedToTake ? 'blocked' : claimsNothing ? 'pending' : 'available')
 
     return {
       ...subject,
+      name: nameOf.get(subject.id) ?? subject.name,
       status,
       grade: state?.grade ?? null,
       notes: state?.notes ?? null,
       missingRequirements: missing,
+      requirements,
       unlocks: [...(unlocksOf.get(subject.id) ?? [])],
     }
   })

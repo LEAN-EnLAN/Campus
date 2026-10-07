@@ -1,42 +1,32 @@
+import { STATUS_GROUPS, statusGroupOf, type StatusGroupId } from '@/domain/status-groups'
 import type { StoredSubjectStatus, SubjectStatus, SubjectView } from '@/domain/types'
 
 /**
  * The subject Kanban, as a pure mapping.
  *
- * Three columns, because three are the ones a student can move a subject
+ * Four columns, because four are the ones a student can move a subject
  * *into*. Everything else — blocked, pending, desaprobada — is a consequence of
  * the correlativa graph or of a grade, not a place you drag something to.
+ *
+ * The columns ARE the status groups (`@/domain/status-groups`), so the chips on
+ * Materias and the board can never disagree about where a subject lives.
+ * Regularizada is "Final pendiente", not Cursando.
  */
 
-export type BoardColumnId = 'disponibles' | 'cursando' | 'aprobadas'
+export type BoardColumnId = StatusGroupId
 
 /** Board order, left to right. It is the order of the academic year, not of a taste. */
-const COLUMN_ORDER: BoardColumnId[] = ['disponibles', 'cursando', 'aprobadas']
+const COLUMN_ORDER: BoardColumnId[] = STATUS_GROUPS.map((g) => g.id)
 
-const COLUMN_NAME: Record<BoardColumnId, string> = {
-  disponibles: 'Disponibles',
-  cursando: 'Cursando',
-  aprobadas: 'Aprobadas',
-}
+const COLUMN_NAME: Record<BoardColumnId, string> = Object.fromEntries(
+  STATUS_GROUPS.map((g) => [g.id, g.label]),
+) as Record<BoardColumnId, string>
 
 /** Which column a subject belongs to, or null when it is off the board. */
 export function columnOf(status: SubjectStatus): BoardColumnId | null {
-  switch (status) {
-    case 'available':
-      return 'disponibles'
-    case 'in_progress':
-    case 'regularized':
-      return 'cursando'
-    case 'passed':
-    case 'equivalent':
-      return 'aprobadas'
-    // `blocked` and `pending` are derived from prerequisites, and `failed` is a
-    // result, not a lane. None of them is a drop target.
-    case 'blocked':
-    case 'pending':
-    case 'failed':
-      return null
-  }
+  // `blocked` and `pending` are derived from prerequisites, and `failed` is a
+  // result, not a lane. None of them is a drop target.
+  return statusGroupOf(status)
 }
 
 /**
@@ -54,6 +44,8 @@ export function statusForColumn(column: BoardColumnId): StoredSubjectStatus | nu
       return null
     case 'cursando':
       return 'in_progress'
+    case 'final_pendiente':
+      return 'regularized'
     case 'aprobadas':
       return 'passed'
   }

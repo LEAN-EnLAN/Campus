@@ -132,15 +132,31 @@ for (const file of files) {
   }
 
   // ---- the curriculum itself ----
-  const byName = new Map()
+  // The id belongs to the SLOT (name + position), never to the name: a plan can
+  // legitimately list one name twice (UNR's two "Horas electivas"), and a lookup
+  // by name gave both slots the last one's id — so marking one marked the other.
+  const idOfSlot = new Map()
+  const slotsByName = new Map()
+  const seenIds = new Map()
   for (const subject of plan.subjects) {
-    byName.set(subject.name, subjectId(subject.name, subject.display_order ?? 0))
+    const id = subjectId(subject.name, subject.display_order ?? 0)
+    if (seenIds.has(id)) {
+      console.error(
+        `[generate-catalog] DUPLICATE subject id "${id}" in ${file}: ` +
+          `"${seenIds.get(id)}" and "${subject.name}" are the same slot. ` +
+          'Give them different display_order values.',
+      )
+      process.exit(1)
+    }
+    seenIds.set(id, subject.name)
+    idOfSlot.set(subject, id)
+    slotsByName.set(subject.name, [...(slotsByName.get(subject.name) ?? []), subject])
   }
 
   const subjects = plan.subjects.map((subject) => {
     if (subject.verified === false) unverified += 1
     return {
-      id: byName.get(subject.name),
+      id: idOfSlot.get(subject),
       code: subject.code ?? null,
       name: subject.name,
       normalizedName: normalize(subject.name),
@@ -151,7 +167,15 @@ for (const file of files) {
       displayOrder: subject.display_order ?? 0,
       verified: subject.verified !== false,
       prerequisites: (subject.prerequisites ?? []).map((p) => {
-        const required = byName.get(p.subject_name)
+        const candidates = slotsByName.get(p.subject_name) ?? []
+        if (candidates.length > 1) {
+          console.error(
+            `[generate-catalog] AMBIGUOUS prerequisite in ${file}: "${subject.name}" requires ` +
+              `"${p.subject_name}", which appears more than once in this plan.`,
+          )
+          process.exit(1)
+        }
+        const required = candidates[0] ? idOfSlot.get(candidates[0]) : undefined
         if (!required) {
           console.error(
             `[generate-catalog] DANGLING prerequisite in ${file}: ` +

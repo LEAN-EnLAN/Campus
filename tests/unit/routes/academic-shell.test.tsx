@@ -28,7 +28,7 @@ describe('mobile navigation', () => {
     expect(within(bar).getByRole('button', { name: 'Más' })).toBeInTheDocument()
   })
 
-  it('reaches Vault, Material and Ajustes in two taps', async () => {
+  it('reaches Notas, Material and Ajustes in two taps', async () => {
     const user = userEvent.setup()
     mount('/today')
     const bar = await tabBar()
@@ -36,7 +36,7 @@ describe('mobile navigation', () => {
     await user.click(within(bar).getByRole('button', { name: 'Más' }))
 
     const more = await screen.findByRole('navigation', { name: 'Más secciones' })
-    for (const name of ['Vault', 'Material', 'Ajustes']) {
+    for (const name of ['Notas', 'Material', 'Ajustes']) {
       expect(within(more).getByRole('link', { name })).toBeInTheDocument()
     }
   })

@@ -59,10 +59,10 @@ function VaultScreen() {
             <path d="M10 20 h28 l6 8 h42 v34 a4 4 0 0 1 -4 4 h-68 a4 4 0 0 1 -4 -4 z" />
             <line x1="10" y1="36" x2="86" y2="36" strokeDasharray="3 4" />
           </svg>
-          <h1 className="text-ink text-lg font-semibold">El Vault vive en tu máquina</h1>
+          <h1 className="text-ink text-lg font-semibold">Tus notas viven en tu computadora</h1>
           <p className="text-ink-muted mt-2 text-sm">
-            Tus notas y archivos son carpetas de verdad, y Campus Cloud no las tiene. Abrí un
-            Vault local desde el inicio para usar el espacio de trabajo.
+            Tus notas son archivos de una carpeta tuya, y Campus Cloud no las tiene. Para
+            usarlas, abrí Campus en tu computadora y elegí una carpeta.
           </p>
         </div>
       </div>

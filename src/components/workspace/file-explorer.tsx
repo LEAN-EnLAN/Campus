@@ -43,7 +43,10 @@ export function FileExplorer({
   createRequest?: number
 } & ExplorerEvents) {
   return (
-    <nav aria-label="Archivos del Vault" className="flex h-full flex-col overflow-y-auto p-2">
+    <nav
+      aria-label="Archivos de tu carpeta"
+      className="flex h-full flex-col overflow-y-auto p-2"
+    >
       <Directory
         path=""
         depth={0}
@@ -324,7 +327,7 @@ function Entry({
           className="py-1"
         >
           <p className="text-ink text-xs">
-            ¿Eliminar <strong>{entry.name}</strong>? Va a la papelera del Vault (
+            ¿Eliminar <strong>{entry.name}</strong>? Va a la papelera de tu carpeta (
             <code className="text-[10px]">.campus/trash/</code>), recuperable a mano.
           </p>
           <div className="mt-1 flex gap-1">

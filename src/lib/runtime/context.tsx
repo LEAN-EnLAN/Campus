@@ -119,7 +119,7 @@ export function RuntimeProvider({
       // rather than with a network error against a server that does not exist.
       if (!capabilities.vaultAvailable) {
         throw new Error(
-          'Esta versión de Campus no puede abrir un Vault. Funciona cuando corrés Campus en tu propia computadora.',
+          'Esta versión de Campus no puede abrir una carpeta. Funciona cuando corrés Campus en tu propia computadora.',
         )
       }
       const runtime = await capabilities.openLocal(vault, options)

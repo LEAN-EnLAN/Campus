@@ -46,7 +46,7 @@ export function SearchDialog({
       <div
         role="dialog"
         aria-modal="true"
-        aria-label="Buscar en el Vault"
+        aria-label="Buscar en tus notas"
         className="bg-paper-elevated border-rule w-full max-w-xl rounded-lg border shadow-sm"
         onClick={(e) => e.stopPropagation()}
       >
@@ -71,11 +71,11 @@ export function SearchDialog({
             }
           }}
           placeholder="Buscar en todas las notas…"
-          aria-label="Buscar texto en el Vault"
+          aria-label="Buscar texto en tus notas"
           className="text-ink placeholder:text-ink-faint w-full border-none bg-transparent px-4 py-3 text-sm outline-none"
         />
         <div className="border-rule max-h-80 overflow-y-auto border-t py-1">
-          {building && <p className="text-ink-muted px-4 py-2 text-xs">Indexando el Vault…</p>}
+          {building && <p className="text-ink-muted px-4 py-2 text-xs">Indexando tus notas…</p>}
           {!building && query.trim() && results.length === 0 && (
             <div className="px-4 py-6 text-center">
               <svg

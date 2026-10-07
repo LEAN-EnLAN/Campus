@@ -86,7 +86,7 @@ try {
   // opener only when it shows the chooser. The waits are explicit rather than
   // locator timeouts because the answer here is "which screen rendered", and
   // probing that mid-hydration reports the wrong one.
-  const explorer = page.getByLabel('Archivos del Vault')
+  const explorer = page.getByLabel('Archivos de tu carpeta')
   const opener = page.getByLabel('Ruta de la carpeta')
   await page.goto(`${server.url}/vault`, { waitUntil: 'domcontentloaded' })
   await page.waitForTimeout(2500)

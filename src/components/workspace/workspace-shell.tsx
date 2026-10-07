@@ -313,7 +313,7 @@ function WorkspaceShellInner({
             onClick={() => setSidebarOpen(false)}
           />
           <aside
-            aria-label="Explorador del Vault"
+            aria-label="Explorador de notas"
             className="bg-paper border-rule fixed inset-y-0 left-0 z-30 w-72 border-r md:static md:z-auto md:w-60 md:shrink-0 lg:w-72"
           >
             <div className="flex items-center justify-between px-3 py-2 md:hidden">
@@ -438,7 +438,7 @@ function WorkspaceShellInner({
                     <div className="border-rule-soft flex items-center justify-between gap-3 border-b px-4 py-2 md:pr-[var(--rule-gutter)] md:pl-[var(--rule-text-inset)]">
                       <div className="min-w-0" title={pane.activeTab}>
                         <p className="text-2xs text-ink-muted tracking-[0.18em] uppercase">
-                          Cuaderno
+                          Notas
                         </p>
                         <h2 className="text-ink truncate font-serif text-lg font-semibold">
                           {(pane.activeTab.split('/').pop() ?? pane.activeTab).replace(

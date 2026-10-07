@@ -1,5 +1,7 @@
 /** Optional build-time flags; see `src/lib/runtime/build-flags.ts`. */
 interface ImportMetaEnv {
+  readonly VITE_SUPABASE_URL?: string
+  readonly VITE_SUPABASE_ANON_KEY?: string
   /** `off` on a hosted build: there is no Vault API behind a static bundle. */
   readonly VITE_CAMPUS_VAULT?: string
   /** `1` enables the tester tooling on a non-hosted build. */

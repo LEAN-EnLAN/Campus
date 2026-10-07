@@ -1,6 +1,6 @@
 import { randomBytes } from 'node:crypto'
 import { homedir } from 'node:os'
-import { isAbsolute, resolve } from 'node:path'
+import { dirname, isAbsolute, join, resolve } from 'node:path'
 
 import { VaultConflictError, VaultError, vaultErrorFromSystem } from '../lib/vault/errors'
 import type { VaultErrorCode } from '../lib/vault/errors'
@@ -21,10 +21,13 @@ import { isInsideAny } from './vault-roots'
  *
  * Three rules shape everything below.
  *
- * 1. The wire surface is `VaultAccess`, not a filesystem. Two operations, both
- *    semantic, both inside an already-chosen vault. There is no realpath, no
- *    stat-an-absolute-path, no readdir, no exec — not because they are guarded,
- *    but because they are absent.
+ * 1. The wire surface is `VaultAccess`, not a filesystem: semantic operations
+ *    inside an already-chosen vault. There is no realpath, no
+ *    stat-an-absolute-path, no exec — not because they are guarded, but because
+ *    they are absent. The ONE deliberate exception is choosing the vault in the
+ *    first place: `open`, `exists` and `dirs` (a folder browser's listing, names
+ *    of directories only) accept an absolute path, and all three are confined to
+ *    the allowed roots (`vault-roots.ts`).
  *
  * 2. The browser names an absolute path exactly once, at `open`, and receives an
  *    opaque id. Every later request is vault-relative.
@@ -200,6 +203,64 @@ export class VaultSessions {
       return false
     }
   }
+
+  /**
+   * The folders inside `path`, for a folder browser. Names only, directories
+   * only; the same confinement as `open` (it IS `open`'s check), plus:
+   *
+   * - an entry that is a symlink is listed only if it resolves to a directory
+   *   INSIDE the roots — a link out is not even named;
+   * - dot-folders are left out, as in any folder picker (and `.ssh` is not
+   *   something a page needs to learn exists);
+   * - `parent` is given only while it is still inside the roots, so the browser
+   *   cannot be walked upwards out of them.
+   *
+   * With no `path` it starts at the first allowed root.
+   */
+  async listDirs(
+    path: string | undefined,
+  ): Promise<{ path: string; parent: string | null; dirs: string[] }> {
+    const start = path === undefined || path === '' ? this.allowedRoots[0] : path
+    if (start === undefined) {
+      throw new VaultError('folder_outside_roots', 'folder is outside the allowed roots')
+    }
+    const real = await this.admit(start)
+    const realRoots = await this.realRoots()
+
+    let entries
+    try {
+      entries = await nodeFileSystem.readdir(real)
+    } catch (error) {
+      throw vaultErrorFromSystem(error)
+    }
+
+    const dirs: string[] = []
+    for (const entry of entries) {
+      if (entry.name.startsWith('.')) continue
+      if (entry.kind === 'dir') {
+        dirs.push(entry.name)
+      } else if (entry.kind === 'symlink') {
+        try {
+          const target = await nodeFileSystem.realpath(join(real, entry.name))
+          const stat = await nodeFileSystem.lstat(target)
+          if (stat?.kind === 'dir' && isInsideAny(realRoots, target)) dirs.push(entry.name)
+        } catch {
+          // A dangling or unreadable link is simply not a folder to browse.
+        }
+      }
+    }
+    dirs.sort((a, b) => a.localeCompare(b, 'es'))
+
+    const up = dirname(real)
+    return { path: real, parent: up !== real && isInsideAny(realRoots, up) ? up : null, dirs }
+  }
+}
+
+/** HTTP status for a refusal while opening or browsing a folder. */
+function folderStatus(code: VaultErrorCode): number {
+  if (code === 'folder_outside_roots' || code === 'permission_denied') return 403
+  if (code === 'folder_not_absolute') return 400
+  return 404
 }
 
 /**
@@ -271,13 +332,11 @@ export async function handleVaultRequest(
       return reply(200, await sessions.open(target))
     } catch (error) {
       const failure = vaultErrorFromSystem(error)
-      const status =
-        failure.code === 'folder_outside_roots' || failure.code === 'permission_denied'
-          ? 403
-          : failure.code === 'folder_not_absolute'
-            ? 400
-            : 404
-      return reply(status, { ok: false, code: failure.code, error: failure.message })
+      return reply(folderStatus(failure.code), {
+        ok: false,
+        code: failure.code,
+        error: failure.message,
+      })
     }
   }
 
@@ -287,6 +346,24 @@ export async function handleVaultRequest(
       return reply(400, { ok: false, code: 'bad_request', error: 'path required' })
     }
     return reply(200, { exists: await sessions.exists(target) })
+  }
+
+  // --- dirs: browse folders (names only) to choose a Vault --------------------
+  if (path === `${PREFIX}/dirs`) {
+    const target = payload.path
+    if (target !== undefined && typeof target !== 'string') {
+      return reply(400, { ok: false, code: 'bad_request', error: 'path must be a string' })
+    }
+    try {
+      return reply(200, await sessions.listDirs(target))
+    } catch (error) {
+      const failure = vaultErrorFromSystem(error)
+      return reply(folderStatus(failure.code), {
+        ok: false,
+        code: failure.code,
+        error: failure.message,
+      })
+    }
   }
 
   // --- everything else is vault-scoped and relative -------------------------

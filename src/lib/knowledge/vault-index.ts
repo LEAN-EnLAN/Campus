@@ -112,7 +112,7 @@ export class VaultIndex {
   upsert(path: string, contents: string): void {
     // Replace, don't merge: stale title/link registrations from the previous
     // version of this note would resurrect deleted links.
-    if (this.byPath.has(path)) this.remove(path)
+    this.removeOne(path)
     const meta = extractNoteMeta(path, contents)
     const note: IndexedNote = {
       meta,
@@ -128,7 +128,18 @@ export class VaultIndex {
     for (const link of meta.links) addTo(this.sourcesByLinkText, fold(link.target), path)
   }
 
+  /** Remove a note — or, when `path` is a folder, every note inside it. */
   remove(path: string): void {
+    for (const known of this.pathsWithin(path)) this.removeOne(known)
+  }
+
+  /** Every indexed path that is `entry` itself or lives inside it. */
+  private pathsWithin(entry: string): string[] {
+    const prefix = entry + '/'
+    return [...this.byPath.keys()].filter((p) => p === entry || p.startsWith(prefix))
+  }
+
+  private removeOne(path: string): void {
     const note = this.byPath.get(path)
     if (!note) return
     this.byPath.delete(path)
@@ -147,10 +158,15 @@ export class VaultIndex {
    * its new path, while links by the old filename correctly stop resolving.
    */
   rename(from: string, to: string): void {
-    const note = this.byPath.get(from)
-    if (!note) return
-    this.remove(from)
-    this.upsert(to, note.contents)
+    // A folder rename moves every note inside it. Collect first: upsert and
+    // remove mutate the maps being walked.
+    const moves = this.pathsWithin(from).map((path) => ({
+      path,
+      to: path === from ? to : to + path.slice(from.length),
+      contents: this.byPath.get(path)!.contents,
+    }))
+    for (const move of moves) this.removeOne(move.path)
+    for (const move of moves) this.upsert(move.to, move.contents)
   }
 
   notes(): NoteMeta[] {

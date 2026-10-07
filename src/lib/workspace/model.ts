@@ -166,34 +166,48 @@ export function closePane(state: WorkspaceState, paneId: string): WorkspaceState
   }
 }
 
+/** Is `path` the entry itself, or something inside it (when it is a folder)? */
+export function isWithin(path: string, entry: string): boolean {
+  return path === entry || path.startsWith(entry + '/')
+}
+
+/** `path` after `from` was renamed to `to` — folder renames move everything inside. */
+export function movedPath(path: string, from: string, to: string): string {
+  if (path === from) return to
+  return path.startsWith(from + '/') ? to + path.slice(from.length) : path
+}
+
 /**
  * A vault rename must not orphan open tabs: the note the student is reading
  * did not close, it just changed address. Rewrites every occurrence in every
- * pane, tabs and activeTab alike.
+ * pane, tabs and activeTab alike. `from` may be a folder: every note inside it
+ * moved with it (`carp/n.md` → `carp2/n.md`), and an exact-match rewrite would
+ * leave those tabs pointing at a folder that no longer exists.
  */
 export function renamePath(state: WorkspaceState, from: string, to: string): WorkspaceState {
   return {
     ...state,
     panes: state.panes.map((pane) => ({
       ...pane,
-      tabs: pane.tabs.map((t) => (t === from ? to : t)),
-      activeTab: pane.activeTab === from ? to : pane.activeTab,
+      tabs: pane.tabs.map((t) => movedPath(t, from, to)),
+      activeTab: pane.activeTab === null ? null : movedPath(pane.activeTab, from, to),
     })),
   }
 }
 
 /**
  * A trashed note closes EVERYWHERE — a tab pointing at a path that no longer
- * exists is a read error waiting for a click. Reuses `closeTab` so pane
- * removal and left-neighbour activation follow the exact same rules.
+ * exists is a read error waiting for a click. A trashed FOLDER closes every
+ * note inside it. Reuses `closeTab` so pane removal and left-neighbour
+ * activation follow the exact same rules.
  */
 export function closePath(state: WorkspaceState, path: string): WorkspaceState {
-  // Snapshot the ids first: closeTab may remove a pane mid-iteration.
-  const paneIds = state.panes.map((p) => p.id)
+  // Snapshot first: closeTab may remove a pane mid-iteration.
+  const targets = state.panes.flatMap((pane) =>
+    pane.tabs.filter((t) => isWithin(t, path)).map((t) => [pane.id, t] as const),
+  )
   let next = state
-  for (const paneId of paneIds) {
-    next = closeTab(next, paneId, path)
-  }
+  for (const [paneId, tab] of targets) next = closeTab(next, paneId, tab)
   return next
 }
 

@@ -42,3 +42,11 @@ These are not non-goals, just not now.
   academic facts would enter. Would need the same provenance discipline as the seed.
 - **Offline / PWA.** A student on the subte is a real use case.
 - **Dark theme.** The token layer is ready for it; the editorial light theme comes first.
+- **In-app folder browser for choosing a Vault.** Typing an absolute path is the first
+  wall a new student hits. The picker should let you browse to the folder instead — and it
+  must work through whatever relay serves the app (e.g. a Windows laptop opening the Vault
+  on a Linux machine over a Tailscale mesh), so it has to be served by the Vault API, not by
+  the browser's own file dialog, which only sees the local disk. Constraint: a
+  directory-listing endpoint widens what the API exposes. It lists directories only (never
+  file contents), stays behind the same token + origin guard, is confined to configured
+  roots (default: the user's home), and refuses symlinks that escape them.

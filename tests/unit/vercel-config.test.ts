@@ -55,4 +55,35 @@ describe('vercel.json — static SPA on Vercel', () => {
     )
     expect(longCached?.map((h) => h.source)).toEqual(['/assets/(.*)'])
   })
+
+  describe('security headers on every response', () => {
+    const all = () => {
+      const rule = config.headers?.find((h) => h.source === '/(.*)')
+      return new Map(rule?.headers.map((h) => [h.key, h.value]))
+    }
+
+    it('stops MIME sniffing and limits the referrer', () => {
+      expect(all().get('X-Content-Type-Options')).toBe('nosniff')
+      expect(all().get('Referrer-Policy')).toBe('strict-origin-when-cross-origin')
+    })
+
+    it('forbids framing (clickjacking), with the legacy header as well', () => {
+      expect(all().get('X-Frame-Options')).toBe('DENY')
+      expect(all().get('Content-Security-Policy')).toContain("frame-ancestors 'none'")
+    })
+
+    it('uses only CSP directives that cannot break the app', () => {
+      // A script-src/default-src policy would have to allow the inline theme
+      // bootstrap in index.html, Google Fonts and Supabase (https + wss), and
+      // could not be verified without a real browser. These four are safe.
+      const csp = all().get('Content-Security-Policy') ?? ''
+      const directives = csp.split(';').map((d) => d.trim().split(' ')[0])
+      expect(directives.sort()).toEqual([
+        'base-uri',
+        'form-action',
+        'frame-ancestors',
+        'object-src',
+      ])
+    })
+  })
 })

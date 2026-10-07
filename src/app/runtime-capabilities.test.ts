@@ -54,3 +54,39 @@ describe('vaultExists — a remembered vault that cannot be opened says why', ()
     expect(await resolveRuntimeCapabilities({}).vaultExists('/home/x/gone')).toBe(false)
   })
 })
+
+describe('folder browsing and creation reach the Vault API', () => {
+  const reply = (body: unknown) =>
+    new Response(JSON.stringify(body), {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    })
+
+  afterEach(() => vi.unstubAllGlobals())
+
+  it('listFolders asks the dirs endpoint', async () => {
+    const fetchMock = vi.fn(async () => reply({ path: '/home/ana', parent: null, dirs: ['A'] }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    const listing = await resolveRuntimeCapabilities({}).listFolders!('/home/ana')
+
+    expect(listing.dirs).toEqual(['A'])
+    expect((fetchMock.mock.calls[0] as unknown as [string])[0]).toMatch(
+      /\/__campus\/vault\/dirs$/,
+    )
+  })
+
+  it('openLocal can ask for the missing folder to be created', async () => {
+    const fetchMock = vi.fn(async (url: string) =>
+      url.endsWith('/open') ? reply({ id: 'v', name: 'Campus' }) : reply({}),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+    // The catalog is fetched too; its failure is not what is under test.
+    await resolveRuntimeCapabilities({})
+      .openLocal({ path: '/home/ana/Campus', name: 'Campus' }, { create: true })
+      .catch(() => undefined)
+
+    const [, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit]
+    expect(JSON.parse(String(init.body))).toEqual({ path: '/home/ana/Campus', create: true })
+  })
+})

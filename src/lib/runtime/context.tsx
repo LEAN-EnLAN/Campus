@@ -23,6 +23,8 @@ import {
   writeDeviceConfig,
 } from './device-config'
 import { descriptorFor, resolveCampusRuntime, type RuntimeCapabilities } from './resolve'
+import type { FolderListing } from '@/lib/vault/http-vault-access'
+
 import type { StartupState, VaultDescriptor } from './types'
 
 /**
@@ -41,8 +43,13 @@ import type { StartupState, VaultDescriptor } from './types'
 
 interface RuntimeValue {
   state: StartupState
-  /** Choose a vault. Records it as most-recent and opens it. */
-  chooseVault(vault: VaultDescriptor): Promise<void>
+  /**
+   * Choose a vault. Records it as most-recent and opens it. `create` makes the
+   * one missing folder first (the suggested default).
+   */
+  chooseVault(vault: VaultDescriptor, options?: { create?: boolean }): Promise<void>
+  /** Folders of the machine running Campus, for the picker; undefined where there is no Vault API. */
+  listFolders?: (path?: string) => Promise<FolderListing>
   /** Choose Campus Cloud. An explicit choice, never an error fallback. */
   chooseCloud(): Promise<void>
   /**
@@ -106,7 +113,7 @@ export function RuntimeProvider({
   }, [capabilities])
 
   const chooseVault = useCallback(
-    async (vault: VaultDescriptor) => {
+    async (vault: VaultDescriptor, options?: { create?: boolean }) => {
       // The picker does not offer this on a hosted build, but the guard lives
       // here too: a stale tab or a hand-written call must fail with a reason
       // rather than with a network error against a server that does not exist.
@@ -115,7 +122,7 @@ export function RuntimeProvider({
           'Esta versión de Campus no puede abrir un Vault. Funciona cuando corrés Campus en tu propia computadora.',
         )
       }
-      const runtime = await capabilities.openLocal(vault)
+      const runtime = await capabilities.openLocal(vault, options)
       // Recorded only AFTER the vault opened. Remembering first would leave a
       // broken path in the recent list for a vault that never worked.
       writeDeviceConfig(
@@ -176,6 +183,7 @@ export function RuntimeProvider({
     forget,
     recent,
     vaultAvailable: capabilities.vaultAvailable,
+    listFolders: capabilities.vaultAvailable ? capabilities.listFolders : undefined,
   }
 
   if (state.status !== 'ready') {

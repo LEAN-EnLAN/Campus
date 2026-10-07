@@ -1,5 +1,6 @@
 import { vaultErrorMessage } from '@/lib/vault/error-messages'
 import { VaultError } from '@/lib/vault/errors'
+import type { FolderListing } from '@/lib/vault/http-vault-access'
 
 import { readDeviceConfig, type DeviceStore } from './device-config'
 import type { CampusRuntime, StartupState, VaultDescriptor } from './types'
@@ -28,8 +29,17 @@ export interface RuntimeCapabilities {
   store: DeviceStore
   /** Is this vault still on disk, and does it look like a vault? */
   vaultExists(path: string): Promise<boolean>
-  /** Build the local runtime for a vault that has already been verified. */
-  openLocal(vault: VaultDescriptor): Promise<CampusRuntime>
+  /**
+   * Build the local runtime for a vault that has already been verified.
+   * `create` makes the one missing folder the path names (the first-run
+   * "use the suggested folder"); the server still decides whether it may.
+   */
+  openLocal(vault: VaultDescriptor, options?: { create?: boolean }): Promise<CampusRuntime>
+  /**
+   * The folders inside a folder on the machine that runs Campus, for the folder
+   * picker. Absent where the build has no Vault API to ask.
+   */
+  listFolders?(path?: string): Promise<FolderListing>
   /** Is there a usable cloud session right now? */
   cloudSession(): Promise<boolean>
   /** Build the cloud runtime. */

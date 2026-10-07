@@ -1,7 +1,12 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { VaultConflictError, VaultError } from './errors'
-import { httpVaultAccess, openVaultSession, vaultExists } from './http-vault-access'
+import {
+  httpVaultAccess,
+  listVaultFolders,
+  openVaultSession,
+  vaultExists,
+} from './http-vault-access'
 
 /**
  * The client reads codes, not prose, and survives a server that answers with
@@ -106,5 +111,62 @@ describe('opening a folder', () => {
     expect(await vaultExists('http://x', 't', '/a')).toBe(false)
     vi.stubGlobal('fetch', answer(403, { ok: false, code: 'folder_outside_roots', error: 'x' }))
     expect(await vaultExists('http://x', 't', '/a')).toBe(false)
+  })
+})
+
+describe('listing folders', () => {
+  const listing = { path: '/home/ana', parent: null, dirs: ['Facultad', 'Zeta'] }
+
+  it('asks the server for the folders of a path and returns the listing', async () => {
+    const fetchMock = answer(200, listing)
+    vi.stubGlobal('fetch', fetchMock)
+
+    expect(await listVaultFolders('http://x', 't', '/home/ana')).toEqual(listing)
+
+    const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit]
+    expect(url).toBe('http://x/__campus/vault/dirs')
+    expect(JSON.parse(String(init.body))).toEqual({ path: '/home/ana' })
+    expect((init.headers as Record<string, string>)['x-campus-capability']).toBe('t')
+  })
+
+  it('without a path, lets the server start where it wants', async () => {
+    const fetchMock = answer(200, listing)
+    vi.stubGlobal('fetch', fetchMock)
+    await listVaultFolders('http://x', 't')
+    const [, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit]
+    expect(JSON.parse(String(init.body))).toEqual({})
+  })
+
+  it('carries the refusal code, never the English text', async () => {
+    vi.stubGlobal(
+      'fetch',
+      answer(403, { ok: false, code: 'folder_outside_roots', error: 'outside' }),
+    )
+    const error = await listVaultFolders('http://x', 't', '/etc').catch((e: unknown) => e)
+    expect((error as VaultError).code).toBe('folder_outside_roots')
+  })
+
+  it('reports a host that has no Vault API as unavailable', async () => {
+    vi.stubGlobal('fetch', answer(200, '<!doctype html>', 'text/html'))
+    const error = await listVaultFolders('http://x', 't').catch((e: unknown) => e)
+    expect((error as VaultError).code).toBe('unavailable')
+  })
+})
+
+describe('opening a folder that may not exist yet', () => {
+  it('sends create only when asked to', async () => {
+    const fetchMock = answer(200, { id: 'i', name: 'Campus' })
+    vi.stubGlobal('fetch', fetchMock)
+
+    await openVaultSession('http://x', 't', '/home/ana/Campus', { create: true })
+    await openVaultSession('http://x', 't', '/home/ana/Campus')
+
+    const bodies = (fetchMock.mock.calls as unknown as [string, RequestInit][]).map(
+      ([, init]) => JSON.parse(String(init.body)) as unknown,
+    )
+    expect(bodies).toEqual([
+      { path: '/home/ana/Campus', create: true },
+      { path: '/home/ana/Campus' },
+    ])
   })
 })

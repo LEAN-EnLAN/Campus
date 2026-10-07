@@ -1,6 +1,6 @@
 import { randomBytes } from 'node:crypto'
 import { homedir } from 'node:os'
-import { dirname, isAbsolute, join, resolve } from 'node:path'
+import { basename, dirname, isAbsolute, join, resolve } from 'node:path'
 
 import { VaultConflictError, VaultError, vaultErrorFromSystem } from '../lib/vault/errors'
 import type { VaultErrorCode } from '../lib/vault/errors'
@@ -181,7 +181,30 @@ export class VaultSessions {
     return out
   }
 
-  async open(path: string): Promise<{ id: string; name: string }> {
+  /**
+   * Make the folder `path` names, when it is missing, so `open` can take it.
+   *
+   * ONE level, inside a parent that already exists and that `admit` accepts: the
+   * parent gets exactly the confinement `open` gives any folder (roots, symlinks
+   * resolved), so a link out, a `..` or a missing grandparent refuses before
+   * anything is made. A folder that is already there is left for `admit` to judge.
+   */
+  private async ensureFolder(path: string): Promise<void> {
+    if (!isAbsolute(path)) throw new VaultError('folder_not_absolute', 'path is not absolute')
+    const target = resolve(path)
+    const parent = dirname(target)
+    if (parent === target) return
+    if ((await nodeFileSystem.lstat(target)) !== null) return
+
+    const realParent = await this.admit(parent)
+    await nodeFileSystem.mkdirp(join(realParent, basename(target)))
+  }
+
+  async open(
+    path: string,
+    options: { create?: boolean } = {},
+  ): Promise<{ id: string; name: string }> {
+    if (options.create) await this.ensureFolder(path)
     // Resolved once, on the privileged side, and stored resolved — so a symlink
     // swapped in afterwards cannot move the root out from under the repository.
     const real = await this.admit(path)
@@ -328,8 +351,12 @@ export async function handleVaultRequest(
     if (typeof target !== 'string' || target.length === 0) {
       return reply(400, { ok: false, code: 'bad_request', error: 'path required' })
     }
+    const create = payload.create
+    if (create !== undefined && typeof create !== 'boolean') {
+      return reply(400, { ok: false, code: 'bad_request', error: 'create must be a boolean' })
+    }
     try {
-      return reply(200, await sessions.open(target))
+      return reply(200, await sessions.open(target, { create: create === true }))
     } catch (error) {
       const failure = vaultErrorFromSystem(error)
       return reply(folderStatus(failure.code), {

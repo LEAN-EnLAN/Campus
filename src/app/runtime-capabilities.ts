@@ -5,6 +5,7 @@ import { createSupabaseBackend } from '@/lib/backends/supabase-backend'
 import { isVaultAvailable, type BuildEnv } from '@/lib/runtime/build-flags'
 import { browserDeviceStore } from '@/lib/runtime/device-config'
 import type { RuntimeCapabilities } from '@/lib/runtime/resolve'
+import { VaultError } from '@/lib/vault/errors'
 import { httpVaultAccess, openVaultSession, vaultExists } from '@/lib/vault/http-vault-access'
 
 import { fetchCatalogFile } from './catalog-fetch'
@@ -53,7 +54,21 @@ export function resolveRuntimeCapabilities(
 
     store: browserDeviceStore(),
 
-    vaultExists: (path) => vaultExists(baseUrl, token, path),
+    vaultExists: async (path) => {
+      if (await vaultExists(baseUrl, token, path)) return true
+      // `exists` answers false for a folder that is gone and for one outside the
+      // allowed roots alike (it must not be an oracle for the disk). Telling a
+      // student "it moved" about a folder that is merely not allowed sends them
+      // hunting for the wrong problem, so ask `open`: its refusal carries the
+      // code, and only a plain "not found" stays a missing vault.
+      try {
+        await openVaultSession(baseUrl, token, path)
+        return true
+      } catch (cause) {
+        if (cause instanceof VaultError && cause.code !== 'folder_not_found') throw cause
+        return false
+      }
+    },
 
     openLocal: async (vault) => {
       const session = await openVaultSession(baseUrl, token, vault.path)

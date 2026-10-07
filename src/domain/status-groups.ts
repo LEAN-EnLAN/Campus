@@ -19,6 +19,26 @@ export const STATUS_GROUPS: readonly { id: StatusGroupId; label: string }[] = [
   { id: 'aprobadas', label: 'Aprobadas' },
 ]
 
+/**
+ * How a subject's status reads, everywhere: chips, rows, the board, search.
+ * One table so no screen words a status on its own ("Disponible" is a claim
+ * about correlativas; the wording lives here, next to the groups it names).
+ */
+const STATUS_LABEL: Record<SubjectStatus, string> = {
+  passed: 'Aprobada',
+  equivalent: 'Equivalencia',
+  in_progress: 'Cursando',
+  regularized: 'Regularizada',
+  available: 'Disponible para cursar',
+  pending: 'Sin marcar',
+  blocked: 'Bloqueada',
+  failed: 'Desaprobada',
+}
+
+export function statusLabel(status: SubjectStatus): string {
+  return STATUS_LABEL[status]
+}
+
 /** The group a status belongs to, or null for derived/negative states that are not a lane. */
 export function statusGroupOf(status: SubjectStatus): StatusGroupId | null {
   switch (status) {

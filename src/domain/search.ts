@@ -1,4 +1,5 @@
-import type { AcademicItem, Resource, SubjectView } from './types'
+import { statusLabel } from './status-groups'
+import type { AcademicItem, Resource, SubjectStatus, SubjectView } from './types'
 
 /**
  * CAP-SEARCH-001 — find a materia, task or resource by partial text.
@@ -57,21 +58,9 @@ function score(haystack: string, needle: string): number | null {
   return (isWordStart ? 1000 : 2000) + index + haystack.length
 }
 
-const SUBJECT_LABEL: Record<string, string> = {
-  passed: 'Aprobada',
-  equivalent: 'Equivalencia',
-  in_progress: 'Cursando',
-  regularized: 'Regularizada',
-  available: 'Disponible para cursar',
-  blocked: 'Bloqueada',
-  pending: 'Sin marcar',
-  failed: 'Desaprobada',
-}
-
 /** The status as the student reads it. Unknown correlativas never read as "available". */
-function statusWording(status: string, prerequisitesKnown: boolean): string {
-  const effective = status === 'available' && !prerequisitesKnown ? 'pending' : status
-  return SUBJECT_LABEL[effective] ?? effective
+function statusWording(status: SubjectStatus, prerequisitesKnown: boolean): string {
+  return statusLabel(status === 'available' && !prerequisitesKnown ? 'pending' : status)
 }
 
 export function search(

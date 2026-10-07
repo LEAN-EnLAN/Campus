@@ -24,29 +24,15 @@ const local = (y: number, mo: number, d: number, h = 0, mi = 0) =>
 
 describe('describeItemDate', () => {
   it('shows weekday and day/month', () => {
-    expect(describeItemDate(item('a', local(2026, 10, 23, 18, 30))).date).toBe('vie 23/10')
-  })
-
-  it('shows the time only when one was set', () => {
-    expect(describeItemDate(item('a', local(2026, 10, 23, 18, 30))).time).toBe('18:30')
-  })
-
-  it('never shows the 23:59 placeholder as if the student chose it', () => {
-    expect(describeItemDate(item('a', local(2026, 10, 23, 23, 59))).time).toBeNull()
-  })
-
-  it('treats a bare date (local midnight) as having no time', () => {
-    const d = describeItemDate(item('a', local(2026, 10, 23)))
-    expect(d.date).toBe('vie 23/10')
-    expect(d.time).toBeNull()
+    expect(describeItemDate(item('a', local(2026, 10, 23, 18, 30)))).toBe('vie 23/10')
   })
 
   it('says "Sin fecha" for an undated item', () => {
-    expect(describeItemDate(item('a', null))).toEqual({ date: 'Sin fecha', time: null })
+    expect(describeItemDate(item('a', null))).toBe('Sin fecha')
   })
 
   it('anchors on the due date, falling back to the start', () => {
-    expect(describeItemDate(item('a', null, local(2026, 11, 2, 9, 0))).date).toBe('lun 2/11')
+    expect(describeItemDate(item('a', null, local(2026, 11, 2, 9, 0)))).toBe('lun 2/11')
   })
 })
 

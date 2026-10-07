@@ -131,7 +131,7 @@ export const campusHighlight = syntaxHighlighting(
       textDecoration: 'line-through',
       color: 'var(--color-ink-muted)',
     },
-    { tag: tags.link, color: 'var(--color-accent)' },
+    { tag: tags.link, color: 'var(--color-accent-ink)' },
     { tag: tags.url, color: 'var(--color-ink-muted)' },
     { tag: tags.quote, color: 'var(--color-ink-muted)', fontStyle: 'italic' },
     {
@@ -147,7 +147,7 @@ export const campusHighlight = syntaxHighlighting(
     // Code-block languages students actually use — lezer resolves these via
     // @codemirror/language-data lazily, these tags style the fence body.
     { tag: tags.keyword, color: 'var(--color-accent-ink, var(--color-accent))' },
-    { tag: tags.string, color: 'var(--color-success, #2f7d4f)' },
+    { tag: tags.string, color: 'var(--color-success-ink)' },
     { tag: tags.comment, color: 'var(--color-ink-muted)', fontStyle: 'italic' },
     { tag: [tags.number, tags.bool], color: 'var(--color-warning, #a06500)' },
   ]),

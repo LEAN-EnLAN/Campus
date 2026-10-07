@@ -1,3 +1,6 @@
+import { vaultErrorMessage } from '@/lib/vault/error-messages'
+import { VaultError } from '@/lib/vault/errors'
+
 import { readDeviceConfig, type DeviceStore } from './device-config'
 import type { CampusRuntime, StartupState, VaultDescriptor } from './types'
 
@@ -102,8 +105,15 @@ export async function resolveCampusRuntime(caps: RuntimeCapabilities): Promise<S
   return { status: 'needs-choice' }
 }
 
-/** Whatever was thrown, as something a student can read. */
+/**
+ * Whatever was thrown, as something a student can read.
+ *
+ * A Vault refusal (or an unreachable server) is said by its CODE, in the one
+ * Spanish table: its own text is English and a remembered vault that now sits
+ * outside the allowed folders must read as exactly that, not as a bare message.
+ */
 function reasonOf(cause: unknown): string {
+  if (cause instanceof VaultError || cause instanceof TypeError) return vaultErrorMessage(cause)
   const message = cause instanceof Error ? cause.message : String(cause)
   return message.trim().length > 0 ? message : 'no sabemos por qué'
 }

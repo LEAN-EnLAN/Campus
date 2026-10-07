@@ -31,7 +31,14 @@ function vault() {
 async function mount(disk: FakeDisk | null) {
   const view = render(
     <FilesProvider access={disk ? disk.access() : null}>
-      <SearchPalette open onOpenChange={() => {}} subjects={[]} items={[]} resources={[]} />
+      <SearchPalette
+        open
+        onOpenChange={() => {}}
+        subjects={[]}
+        items={[]}
+        resources={[]}
+        prerequisitesKnown
+      />
     </FilesProvider>,
   )
   await act(async () => void (await new Promise((r) => setTimeout(r, 30))))

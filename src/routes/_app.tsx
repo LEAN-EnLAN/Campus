@@ -160,6 +160,7 @@ function AppFrame() {
         subjects={plan.views}
         items={itemsQuery.data ?? []}
         resources={resourcesQuery.data ?? []}
+        prerequisitesKnown={plan.prerequisitesKnown}
       />
     </>
   )

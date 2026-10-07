@@ -1,5 +1,7 @@
 import { spawn } from 'node:child_process'
 import { createConnection } from 'node:net'
+import { homedir, tmpdir } from 'node:os'
+import { delimiter, resolve } from 'node:path'
 
 /**
  * Start a dev server, wait for it to actually serve, and always clean up.
@@ -38,6 +40,25 @@ export async function portInUse(port, host = '127.0.0.1') {
 }
 
 /**
+ * The environment for a dev server a verify script spawns.
+ *
+ * The scripts build their vaults under /tmp, and the Vault API only opens
+ * folders under CAMPUS_VAULT_ALLOWED_ROOTS (default: home). Without this the
+ * server refuses them as "outside the allowed folders" and the journey fails at
+ * its first step. An explicit list from the caller or from the operator's own
+ * environment wins untouched; the filesystem root is never added.
+ */
+export function devServerEnv(env = {}) {
+  const explicit = [
+    env.CAMPUS_VAULT_ALLOWED_ROOTS,
+    process.env.CAMPUS_VAULT_ALLOWED_ROOTS,
+  ].find((value) => typeof value === 'string' && value.trim().length > 0)
+  const roots =
+    explicit ?? [...new Set([resolve(homedir()), resolve(tmpdir()), '/tmp'])].join(delimiter)
+  return { ...process.env, ...env, CAMPUS_VAULT_ALLOWED_ROOTS: roots }
+}
+
+/**
  * @param {object} options
  * @param {string[]} options.args        arguments after `pnpm`
  * @param {Record<string,string>} [options.env]
@@ -55,7 +76,7 @@ export async function startDevServer({
 } = {}) {
   const child = spawn('pnpm', args, {
     cwd,
-    env: { ...process.env, ...env },
+    env: devServerEnv(env),
     stdio: ['ignore', 'pipe', 'pipe'],
   })
 

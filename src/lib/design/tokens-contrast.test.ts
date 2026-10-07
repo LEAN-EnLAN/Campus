@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs'
+import { readdirSync, readFileSync } from 'node:fs'
 
 import { describe, expect, it } from 'vitest'
 
@@ -107,4 +107,47 @@ describe('calendar chips (text, 4.5:1)', () => {
       }
     })
   }
+})
+
+describe('text colours chosen in code (4.5:1)', () => {
+  const editorTheme = readFileSync('src/components/workspace/editor-theme.ts', 'utf8')
+
+  /** The token a highlight rule paints with, e.g. `{ tag: tags.link, color: 'var(--color-x)' }`. */
+  function highlightColor(tag: string): string {
+    const rule = new RegExp(`tag: tags\\.${tag},\\s*color: 'var\\(--color-([a-z-]+)`).exec(
+      editorTheme,
+    )
+    if (!rule) throw new Error(`editor theme has no colour for tags.${tag}`)
+    return rule[1]!
+  }
+
+  describe.each(['light', 'dark'] as const)('%s theme', (theme) => {
+    it.each(['link', 'string', 'keyword'])(
+      'editor highlight of tags.%s reads on the paper',
+      (tag) => {
+        expect(ratio(theme, highlightColor(tag), 'paper-elevated')).toBeGreaterThanOrEqual(4.5)
+      },
+    )
+  })
+
+  it('names the ink variants for links and strings, not the fill tokens', () => {
+    expect(highlightColor('link')).toBe('accent-ink')
+    expect(highlightColor('string')).toBe('success-ink')
+  })
+
+  it('never paints text with the --color-success fill (it is a fill, ~3:1 as text)', () => {
+    const offenders: string[] = []
+    const walk = (dir: string) => {
+      for (const entry of readdirSync(dir, { withFileTypes: true })) {
+        const path = `${dir}/${entry.name}`
+        if (entry.isDirectory()) walk(path)
+        else if (/\.tsx?$/.test(entry.name) && !/\.test\./.test(entry.name)) {
+          if (/(?<![\w-])text-success(?![\w-])/.test(readFileSync(path, 'utf8')))
+            offenders.push(path)
+        }
+      }
+    }
+    walk('src')
+    expect(offenders).toEqual([])
+  })
 })

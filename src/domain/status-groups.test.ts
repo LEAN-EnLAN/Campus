@@ -6,6 +6,7 @@ import {
   defaultStatusFilter,
   groupByStatus,
   statusGroupOf,
+  statusLabel,
   type StatusGroupId,
 } from './status-groups'
 import { state, subject } from './test-fixtures'
@@ -85,5 +86,14 @@ describe('defaultStatusFilter', () => {
 
   it('does not offer disponibles when the plan has no known correlativas', () => {
     expect(defaultStatusFilter(counts({ disponibles: 5 }), false)).toBe('todas')
+  })
+})
+
+describe('statusLabel', () => {
+  it('names every status the way the whole app reads it', () => {
+    expect(statusLabel('available')).toBe('Disponible para cursar')
+    expect(statusLabel('pending')).toBe('Sin marcar')
+    expect(statusLabel('blocked')).toBe('Bloqueada')
+    expect(statusLabel('regularized')).toBe('Regularizada')
   })
 })

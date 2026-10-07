@@ -1,5 +1,6 @@
 import { execFileSync } from 'node:child_process'
-import { readdirSync, readFileSync } from 'node:fs'
+import { cpSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
 import { describe, expect, it } from 'vitest'
@@ -61,21 +62,28 @@ describe('portable academic catalog', () => {
   })
 
   it('is regenerable — running the generator produces no diff', () => {
-    const before = readdirSync(join(CATALOG, 'curricula'))
-      .sort()
-      .map((f) => readFileSync(join(CATALOG, 'curricula', f), 'utf8'))
-      .join('\n')
+    // Generated in a COPY of the sources. The generator deletes and rewrites its
+    // output directory, so running it over the live public/academic-catalog made
+    // every other test file reading that directory in parallel race with it
+    // (prerequisite-provenance, local-backend, ...): an intermittent ENOENT.
+    const dir = mkdtempSync(join(tmpdir(), 'campus-regen-'))
+    try {
+      cpSync(join(ROOT, 'docs'), join(dir, 'docs'), { recursive: true })
+      cpSync(join(ROOT, 'scripts'), join(dir, 'scripts'), { recursive: true })
+      execFileSync('node', ['scripts/generate-catalog.mjs'], { cwd: dir, stdio: 'ignore' })
 
-    execFileSync('node', ['scripts/generate-catalog.mjs'], { cwd: ROOT, stdio: 'ignore' })
+      const read = (root: string) =>
+        readdirSync(join(root, 'curricula'))
+          .sort()
+          .map((f) => readFileSync(join(root, 'curricula', f), 'utf8'))
+          .join('\n')
 
-    const after = readdirSync(join(CATALOG, 'curricula'))
-      .sort()
-      .map((f) => readFileSync(join(CATALOG, 'curricula', f), 'utf8'))
-      .join('\n')
-
-    // A hand-edit of the catalog would show up here, which is the point: there is
-    // one source of truth and this is not it.
-    expect(after).toBe(before)
+      // A hand-edit of the catalog would show up here, which is the point: there is
+      // one source of truth and this is not it.
+      expect(read(join(dir, 'public/academic-catalog'))).toBe(read(CATALOG))
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
   })
 
   it('carries the same subject count as the research it came from', () => {

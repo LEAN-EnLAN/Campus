@@ -34,7 +34,7 @@ function Group({
             >
               {item.name}
             </Link>
-            <span className={item.met ? 'text-success text-sm' : 'text-ink-muted text-sm'}>
+            <span className={item.met ? 'text-success-ink text-sm' : 'text-ink-muted text-sm'}>
               {item.met ? '— cumplida' : `— te falta ${verb}la`}
             </span>
           </li>

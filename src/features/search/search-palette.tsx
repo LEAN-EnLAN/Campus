@@ -29,7 +29,7 @@ export function SearchPalette({
   subjects,
   items,
   resources,
-  prerequisitesKnown = true,
+  prerequisitesKnown,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -37,7 +37,7 @@ export function SearchPalette({
   items: readonly AcademicItem[]
   resources: readonly Resource[]
   /** Whether the plan's correlativas are known; unknown ones never read as "Disponible". */
-  prerequisitesKnown?: boolean
+  prerequisitesKnown: boolean
 }) {
   const navigate = useNavigate()
   const listId = useId()

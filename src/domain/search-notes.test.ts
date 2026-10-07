@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest'
 
 import { computeSubjectViews } from './availability'
 import { normalize, noteResults, search } from './search'
-import type { CurriculumSubject } from './types'
+import { statusLabel } from './status-groups'
+import type { CurriculumSubject, SubjectStatus, SubjectView } from './types'
 
 describe('noteResults', () => {
   const hits = [
@@ -64,5 +65,23 @@ describe('subject status wording in results', () => {
     )
     expect(result?.subtitle).not.toMatch(/Disponible/)
     expect(result?.subtitle).toContain('Sin marcar')
+  })
+
+  it('uses the shared label of every status, never wording of its own', () => {
+    const all: SubjectStatus[] = [
+      'passed',
+      'equivalent',
+      'in_progress',
+      'regularized',
+      'available',
+      'blocked',
+      'pending',
+      'failed',
+    ]
+    for (const status of all) {
+      const view: SubjectView = { ...subjects[0]!, status }
+      const [result] = search({ subjects: [view], items: [], resources: [] }, 'fisica')
+      expect(result?.subtitle).toBe(`1° año · ${statusLabel(status)}`)
+    }
   })
 })

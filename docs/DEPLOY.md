@@ -76,7 +76,11 @@ commit the result, then push again.
     link (`detectSessionInUrl: true`), signing the student in. The default Supabase
     SMTP is heavily rate limited (a few e-mails per hour): configure a custom SMTP
     under Authentication > SMTP before a public launch.
-- There is no password-reset flow yet.
+- **Password recovery**: "¿Olvidaste tu contraseña?" on `/login` sends an email
+  through Supabase Auth. The callback is `<origin>/login?recovery=1`, where Campus
+  asks for the new password. Keep the allowed Redirect URLs up to date for each
+  production/preview origin. Test the email flow with your configured SMTP
+  before opening registration publicly.
 - Leave anonymous sign-ins disabled (the local config does too).
 
 ## 3. Vercel environment variables

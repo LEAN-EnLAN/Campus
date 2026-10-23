@@ -11,10 +11,13 @@ import { renderRoute } from '../helpers/render-route'
 const auth = vi.hoisted(() => ({
   signIn: vi.fn(),
   signUp: vi.fn(),
+  sendPasswordReset: vi.fn(),
+  updatePassword: vi.fn(),
+  session: null as { user: { id: string } } | null,
 }))
 
 vi.mock('@/features/auth/auth-context', () => ({
-  useAuth: () => ({ ...auth, session: null, loading: false }),
+  useAuth: () => ({ ...auth, loading: false }),
 }))
 
 const Login = Route.options.component as () => ReactNode
@@ -30,7 +33,11 @@ const mount = () =>
 beforeEach(() => {
   auth.signIn = vi.fn()
   auth.signUp = vi.fn()
+  auth.sendPasswordReset = vi.fn()
+  auth.updatePassword = vi.fn()
+  auth.session = null
   change.mockReset()
+  window.history.replaceState({}, '', '/login')
 })
 
 describe('/login', () => {
@@ -74,5 +81,35 @@ describe('/login', () => {
     await user.click(screen.getByRole('button', { name: 'Crear cuenta' }))
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Campus Cloud no responde ahora')
+  })
+
+  it('requests a recovery link without revealing whether an account exists', async () => {
+    const user = userEvent.setup()
+    auth.sendPasswordReset = vi.fn(async () => ({ error: null }))
+    mount()
+
+    await user.click(await screen.findByRole('button', { name: 'Entrá' }))
+    await user.click(screen.getByRole('button', { name: '¿Olvidaste tu contraseña?' }))
+    expect(screen.queryByLabelText('Contraseña')).not.toBeInTheDocument()
+    await user.type(screen.getByLabelText(/Email/), 'cami@example.com')
+    await user.click(screen.getByRole('button', { name: 'Enviar enlace' }))
+
+    expect(auth.sendPasswordReset).toHaveBeenCalledWith('cami@example.com')
+    expect(await screen.findByRole('status')).toHaveTextContent('Si existe una cuenta')
+  })
+
+  it('requires matching passwords before changing one through a recovery link', async () => {
+    const user = userEvent.setup()
+    window.history.replaceState({}, '', '/login?recovery=1')
+    auth.session = { user: { id: 'student-1' } }
+    auth.updatePassword = vi.fn(async () => ({ error: null }))
+    mount()
+
+    await user.type(await screen.findByLabelText(/Nueva contraseña/), 'nueva-clave')
+    await user.type(screen.getByLabelText(/Repetí la nueva contraseña/), 'diferente')
+    await user.click(screen.getByRole('button', { name: 'Guardar contraseña' }))
+
+    expect(screen.getByText('Las contraseñas no coinciden.')).toBeInTheDocument()
+    expect(auth.updatePassword).not.toHaveBeenCalled()
   })
 })

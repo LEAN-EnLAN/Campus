@@ -16,6 +16,8 @@ interface AuthValue {
     password: string,
     displayName: string,
   ) => Promise<{ error: string | null; needsConfirmation: boolean }>
+  sendPasswordReset: (email: string) => Promise<{ error: string | null }>
+  updatePassword: (password: string) => Promise<{ error: string | null }>
   signOut: () => Promise<void>
 }
 
@@ -89,6 +91,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // With "Confirm email" on, the account exists but there is no session
         // until the link is followed.
         return { error: null, needsConfirmation: data.session === null }
+      },
+      sendPasswordReset: async (email) => {
+        try {
+          const { error } = await supabase.auth.resetPasswordForEmail(email, {
+            redirectTo: `${window.location.origin}/login?recovery=1`,
+          })
+          return { error: error ? translateAuthError(error.message, navigator.onLine) : null }
+        } catch (cause) {
+          return { error: translateAuthError(String(cause), navigator.onLine) }
+        }
+      },
+      updatePassword: async (password) => {
+        try {
+          const { error } = await supabase.auth.updateUser({ password })
+          return { error: error ? translateAuthError(error.message, navigator.onLine) : null }
+        } catch (cause) {
+          return { error: translateAuthError(String(cause), navigator.onLine) }
+        }
       },
       signOut: async () => {
         await supabase.auth.signOut()

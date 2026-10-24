@@ -15,6 +15,10 @@ ni acceden a credenciales de producción.
 estático con variables de prueba y el análisis `deploy:check` del bundle.
 `database` inicia Supabase local en Docker, aplica migraciones/seed y ejecuta
 `test:db` con claves obtenidas localmente, verificando las políticas RLS.
+El wrapper `scripts/with-supabase-env.mjs` transmite la URL y la clave pública
+locales tanto como `SUPABASE_*` para las pruebas como `VITE_SUPABASE_*`
+para el adaptador que importa el cliente real mediante `import.meta.env`.
+Esto evita un fallo de carga previo a ejecutar `tests/db/conformance.test.ts`.
 
 Los tests que ejercitan enlaces simbólicos se ejecutan en Ubuntu. En Windows,
 `symlinkSync` puede fallar con `EPERM` sin el modo de desarrollador o los permisos

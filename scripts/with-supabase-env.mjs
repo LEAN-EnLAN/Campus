@@ -35,10 +35,17 @@ function readStatus() {
 
 const status = readStatus()
 
+const localUrl = status.API_URL ?? 'http://127.0.0.1:54321'
+const localAnonKey = status.ANON_KEY ?? ''
 const env = {
   ...process.env,
-  SUPABASE_URL: status.API_URL ?? 'http://127.0.0.1:54321',
-  SUPABASE_ANON_KEY: status.ANON_KEY ?? '',
+  SUPABASE_URL: localUrl,
+  SUPABASE_ANON_KEY: localAnonKey,
+  // The conformance suite imports the production adapter, whose default client
+  // is initialized from import.meta.env at module load time. Vitest exposes
+  // VITE_* values from the child process environment, not the SUPABASE_ vars.
+  VITE_SUPABASE_URL: localUrl,
+  VITE_SUPABASE_ANON_KEY: localAnonKey,
   SUPABASE_SERVICE_ROLE_KEY: status.SERVICE_ROLE_KEY ?? '',
   SUPABASE_DB_URL: status.DB_URL ?? '',
 }

@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "title": "Campus Hoy visual proposals — native ImageGen only",
+  "status": "blocked_native_imagegen_unavailable",
+  "checked_on": "2026-10-24",
+  "source_research_commit": "b91e847",
+  "source_product_commit": "fd8a832",
+  "target_branch": "research/campus-ux-study",
+  "generation_policy": {
+    "engine": "ChatGPT built-in native ImageGen",
+    "calls_per_mockup": 1,
+    "forbidden": [
+      "Canva",
+      "Adobe Express",
+      "third-party image generation APIs",
+      "CLI image generators",
+      "programmatic SVG/HTML/CSS render",
+      "browser screenshots represented as ImageGen output"
+    ]
+  },
+  "availability": {
+    "native_imagegen_tool_exposed": false,
+    "save_image_connector_exposed": true,
+    "reason": "No native ImageGen action exists in this worker's exposed tools. save_image only exports originals previously generated in this chat; no such originals exist for this task."
+  },
+  "generated_count": 0,
+  "original_assets": [],
+  "viewed_images": [],
+  "asset_urls": [],
+  "proposals": [
+    {
+      "id": "H-D01-A",
+      "route": "/today",
+      "direction": "Cuaderno editorial",
+      "viewport_requested": [1440, 900],
+      "state": "prompt_ready_not_generated",
+      "prompt": "prompts/H-D01-A.md",
+      "proposed_original_filename_not_created": "hoy-desktop-A-cuaderno-original.png"
+    },
+    {
+      "id": "H-D01-B",
+      "route": "/today",
+      "direction": "Agenda de precisión",
+      "viewport_requested": [1440, 900],
+      "state": "prompt_ready_not_generated",
+      "prompt": "prompts/H-D01-B.md",
+      "proposed_original_filename_not_created": "hoy-desktop-B-agenda-original.png"
+    },
+    {
+      "id": "H-D01-C",
+      "route": "/today",
+      "direction": "Mesa de estudio",
+      "viewport_requested": [1440, 900],
+      "state": "prompt_ready_not_generated",
+      "prompt": "prompts/H-D01-C.md",
+      "proposed_original_filename_not_created": "hoy-desktop-C-mesa-original.png"
+    },
+    {
+      "id": "H-M01-A",
+      "route": "/today",
+      "direction": "Cuaderno editorial mobile",
+      "viewport_requested": [390, 844],
+      "state": "prompt_ready_not_generated",
+      "prompt": "prompts/H-M01-A.md",
+      "proposed_original_filename_not_created": "hoy-mobile-A-cuaderno-original.png"
+    }
+  ],
+  "qa": {
+    "image_fidelity_checked": false,
+    "reason_not_checked": "No generated images to inspect",
+    "product_source_reviewed": true,
+    "user_visual_approval": "pending"
+  }
+}

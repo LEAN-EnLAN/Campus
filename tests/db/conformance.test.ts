@@ -113,15 +113,35 @@ describe('A-10 — both adapters answer the same contract', () => {
     ]
   }, 60_000)
 
-  it('both expose exactly the sixteen methods', async () => {
+  it('both expose the full current backend contract', async () => {
+    // Exact method names protect against drift in either adapter. The old
+    // hardcoded count (16) went stale when batch status and manual subjects
+    // brought the interface to 20 methods, although both adapters conformed.
+    const expected = {
+      catalog: ['academicUnits', 'curricula', 'curriculumBundle', 'institutions', 'programs'],
+      academic: [
+        'addManualSubject',
+        'context',
+        'manualSubjects',
+        'removeManualSubject',
+        'saveContext',
+        'setSubjectStatus',
+        'setSubjectStatuses',
+        'subjectStates',
+      ],
+      items: ['create', 'list', 'remove', 'setDone'],
+      resources: ['create', 'list', 'remove'],
+    }
     for (const fixture of fixtures) {
       const b = await fixture.backend()
-      const count =
-        Object.keys(b.catalog).length +
-        Object.keys(b.academic).length +
-        Object.keys(b.items).length +
-        Object.keys(b.resources).length
-      expect(count, `${fixture.name} exposes ${count} methods`).toBe(16)
+      expect(Object.keys(b.catalog).sort(), `${fixture.name} catalog`).toEqual(expected.catalog)
+      expect(Object.keys(b.academic).sort(), `${fixture.name} academic`).toEqual(
+        expected.academic,
+      )
+      expect(Object.keys(b.items).sort(), `${fixture.name} items`).toEqual(expected.items)
+      expect(Object.keys(b.resources).sort(), `${fixture.name} resources`).toEqual(
+        expected.resources,
+      )
     }
   })
 

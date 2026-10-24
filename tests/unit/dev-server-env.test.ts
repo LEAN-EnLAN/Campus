@@ -42,7 +42,9 @@ describe('dev server spawned by the verify scripts', () => {
     expect(rejected).toEqual([])
     expect(roots).toContain(resolve(homedir()))
     expect(roots).toContain(resolve(tmpdir()))
-    expect(roots).toContain('/tmp')
+    // /tmp is an additional Linux fallback; on Windows tmpdir() is the real
+    // temporary folder and has already been asserted above.
+    if (process.platform !== 'win32') expect(roots).toContain('/tmp')
     expect(env.CAMPUS_VAULT_ALLOWED_ROOTS).toContain(delimiter)
   })
 

@@ -45,7 +45,9 @@ const ALLOWED = [
 ]
 
 describe('backend boundary', () => {
-  const files = walk(join(ROOT, 'src')).map((f) => relative(ROOT, f))
+  // The boundary is expressed as repository paths; on Windows node:path
+  // returns backslashes, which bypasses every forward-slash predicate below.
+  const files = walk(join(ROOT, 'src')).map((f) => relative(ROOT, f).replaceAll('\\', '/'))
 
   it('finds the source tree', () => {
     expect(files.length).toBeGreaterThan(20)

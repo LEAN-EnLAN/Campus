@@ -32,6 +32,9 @@ importers:
       '@codemirror/view':
         specifier: ^6.43.8
         version: 6.43.8
+      '@dayflow/core':
+        specifier: ^3.7.1
+        version: 3.7.1
       '@dayflow/react':
         specifier: ^3.7.1
         version: 3.7.1(@dayflow/core@3.7.1)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)

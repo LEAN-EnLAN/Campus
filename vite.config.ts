@@ -40,7 +40,12 @@ export default defineConfig(({ mode }) => ({
     __CAMPUS_TESTER__: JSON.stringify(isTesterEnabled(loadEnv(mode, process.cwd(), 'VITE_'))),
   },
   plugins: [
-    tanstackRouter({ target: 'react', autoCodeSplitting: true }),
+    tanstackRouter({
+      target: 'react',
+      autoCodeSplitting: true,
+      // Tests can live beside a route without entering the generated route tree.
+      routeFileIgnorePattern: '\\.test\\.[jt]sx?$',
+    }),
     react(),
     tailwindcss(),
     // Development only (`apply: 'serve'`). Mounts the Vault API so LOCAL mode

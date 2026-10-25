@@ -219,7 +219,21 @@ export class VaultRepository implements VaultAccess {
       }
     }
 
-    await this.fs.mkdirp(this.fs.dirname(absolute))
+    const parent = this.fs.dirname(absolute)
+    try {
+      await this.fs.mkdirp(parent)
+    } catch (error) {
+      // Node's recursive mkdir reports ENOTDIR on POSIX but EEXIST on Windows
+      // when a parent is a regular file. A missing directory is not a rename
+      // conflict. Check the *specific parent* before translating that errno.
+      if ((error as NodeJS.ErrnoException).code === 'EEXIST') {
+        const parentEntry = await this.fs.lstat(parent)
+        if (parentEntry !== null && parentEntry.kind !== 'dir') {
+          throw new VaultError('not_found', 'not found')
+        }
+      }
+      throw error
+    }
     await this.fs.writeFileAtomic(absolute, contents)
   }
 

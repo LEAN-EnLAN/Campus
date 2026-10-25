@@ -1,15 +1,11 @@
-import {
-  mkdirSync,
-  mkdtempSync,
-  realpathSync,
-  rmSync,
-  symlinkSync,
-  writeFileSync,
-} from 'node:fs'
+import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
+import { execFileSync } from 'node:child_process'
 import { homedir, tmpdir } from 'node:os'
 import { join } from 'node:path'
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+
+import { symlinkSync } from '../../tests/support/real-links'
 
 import { handleVaultRequest, mintToken, PREFIX, VaultSessions } from './vault-api'
 
@@ -107,17 +103,37 @@ describe('open', () => {
   })
 
   it('reports no permission as its own code', async () => {
-    // A path whose parent cannot be traversed. Skipped where the OS lets us through (root).
+    // An actual directory denied by the OS, never a mocked EACCES.
     if (process.getuid?.() === 0) return
     const locked = join(home, 'locked')
-    mkdirSync(join(locked, 'inner'), { recursive: true })
+    const inner = join(locked, 'inner')
+    mkdirSync(inner, { recursive: true })
     const { chmodSync } = await import('node:fs')
-    chmodSync(locked, 0o000)
+    const windows = process.platform === 'win32'
+    const identity = windows ? execFileSync('whoami', { encoding: 'utf8' }).trim() : ''
+    let deniedParent = false
+    let deniedChild = false
     try {
-      const res = await open(join(locked, 'inner'))
+      if (windows) {
+        // chmod(000) changes DOS attributes, not Windows directory ACLs.
+        // Deny access to both directories: a process with traverse privilege
+        // could otherwise resolve the child while the parent is unreadable.
+        execFileSync('icacls', [locked, '/deny', `${identity}:(F)`])
+        deniedParent = true
+        execFileSync('icacls', [inner, '/deny', `${identity}:(F)`])
+        deniedChild = true
+      } else {
+        chmodSync(locked, 0o000)
+      }
+      const res = await open(inner)
       expect(parse(res.body).code).toBe('permission_denied')
     } finally {
-      chmodSync(locked, 0o755)
+      if (windows) {
+        if (deniedParent) execFileSync('icacls', [locked, '/remove:d', identity])
+        if (deniedChild) execFileSync('icacls', [inner, '/remove:d', identity])
+      } else {
+        chmodSync(locked, 0o755)
+      }
     }
   })
 

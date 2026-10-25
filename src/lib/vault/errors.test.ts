@@ -1,8 +1,10 @@
-import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+
+import { symlinkSync } from '../../../tests/support/real-links'
 
 import { VAULT_ERROR_CODES, VaultConflictError, VaultError, vaultErrorCode } from './errors'
 import { vaultErrorMessage } from './error-messages'

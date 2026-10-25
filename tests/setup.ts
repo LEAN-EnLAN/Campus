@@ -24,3 +24,7 @@ if (!window.matchMedia) {
 if (!window.HTMLElement.prototype.scrollIntoView) {
   window.HTMLElement.prototype.scrollIntoView = vi.fn()
 }
+
+// jsdom exposes scrollTo but throws "Not implemented" whenever a screen
+// navigates; no browser viewport exists in a unit-test environment.
+window.scrollTo = vi.fn()

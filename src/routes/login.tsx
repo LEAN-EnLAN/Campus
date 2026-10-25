@@ -11,17 +11,20 @@ export const Route = createFileRoute('/login')({
   component: LoginScreen,
 })
 
-type Mode = 'signin' | 'signup'
+type Mode = 'signin' | 'signup' | 'forgot' | 'recovery'
 
 function LoginScreen() {
-  const { signIn, signUp, session, loading } = useAuth()
+  const { signIn, signUp, sendPasswordReset, updatePassword, session, loading } = useAuth()
   const workspace = useWorkspace()
   useDocumentTitle('Entrar · Campus')
   const navigate = useNavigate()
 
-  const [mode, setMode] = useState<Mode>('signup')
+  const [mode, setMode] = useState<Mode>(() =>
+    new URLSearchParams(window.location.search).has('recovery') ? 'recovery' : 'signup',
+  )
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
   const [displayName, setDisplayName] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
@@ -29,8 +32,10 @@ function LoginScreen() {
   const [submitted, setSubmitted] = useState(false)
 
   useEffect(() => {
-    if (!loading && session) void navigate({ to: '/today' })
-  }, [loading, session, navigate])
+    // A recovery link signs the student in temporarily. Stay on this screen
+    // until they set a new password instead of redirecting to the dashboard.
+    if (!loading && session && mode !== 'recovery') void navigate({ to: '/today' })
+  }, [loading, session, navigate, mode])
 
   const emailError =
     email.trim() === ''
@@ -40,6 +45,17 @@ function LoginScreen() {
         : null
   const passwordError =
     password.length < 6 ? 'La contraseña tiene que tener al menos 6 caracteres.' : null
+  const confirmPasswordError =
+    confirmPassword !== password ? 'Las contraseñas no coinciden.' : null
+
+  const changeMode = (next: Mode) => {
+    setMode(next)
+    setError(null)
+    setNotice(null)
+    setSubmitted(false)
+    setPassword('')
+    setConfirmPassword('')
+  }
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault()
@@ -48,9 +64,34 @@ function LoginScreen() {
     setSubmitted(true)
     // Our own checks, in our own words. The form opts out of the browser's
     // (`noValidate`), whose text follows the browser language.
-    if (emailError || passwordError) return
+    if (
+      (mode !== 'recovery' && emailError) ||
+      (mode !== 'forgot' && (passwordError || (mode === 'recovery' && confirmPasswordError)))
+    )
+      return
+    if (mode === 'recovery' && !session) {
+      setError('El enlace venció o todavía no se pudo validar. Pedí uno nuevo desde Entrar.')
+      return
+    }
     setPending(true)
 
+    if (mode === 'forgot') {
+      const result = await sendPasswordReset(email.trim())
+      setPending(false)
+      if (result.error) setError(result.error)
+      else
+        setNotice(
+          'Si existe una cuenta con ese email, te enviamos un enlace para recuperar tu contraseña.',
+        )
+      return
+    }
+    if (mode === 'recovery') {
+      const result = await updatePassword(password)
+      setPending(false)
+      if (result.error) setError(result.error)
+      else void navigate({ to: '/today' })
+      return
+    }
     const result =
       mode === 'signin'
         ? { ...(await signIn(email.trim(), password)), needsConfirmation: false }
@@ -95,12 +136,22 @@ function LoginScreen() {
             Campus
           </p>
           <h1 className="text-ink mt-6 font-serif text-2xl leading-tight">
-            {mode === 'signup' ? 'Tu cursada, ordenada.' : 'Bienvenido de vuelta.'}
+            {mode === 'signup'
+              ? 'Tu cursada, ordenada.'
+              : mode === 'signin'
+                ? 'Bienvenido de vuelta.'
+                : mode === 'forgot'
+                  ? 'Recuperá tu acceso.'
+                  : 'Elegí una nueva contraseña.'}
           </h1>
           <p className="text-ink-muted mt-2 text-sm">
             {mode === 'signup'
               ? 'Plan de estudios, materias, entregas y correlativas en un solo lugar.'
-              : 'Entrá para ver qué tenés hoy.'}
+              : mode === 'signin'
+                ? 'Entrá para ver qué tenés hoy.'
+                : mode === 'forgot'
+                  ? 'Te mandamos un enlace al email de tu cuenta.'
+                  : 'Guardala para volver a entrar a Campus.'}
           </p>
         </div>
 
@@ -115,26 +166,56 @@ function LoginScreen() {
             />
           ) : null}
 
-          <TextField
-            label="Email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            autoComplete="email"
-            error={submitted ? emailError : null}
-            required
-          />
+          {mode !== 'recovery' ? (
+            <TextField
+              label="Email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              autoComplete="email"
+              error={submitted ? emailError : null}
+              required
+            />
+          ) : null}
 
-          <TextField
-            label="Contraseña"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
-            hint={mode === 'signup' ? 'Mínimo 6 caracteres.' : undefined}
-            error={submitted ? passwordError : null}
-            required
-          />
+          {mode !== 'forgot' ? (
+            <TextField
+              label={mode === 'recovery' ? 'Nueva contraseña' : 'Contraseña'}
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              autoComplete={
+                mode === 'signup' || mode === 'recovery' ? 'new-password' : 'current-password'
+              }
+              hint={
+                mode === 'signup' || mode === 'recovery' ? 'Mínimo 6 caracteres.' : undefined
+              }
+              error={submitted ? passwordError : null}
+              required
+            />
+          ) : null}
+
+          {mode === 'recovery' ? (
+            <TextField
+              label="Repetí la nueva contraseña"
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              autoComplete="new-password"
+              error={submitted ? confirmPasswordError : null}
+              required
+            />
+          ) : null}
+
+          {mode === 'signin' ? (
+            <button
+              type="button"
+              onClick={() => changeMode('forgot')}
+              className="text-accent-ink self-start text-sm font-medium underline-offset-4 hover:underline"
+            >
+              ¿Olvidaste tu contraseña?
+            </button>
+          ) : null}
 
           {notice ? (
             <p role="status" className="text-ink text-sm font-medium">
@@ -149,21 +230,36 @@ function LoginScreen() {
           ) : null}
 
           <Button type="submit" variant="primary" size="lg" disabled={pending} className="mt-1">
-            {pending ? 'Un momento…' : mode === 'signup' ? 'Crear cuenta' : 'Entrar'}
+            {pending
+              ? 'Un momento…'
+              : mode === 'signup'
+                ? 'Crear cuenta'
+                : mode === 'signin'
+                  ? 'Entrar'
+                  : mode === 'forgot'
+                    ? 'Enviar enlace'
+                    : 'Guardar contraseña'}
           </Button>
         </form>
 
         <p className="text-ink-muted mt-6 text-sm">
-          {mode === 'signup' ? '¿Ya tenés cuenta?' : '¿Todavía no tenés cuenta?'}{' '}
+          {mode === 'signup'
+            ? '¿Ya tenés cuenta?'
+            : mode === 'signin'
+              ? '¿Todavía no tenés cuenta?'
+              : '¿Querés volver a entrar?'}{' '}
           <button
             type="button"
-            onClick={() => {
-              setMode(mode === 'signup' ? 'signin' : 'signup')
-              setError(null)
-            }}
+            onClick={() =>
+              changeMode(
+                mode === 'signup' || mode === 'forgot' || mode === 'recovery'
+                  ? 'signin'
+                  : 'signup',
+              )
+            }
             className="text-accent-ink font-medium underline-offset-4 hover:underline"
           >
-            {mode === 'signup' ? 'Entrá' : 'Creá una'}
+            {mode === 'signup' ? 'Entrá' : mode === 'signin' ? 'Creá una' : 'Entrar'}
           </button>
         </p>
 

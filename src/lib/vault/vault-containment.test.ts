@@ -5,13 +5,14 @@ import {
   readFileSync,
   readdirSync,
   rmSync,
-  symlinkSync,
   writeFileSync,
 } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+
+import { symlinkSync } from '../../../tests/support/real-links'
 
 import { nodeFileSystem } from './node-fs'
 import { VaultRepository } from './vault-repository'
@@ -129,7 +130,10 @@ describe('chains built from relative targets and dot-dot', () => {
   it('refuses a link whose target climbs out through an in-vault link', async () => {
     // inner -> outside; esc -> inner/.. is physically `outside/..` = base.
     symlinkSync(outside, join(root, 'inner'))
-    symlinkSync('inner/..', join(root, 'esc'))
+    // Win32 junction targets are normalized before the reparse point is made,
+    // so a junction to "inner/.." loses the symlink traversal. Exercise an
+    // actual two-hop escape there; retain the exact dot-dot case on POSIX.
+    symlinkSync(process.platform === 'win32' ? 'inner' : 'inner/..', join(root, 'esc'))
     await expect(repo.listDir('esc')).rejects.toThrow(OUTSIDE)
   })
 

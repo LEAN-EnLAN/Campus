@@ -8,25 +8,27 @@ describe('parseAllowedRoots', () => {
   const HOME = '/home/estudiante'
 
   it('defaults to the home directory when nothing is set', () => {
-    expect(parseAllowedRoots(undefined, HOME).roots).toEqual([HOME])
-    expect(parseAllowedRoots('', HOME).roots).toEqual([HOME])
-    expect(parseAllowedRoots('   ', HOME).roots).toEqual([HOME])
+    expect(parseAllowedRoots(undefined, HOME).roots).toEqual([resolve(HOME)])
+    expect(parseAllowedRoots('', HOME).roots).toEqual([resolve(HOME)])
+    expect(parseAllowedRoots('   ', HOME).roots).toEqual([resolve(HOME)])
   })
 
   it('an explicit list REPLACES the default, it does not extend it', () => {
     const { roots } = parseAllowedRoots(['/srv/vaults', '/mnt/usb'].join(delimiter), HOME)
-    expect(roots).toEqual(['/srv/vaults', '/mnt/usb'])
+    expect(roots).toEqual([resolve('/srv/vaults'), resolve('/mnt/usb')])
   })
 
   it('normalises trailing slashes and dot segments', () => {
-    expect(parseAllowedRoots('/srv/vaults/', HOME).roots).toEqual(['/srv/vaults'])
-    expect(parseAllowedRoots('/srv/./vaults/../vaults', HOME).roots).toEqual(['/srv/vaults'])
+    expect(parseAllowedRoots('/srv/vaults/', HOME).roots).toEqual([resolve('/srv/vaults')])
+    expect(parseAllowedRoots('/srv/./vaults/../vaults', HOME).roots).toEqual([
+      resolve('/srv/vaults'),
+    ])
   })
 
   it('drops what could never match instead of keeping a knob that is set but inert', () => {
     const raw = ['relative/dir', '~/vaults', '', '/ok', '/bad\0nul', '*'].join(delimiter)
     const { roots, rejected } = parseAllowedRoots(raw, HOME)
-    expect(roots).toEqual(['/ok'])
+    expect(roots).toEqual([resolve('/ok')])
     expect(rejected).toEqual(['relative/dir', '~/vaults', '/bad\0nul', '*'])
   })
 

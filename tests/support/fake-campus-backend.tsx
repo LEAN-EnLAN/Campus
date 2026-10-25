@@ -6,7 +6,7 @@ import {
   RouterProvider,
 } from '@tanstack/react-router'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { render } from '@testing-library/react'
+import { act, render } from '@testing-library/react'
 import type { ReactNode } from 'react'
 
 import type {
@@ -118,5 +118,9 @@ export async function renderScreen(screen: ReactNode, backend: CampusBackend) {
     history: createMemoryHistory({ initialEntries: ['/'] }),
   })
   render(<RouterProvider router={router} />)
-  await router.load()
+  // Router initial load updates matching React state asynchronously. Flush it
+  // before interacting with the academic screen or its mutation controls.
+  await act(async () => {
+    await router.load()
+  })
 }

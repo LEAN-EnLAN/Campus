@@ -76,7 +76,7 @@ describe('Cargar mi avance', () => {
     await waitFor(() => expect(store.states).toHaveLength(5 + 13))
     expect(store.states.filter((s) => s.status === 'passed')).toHaveLength(5 + 11)
     expect(store.states.filter((s) => s.status === 'in_progress')).toHaveLength(2)
-  })
+  }, 15_000)
 
   it('"Aprobé todo" is one bulk write and can be undone', async () => {
     const store = emptyStore({ subjects: plan() })

@@ -30,14 +30,56 @@ y 2 de semántica Windows (ACL y código de error). Las otras dos fallas de la
 pantalla no se reprodujeron en esa segunda corrida; requieren investigación
 de sincronización. Ninguna prueba de seguridad se desactivó.
 
+## Revalidación Fase 1 (24/10/2026)
+
+Se agregaron cinco pruebas de recuperación de cuenta (el total sube de
+1157 a 1162). Los cambios posteriores incluyen enlaces de directorio reales
+por junction, ACL temporal auténtica, normalización de error `mkdir` y
+espera de carga inicial del router dentro de React `act`. Se confirmó que
+`window.scrollTo` no está implementado en jsdom y se agregó un stub al
+entorno de pruebas, sin modificar código de aplicación.
+
+| Ejecución Windows                        | Aprobados | Fallidos |    Total |
+| ---------------------------------------- | --------: | -------: | -------: |
+| Antes de esta iteración                  |      1119 |       38 |     1157 |
+| Ejecutado con la paralelización anterior |      1147 |       15 |     1162 |
+| `--maxWorkers=2`                         |  **1150** |   **12** | **1162** |
+
+El número final de 12 fallos corresponde **únicamente** a creación de
+symlinks de archivo, colgantes o ciclos no admitida por los permisos de este
+proceso Windows. No hay fallos de aserción del software en esa corrida. Los
+tres `STACK_TRACE_ERROR` de `ProgressEntryScreen` eran timeouts cuando
+muchos workers de jsdom compiten por CPU; con 2 workers pasaron sus pruebas
+de UI sin reducir assertions. `vitest.config.ts` limita workers sólo en
+Windows (Ubuntu CI continúa con su valor estándar).
+
 ## Qué significa para una entrega
 
 El CI de Ubuntu es la referencia obligatoria de validación cruzada y ejerce los
 symlinks reales; un CI verde allí no demuestra compatibilidad total con Windows.
-Para exigir Windows verde en una fase posterior, se recomienda un job Windows
-con la capacidad de crear enlaces comprobada explícitamente, y pruebas de
-confinamiento independientes para los tipos de enlace de Windows, como
-reparse points/junctions. No bajar el umbral de pruebas para conseguir verde.
+La comprobación en Windows 11 build 26200, Node 24.21.0, usuario estándar
+de b032, confirmó:
+
+- La clave de registro `HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\AppModelUnlock`
+  no está disponible; el proceso no presenta `SeCreateSymbolicLinkPrivilege`.
+- `New-Item -ItemType SymbolicLink` para archivos y directorios falla con
+  "Administrator privilege required for this operation".
+- `node:fs.symlinkSync(..., 'junction')` crea un enlace **real** a directorios
+  sin elevación; `lstatSync(...).isSymbolicLink()` devuelve `true`.
+
+`tests/support/real-links.ts` mantiene los symlinks nativos de POSIX, usa
+junctions reales para directorios Windows y sigue exigiendo symlinks genuinos
+para archivos y enlaces colgantes. Ninguna prueba se reemplaza por mocks ni se
+saltea para aparentar éxito. Habilitar Developer Mode podría permitir enlaces
+de archivo sin elevación; no se modificó ninguna política del equipo. Se debe
+repetir el probe real después de habilitarlo.
+
+La prueba Windows de permisos usa una ACL auténtica `icacls /deny (F)` en
+directorios temporales, restaurándola en `finally`. `writeNote` distingue el
+error `EEXIST` de `mkdir` en Windows cuando el supuesto padre es un archivo,
+y lo informa como `not_found`, igual que el `ENOTDIR` POSIX. El caso
+`inner/..` conserva la prueba exacta en POSIX y ejecuta una cadena
+equivalente de dos junctions bajo Windows, cuya API normaliza destinos.
 
 La deuda `format:check` global (327 archivos en la estimación inicial) se
 mantiene fuera de este cambio; los archivos editados usan Prettier individual.

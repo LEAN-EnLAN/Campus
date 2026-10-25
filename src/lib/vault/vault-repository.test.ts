@@ -3,7 +3,6 @@ import {
   mkdtempSync,
   mkdirSync,
   rmSync,
-  symlinkSync,
   writeFileSync,
   readFileSync,
 } from 'node:fs'
@@ -11,6 +10,8 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+
+import { symlinkSync } from '../../../tests/support/real-links'
 
 import { nodeFileSystem } from './node-fs'
 import { VaultRepository, VaultConflictError } from './vault-repository'

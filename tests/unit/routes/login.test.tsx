@@ -112,4 +112,42 @@ describe('/login', () => {
     expect(screen.getByText('Las contraseñas no coinciden.')).toBeInTheDocument()
     expect(auth.updatePassword).not.toHaveBeenCalled()
   })
+
+  it('does not request a reset email for malformed addresses', async () => {
+    const user = userEvent.setup()
+    mount()
+    await user.click(await screen.findByRole('button', { name: 'Entrá' }))
+    await user.click(screen.getByRole('button', { name: '¿Olvidaste tu contraseña?' }))
+    await user.type(screen.getByLabelText(/Email/), 'not-an-address')
+    await user.click(screen.getByRole('button', { name: 'Enviar enlace' }))
+    expect(screen.getByText('Revisá el email, no parece válido.')).toBeInTheDocument()
+    expect(auth.sendPasswordReset).not.toHaveBeenCalled()
+  })
+
+  it('rejects recovery without a validated session even when the URL has the marker', async () => {
+    const user = userEvent.setup()
+    window.history.replaceState({}, '', '/login?recovery=1')
+    mount()
+    await user.type(await screen.findByLabelText(/Nueva contraseña/), 'secreta123')
+    await user.type(screen.getByLabelText(/Repetí la nueva contraseña/), 'secreta123')
+    await user.click(screen.getByRole('button', { name: 'Guardar contraseña' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('El enlace venció')
+    expect(auth.updatePassword).not.toHaveBeenCalled()
+  })
+
+  it('keeps recovery open when the provider refuses an expired token', async () => {
+    const user = userEvent.setup()
+    window.history.replaceState({}, '', '/login?recovery=1')
+    auth.session = { user: { id: 'student-1' } }
+    auth.updatePassword = vi.fn(async () => ({
+      error: 'No pudimos completar la operación. Probá de nuevo.',
+    }))
+    mount()
+    await user.type(await screen.findByLabelText(/Nueva contraseña/), 'secreta123')
+    await user.type(screen.getByLabelText(/Repetí la nueva contraseña/), 'secreta123')
+    await user.click(screen.getByRole('button', { name: 'Guardar contraseña' }))
+    expect(auth.updatePassword).toHaveBeenCalledWith('secreta123')
+    expect(await screen.findByRole('alert')).toHaveTextContent('No pudimos completar')
+    expect(screen.getByLabelText(/Repetí la nueva contraseña/)).toBeInTheDocument()
+  })
 })

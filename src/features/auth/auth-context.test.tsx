@@ -125,4 +125,25 @@ describe('password recovery', () => {
       )
     })
   })
+
+  it('does not expose provider details when changing a password is rejected', async () => {
+    auth.updateUser.mockResolvedValue({
+      error: { message: 'Auth session missing: token invalid signature' },
+    })
+    const get = capture()
+    await act(async () => {
+      expect(await get().updatePassword('secreta123')).toEqual({
+        error: 'No pudimos completar la operación. Probá de nuevo.',
+      })
+    })
+    expect(auth.updateUser).toHaveBeenCalledWith({ password: 'secreta123' })
+  })
+
+  it('handles network errors without claiming a reset email was sent', async () => {
+    auth.resetPasswordForEmail.mockRejectedValue(new Error('Failed to fetch'))
+    const get = capture()
+    await act(async () => {
+      expect((await get().sendPasswordReset('cami@example.com')).error).toMatch(/no responde/i)
+    })
+  })
 })

@@ -53,3 +53,7 @@ El pipeline recién añadido debe correr por primera vez en GitHub Actions. La
 recuperación de contraseña requiere un ensayo manual de extremo a extremo con
 una cuenta de prueba, email recibido y Supabase hospedado o local configurado.
 Hasta entonces la evidencia es de código, pruebas unitarias y compilación.
+Se ampliaron las pruebas con email inválido, enlace de recuperación sin sesión,
+contraseñas diferentes, error de token en el proveedor, límite de tasa y fallo
+de red. Los envíos de email se simularon mediante mocks de Supabase Auth; no se
+mandaron mensajes reales ni se utilizaron secretos de producción.

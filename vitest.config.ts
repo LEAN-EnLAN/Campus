@@ -15,6 +15,10 @@ export default defineConfig({
     setupFiles: ['./tests/setup.ts'],
     include: ['src/**/*.test.{ts,tsx}', 'tests/unit/**/*.test.{ts,tsx}'],
     css: false,
+    // A heavily parallel jsdom suite on the Windows desktop starved React's
+    // async router/mutation tests and hit Vitest timeouts. Two real workers
+    // complete all functional tests without turning off assertions or retries.
+    maxWorkers: process.platform === 'win32' ? 2 : undefined,
     // Hermetic: `src/lib/supabase.ts` throws at import time without these, which
     // made any test that reaches it fail on a fresh clone (no `.env`). The
     // client is never called, so any well-formed values do.

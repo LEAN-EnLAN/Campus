@@ -35,7 +35,8 @@
     "verify:frontend:xvfb": "xvfb-run -n 99 -s \"-screen 0 1600x1200x24 -nolisten tcp\" env CAMPUS_HEADED=1 node scripts/verify-frontend.mjs",
     "dev:tailnet": "node scripts/dev-tailnet.mjs",
     "catalog:generate": "node scripts/generate-catalog.mjs",
-    "deploy:check": "node scripts/deploy-check.mjs"
+    "deploy:check": "node scripts/deploy-check.mjs",
+    "release:check": "node scripts/release-preflight.mjs"
   },
   "dependencies": {
     "@codemirror/autocomplete": "^6.20.3",

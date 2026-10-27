@@ -8,7 +8,7 @@
 2. Elegir y añadir una licencia de distribución real (`LICENSE`); la elección corresponde al propietario. Comprobar la compatibilidad de cualquier material de terceros.
 3. Escribir `CHANGELOG.md` con una sección `## [0.1.0]` y distinguir funciones verificadas, limitaciones y cambios incompatibles. Ajustar la versión en `package.json` antes del lanzamiento.
 4. Completar el ensayo con email real de restablecimiento de contraseña (SMTP/redirects configurados), comprobar rutas profundas, registros y políticas RLS. Los tests simulados **no** verifican la entrega de correo.
-5. Validar exportación/recuperación de datos y explicar los límites de Local y Cloud. Si falta alguna capacidad, marcar el bloqueo y no prometer protección de datos que no existe.
+5. Ensayar backup y restauración **LOCAL** siguiendo [`BACKUPS.md`](BACKUPS.md) y comparar la copia restaurada con los datos del vault. Para **Cloud** hace falta un procedimiento separado de backup PostgreSQL y un restore aislado con credenciales del entorno; el backup local **no** demuestra que Cloud esté protegido. Si falta alguna capacidad, marcar el bloqueo y no prometer protección de datos que no existe.
 6. Ejecutar la batería determinista del proyecto en un entorno compatible: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm test:db`, `pnpm build`, `pnpm deploy:check`; para interfaces, la matriz de `docs/TESTING.md`. Registrar los resultados reales y las excepciones. La falta de privilegios de symlinks en Windows no equivale a un pase local completo.
 7. Obtener aprobación explícita para publicar. **No** ejecutar este procedimiento automáticamente desde un push de PR ni generar tags desde un draft.
 

@@ -36,6 +36,7 @@
     "dev:tailnet": "node scripts/dev-tailnet.mjs",
     "catalog:generate": "node scripts/generate-catalog.mjs",
     "deploy:check": "node scripts/deploy-check.mjs",
+    "vault:backup": "node scripts/local-backup.mjs",
     "release:check": "node scripts/release-preflight.mjs"
   },
   "dependencies": {

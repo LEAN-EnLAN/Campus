@@ -76,7 +76,7 @@ describe('Hoy', () => {
     state.items = [item('Parcial de Álgebra', { dueAt: at(10), kind: 'midterm' })]
     mount()
 
-    const section = (await screen.findByRole('heading', { name: 'Próximas' })).closest(
+    const section = (await screen.findByRole('heading', { name: /^Próximas/ })).closest(
       'section',
     )!
     expect(within(section).getByText('Parcial de Álgebra')).toBeInTheDocument()
@@ -87,20 +87,27 @@ describe('Hoy', () => {
     state.items = [item('Parcial de Álgebra', { dueAt: at(3) })]
     mount()
 
-    expect(
-      await screen.findByRole('heading', { level: 1, name: 'Nada para hoy.' }),
-    ).toBeInTheDocument()
-    expect(screen.getByText('Lo próximo: Parcial de Álgebra, en 3 días.')).toBeInTheDocument()
-    expect(screen.queryByText(/No tenés nada para hoy/)).toBeNull()
+    expect(await screen.findByRole('heading', { level: 1, name: 'Hoy' })).toBeInTheDocument()
+    expect(screen.getByText('No tenés entregas para hoy')).toBeInTheDocument()
+    const upcoming = screen.getByRole('heading', { name: /^Próximas/ }).closest('section')!
+    expect(within(upcoming).getByText('Parcial de Álgebra')).toBeInTheDocument()
+    expect(within(upcoming).getByText(/En 3 días/)).toBeInTheDocument()
+    // The new hero can report zero for today, but the page must not claim
+    // there are no pending tasks while an upcoming deadline exists.
+    expect(screen.queryByText('No hay tareas pendientes')).toBeNull()
   })
 
   it('says so inside "Hoy" when only overdue work is left, as one quiet sentence', async () => {
     state.items = [item('Informe viejo', { dueAt: at(-2) })]
     mount()
 
-    const section = (await screen.findByRole('heading', { name: 'Hoy' })).closest('section')!
-    expect(within(section).getByText('Nada más agendado para hoy.')).toBeInTheDocument()
-    // One message, no dashed box: the section already has its heading.
+    const section = (await screen.findByRole('heading', { name: /^Atrasadas/ })).closest(
+      'section',
+    )!
+    expect(within(section).getByText('Informe viejo')).toBeInTheDocument()
+    expect(screen.getByText('Tenés 1 cosa para hoy')).toBeInTheDocument()
+    expect(screen.queryByText('No hay tareas pendientes')).toBeNull()
+    expect(screen.queryByRole('heading', { level: 2, name: /^Hoy/ })).toBeNull()
     expect(section.querySelector('.border-dashed')).toBeNull()
   })
 
@@ -108,7 +115,7 @@ describe('Hoy', () => {
     state.items = [item('TP 1 sin fecha')]
     mount()
 
-    const section = (await screen.findByRole('heading', { name: 'Sin fecha' })).closest(
+    const section = (await screen.findByRole('heading', { name: /^Sin fecha/ })).closest(
       'section',
     )!
     expect(within(section).getByText('TP 1 sin fecha')).toBeInTheDocument()
@@ -148,13 +155,13 @@ describe('Hoy', () => {
     ]
     mount()
 
-    const cursando = (await screen.findByRole('heading', { name: 'Cursando' })).closest(
+    const cursando = (await screen.findByRole('heading', { name: 'Mis materias' })).closest(
       'section',
     )!
     expect(within(cursando).getByText('Álgebra')).toBeInTheDocument()
     expect(within(cursando).queryByText('Física I')).toBeNull()
     const pendiente = screen
-      .getByRole('heading', { name: 'Final pendiente' })
+      .getByRole('heading', { name: 'Regularizadas (final pendiente)' })
       .closest('section')!
     expect(within(pendiente).getByText('Física I')).toBeInTheDocument()
   })

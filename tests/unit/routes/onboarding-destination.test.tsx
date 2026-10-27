@@ -84,9 +84,26 @@ describe('onboarding: where saving lands', () => {
     mount()
 
     await user.click(await screen.findByRole('radio', { name: /Universidad Nacional/ }))
-    // One facultad and one plan are preselected; the carrera is the choice.
+    // The sole faculty is selected automatically, but the wizard still exposes
+    // its checked radio so the student can advance explicitly and accessibly.
+    expect(await screen.findByRole('radio', { name: 'Facultad A' })).toBeChecked()
+    await user.click(screen.getByRole('radio', { name: 'Facultad A' }))
     await user.click(await screen.findByRole('radio', { name: /Carrera/ }))
-    await user.click(screen.getByRole('button', { name: 'Listo, empezar' }))
+    expect(await screen.findByRole('radio', { name: 'TO 2024' })).toBeChecked()
+    await user.click(screen.getByRole('button', { name: 'Guardar y continuar' }))
+
+    expect(state.save).toHaveBeenCalledWith({
+      institutionId: 'unr',
+      academicUnitId: 'fac',
+      programId: 'carrera',
+      curriculumId: 'plan',
+      unmappedLabel: null,
+    })
+    expect(
+      await screen.findByRole('heading', { name: 'Tu plan ya está en Campus.' }),
+    ).toBeInTheDocument()
+    expect(screen.queryByText('pantalla de progreso')).toBeNull()
+    await user.click(screen.getByRole('button', { name: 'Marcar estado de materias' }))
 
     expect(await screen.findByText('pantalla de progreso')).toBeInTheDocument()
   })
@@ -96,9 +113,24 @@ describe('onboarding: where saving lands', () => {
     mount()
 
     await user.click(await screen.findByRole('button', { name: 'No encuentro mi carrera' }))
-    await user.type(screen.getByLabelText('Carrera y universidad'), 'Psicología — UBA')
-    await user.click(screen.getByRole('button', { name: 'Listo, empezar' }))
+    await user.type(
+      screen.getByRole('textbox', { name: /Carrera y universidad/ }),
+      'Psicología — UBA',
+    )
+    await user.click(screen.getByRole('button', { name: 'Guardar y continuar' }))
 
+    expect(state.save).toHaveBeenCalledWith({
+      institutionId: null,
+      academicUnitId: null,
+      programId: null,
+      curriculumId: null,
+      unmappedLabel: 'Psicología — UBA',
+    })
+    expect(
+      await screen.findByRole('heading', { name: 'Tu plan ya está en Campus.' }),
+    ).toBeInTheDocument()
+    expect(screen.queryByText('pantalla del plan')).toBeNull()
+    await user.click(screen.getByRole('button', { name: 'Ir a mi plan' }))
     expect(await screen.findByText('pantalla del plan')).toBeInTheDocument()
   })
 })

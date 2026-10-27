@@ -16,6 +16,7 @@ const LONG_NAME =
 const state = vi.hoisted(() => ({
   existing: null as AcademicContext | null,
   save: vi.fn(),
+  singleUnit: false,
 }))
 
 const some = <T,>(data: T[]) => ({ data, isLoading: false, error: null, refetch: vi.fn() })
@@ -34,7 +35,7 @@ vi.mock('@/features/academic/queries', () => ({
       id
         ? [
             { id: `${id}-fac`, name: 'Facultad A' },
-            { id: `${id}-fac2`, name: 'Facultad B' },
+            ...(state.singleUnit ? [] : [{ id: `${id}-fac2`, name: 'Facultad B' }]),
           ]
         : [],
     ),
@@ -67,12 +68,15 @@ function mount(
   ))
 }
 
-const steps = () => screen.getByRole('list', { name: 'Pasos' })
-const done = () => within(steps()).queryAllByText('(listo)')
+const steps = () => screen.getByRole('navigation', { name: 'Pasos de configuración' })
+const stepButtons = () => within(steps()).getAllByRole('button')
+const done = () =>
+  stepButtons().filter((button) => button.getAttribute('data-complete') === 'true')
 
 beforeEach(() => {
   state.existing = null
-  state.save = vi.fn()
+  state.save = vi.fn(async () => undefined)
+  state.singleUnit = false
 })
 
 describe('onboarding: what we cover', () => {
@@ -88,9 +92,13 @@ describe('onboarding: what we cover', () => {
 describe('onboarding: the stepper only says what happened', () => {
   it('shows no completed step before anything is chosen', async () => {
     mount()
-    await screen.findByRole('list', { name: 'Pasos' })
+    await screen.findByRole('navigation', { name: 'Pasos de configuración' })
 
     expect(done()).toHaveLength(0)
+    expect(stepButtons()[0]).toHaveAttribute('aria-current', 'step')
+    expect(stepButtons()[1]).toBeDisabled()
+    expect(stepButtons()[2]).toBeDisabled()
+    expect(stepButtons()[3]).toBeDisabled()
   })
 
   it('marks a step once the student has chosen it, and not before', async () => {
@@ -101,9 +109,10 @@ describe('onboarding: the stepper only says what happened', () => {
       await screen.findByRole('radio', { name: /Universidad Nacional de Rosario/ }),
     )
 
-    const items = within(steps()).getAllByRole('listitem')
-    expect(within(items[0]!).getByText('(listo)')).toBeInTheDocument()
-    expect(within(items[3]!).queryByText('(listo)')).toBeNull()
+    expect(done()).toHaveLength(1)
+    expect(stepButtons()[0]).toHaveAttribute('data-complete', 'true')
+    expect(stepButtons()[1]).toHaveAttribute('aria-current', 'step')
+    expect(stepButtons()[3]).toHaveAttribute('data-complete', 'false')
   })
 
   it('has no stepper, and so no green checks, on the "No encuentro mi carrera" path', async () => {
@@ -112,7 +121,30 @@ describe('onboarding: the stepper only says what happened', () => {
 
     await user.click(await screen.findByRole('button', { name: 'No encuentro mi carrera' }))
 
-    expect(screen.queryByRole('list', { name: 'Pasos' })).toBeNull()
+    expect(screen.queryByRole('navigation', { name: 'Pasos de configuración' })).toBeNull()
+    expect(state.save).not.toHaveBeenCalled()
+  })
+
+  it('advances from a sole faculty already preselected, with accessible step buttons', async () => {
+    const user = userEvent.setup()
+    state.singleUnit = true
+    mount()
+
+    await user.click(
+      await screen.findByRole('radio', { name: /Universidad Nacional de Rosario/ }),
+    )
+    expect(await screen.findByRole('radio', { name: 'Facultad A' })).toBeChecked()
+    expect(stepButtons()[1]).toHaveAttribute('aria-current', 'step')
+    expect(stepButtons()[2]).toBeEnabled()
+
+    // Clicking a prechecked radio must still progress to the real career options.
+    await user.click(screen.getByRole('radio', { name: 'Facultad A' }))
+    expect(await screen.findByRole('radio', { name: 'Carrera' })).toBeInTheDocument()
+    expect(stepButtons()[2]).toHaveAttribute('aria-current', 'step')
+
+    await user.click(stepButtons()[0]!)
+    expect(screen.getByRole('radio', { name: /Universidad Nacional de Rosario/ })).toBeChecked()
+    expect(stepButtons()[0]).toHaveAttribute('aria-current', 'step')
   })
 })
 
@@ -122,7 +154,7 @@ describe('onboarding: the free-text path is honest about where it goes', () => {
     mount()
     await user.click(await screen.findByRole('button', { name: 'No encuentro mi carrera' }))
 
-    expect(screen.getByText(/queda guardado solo en tu carpeta/i)).toBeInTheDocument()
+    expect(screen.getByText(/se guarda en tu carpeta/i)).toBeInTheDocument()
     expect(screen.queryByText(/Vamos a anotar que nos falta/)).toBeNull()
   })
 
@@ -131,7 +163,7 @@ describe('onboarding: the free-text path is honest about where it goes', () => {
     mount({ folder: null, change: vi.fn() })
     await user.click(await screen.findByRole('button', { name: 'No encuentro mi carrera' }))
 
-    expect(screen.getByText(/queda guardado solo en tu cuenta/i)).toBeInTheDocument()
+    expect(screen.getByText(/se guarda en tu cuenta/i)).toBeInTheDocument()
   })
 
   it('uses the same words for the question in the heading and in the field', async () => {
@@ -140,9 +172,9 @@ describe('onboarding: the free-text path is honest about where it goes', () => {
     await user.click(await screen.findByRole('button', { name: 'No encuentro mi carrera' }))
 
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
-      'Contanos dónde estudiás.',
+      'Empezá con tu propia carrera.',
     )
-    expect(screen.getByLabelText('Carrera y universidad')).toBeInTheDocument()
+    expect(screen.getByRole('textbox', { name: /Carrera y universidad/ })).toBeInTheDocument()
   })
 })
 
@@ -158,22 +190,27 @@ describe('onboarding: revisiting', () => {
   }
 
   it('preselects the current choice at every step', async () => {
+    const user = userEvent.setup()
     state.existing = existing
     mount()
 
-    expect(
-      await screen.findByRole('radio', { name: /Universidad Nacional de Rosario/ }),
-    ).toBeChecked()
+    expect(await screen.findByRole('radio', { name: 'TO 2024' })).toBeChecked()
+    expect(done()).toHaveLength(4)
+    await user.click(stepButtons()[0]!)
+    expect(screen.getByRole('radio', { name: /Universidad Nacional de Rosario/ })).toBeChecked()
+    await user.click(stepButtons()[1]!)
     expect(screen.getByRole('radio', { name: /Facultad A/ })).toBeChecked()
-    expect(screen.getByRole('radio', { name: /Carrera/ })).toBeChecked()
-    expect(screen.getByRole('radio', { name: /TO 2024/ })).toBeChecked()
+    await user.click(stepButtons()[2]!)
+    expect(screen.getByRole('radio', { name: 'Carrera' })).toBeChecked()
+    await user.click(stepButtons()[3]!)
+    expect(screen.getByRole('radio', { name: 'TO 2024' })).toBeChecked()
   })
 
   it('offers a way back that does not change anything', async () => {
     state.existing = existing
     mount()
 
-    const back = await screen.findByRole('link', { name: 'Volver' })
+    const back = await screen.findByRole('link', { name: 'Volver a ajustes' })
     expect(back).toHaveAttribute('href', '/settings')
   })
 
@@ -186,16 +223,16 @@ describe('onboarding: revisiting', () => {
     }
     mount()
 
-    expect(await screen.findByLabelText('Carrera y universidad')).toHaveValue(
+    expect(await screen.findByRole('textbox', { name: /Carrera y universidad/ })).toHaveValue(
       'Psicología — UBA',
     )
   })
 
   it('does not offer "Volver" on the first run: there is nowhere to go back to', async () => {
     mount()
-    await screen.findByRole('list', { name: 'Pasos' })
+    await screen.findByRole('navigation', { name: 'Pasos de configuración' })
 
-    expect(screen.queryByRole('link', { name: 'Volver' })).toBeNull()
+    expect(screen.queryByRole('link', { name: 'Volver a ajustes' })).toBeNull()
   })
 })
 
@@ -214,5 +251,40 @@ describe('onboarding: plan labels', () => {
     const detail = screen.getByText(LONG_NAME).closest('details')!
     expect(detail.open).toBe(false)
     expect(within(detail).getByText('Ver detalle')).toBeInTheDocument()
+  })
+})
+
+describe('onboarding: real decisions and workspace', () => {
+  it('does not allow an incomplete selection to be saved and clears downstream choices on university change', async () => {
+    const user = userEvent.setup()
+    mount()
+
+    expect(screen.queryByRole('button', { name: 'Guardar y continuar' })).toBeNull()
+    await user.click(
+      await screen.findByRole('radio', { name: /Universidad Nacional de Rosario/ }),
+    )
+    await user.click(screen.getByRole('radio', { name: 'Facultad A' }))
+    await user.click(screen.getByRole('radio', { name: 'Carrera' }))
+    await user.click(screen.getByRole('radio', { name: 'TO 2024' }))
+    expect(screen.getByRole('button', { name: 'Guardar y continuar' })).toBeEnabled()
+
+    await user.click(stepButtons()[0]!)
+    await user.click(screen.getByRole('radio', { name: /Universidad Tecnológica Nacional/ }))
+    expect(done()).toHaveLength(1)
+    expect(screen.queryByRole('button', { name: 'Guardar y continuar' })).toBeNull()
+    expect(state.save).not.toHaveBeenCalled()
+  })
+
+  it('can return to workspace selection without saving an academic context', async () => {
+    const user = userEvent.setup()
+    const change = vi.fn()
+    mount({ folder: { name: 'Mi carpeta', path: '/campus' }, change })
+
+    expect(
+      await screen.findByRole('complementary', { name: 'Espacio y resumen' }),
+    ).toHaveTextContent('En esta computadora: Mi carpeta')
+    await user.click(await screen.findByRole('button', { name: 'Cambiar espacio de trabajo' }))
+    expect(change).toHaveBeenCalledOnce()
+    expect(state.save).not.toHaveBeenCalled()
   })
 })

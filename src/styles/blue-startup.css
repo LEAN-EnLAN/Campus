@@ -1,4 +1,5 @@
 .blue-startup {
+  --color-on-tint: #fff;
   --color-ink: #14264b;
   --color-ink-muted: #597197;
   --color-rule: #d7e4f5;

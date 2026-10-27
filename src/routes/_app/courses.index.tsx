@@ -23,6 +23,13 @@ import type { SubjectView } from '@/domain/types'
 import { useAcademicPlan } from '@/features/academic/queries'
 import { SubjectBoardView } from '@/features/courses/subject-board-view'
 
+function searchKey(text: string): string {
+  return text
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLocaleLowerCase('es-AR')
+}
+
 export const Route = createFileRoute('/_app/courses/')({
   component: CoursesScreen,
 })
@@ -80,10 +87,14 @@ function CoursesScreen() {
       (filter === 'todas'
         ? plan.views
         : plan.views.filter((v) => statusGroupOf(v.status) === filter || pinned.has(v.id))
-      ).filter((v) =>
-        v.name.toLocaleLowerCase('es-AR').includes(query.trim().toLocaleLowerCase('es-AR')),
-      ),
+      ).filter((v) => searchKey(v.name).includes(searchKey(query.trim()))),
     [plan.views, filter, pinned, query],
+  )
+  // A board has no status filter, but it does share the visible search field.
+  // The dragged cards retain their real IDs and mutations through this filtered view.
+  const boardSubjects = useMemo(
+    () => plan.views.filter((v) => searchKey(v.name).includes(searchKey(query.trim()))),
+    [plan.views, query],
   )
 
   function chooseFilter(next: Filter) {
@@ -221,7 +232,7 @@ function CoursesScreen() {
             <SectionHeading id="listado">{showBoard ? 'Tablero' : spec.label}</SectionHeading>
             {showBoard ? (
               <div className="mt-2 min-w-0 overflow-x-auto">
-                <SubjectBoardView />
+                <SubjectBoardView subjects={boardSubjects} />
               </div>
             ) : visible.length === 0 ? (
               <EmptyState

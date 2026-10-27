@@ -81,11 +81,12 @@ function SubjectCard({ subject }: { subject: SubjectView }) {
   )
 }
 
-export function SubjectBoardView() {
+export function SubjectBoardView({ subjects }: { subjects?: readonly SubjectView[] }) {
   const plan = useAcademicPlan()
   const setStatus = useSetSubjectStatus()
 
-  const board = useMemo(() => buildSubjectBoard(plan.views), [plan.views])
+  const boardSubjects = subjects ?? plan.views
+  const board = useMemo(() => buildSubjectBoard(boardSubjects), [boardSubjects])
 
   const columns: KanbanColumn<SubjectView>[] = board.columns.map((column) => ({
     id: column.id,

@@ -64,6 +64,8 @@ function CourseDetailScreen() {
   const [captureOpen, setCaptureOpen] = useState(false)
   const [resourceTitle, setResourceTitle] = useState('')
   const [resourceUrl, setResourceUrl] = useState('')
+  const [resourceError, setResourceError] = useState<string | null>(null)
+  const [expandedResourceId, setExpandedResourceId] = useState<string | null>(null)
 
   const subject = plan.subjectById.get(courseId)
 
@@ -113,20 +115,32 @@ function CourseDetailScreen() {
 
   async function handleAddResource(event: React.FormEvent) {
     event.preventDefault()
-    if (!resourceTitle.trim() || !resourceUrl.trim()) return
-    await createResource.mutateAsync({
-      title: resourceTitle,
-      kind: 'link',
-      curriculumSubjectId: courseId,
-      url: resourceUrl.trim(),
-      body: null,
-    })
-    setResourceTitle('')
-    setResourceUrl('')
+    if (!resourceTitle.trim()) {
+      setResourceError('Poné un título para el material.')
+      return
+    }
+    if (!/^https?:\/\/\S+$/i.test(resourceUrl.trim())) {
+      setResourceError('Ingresá un link que empiece con https:// o http://.')
+      return
+    }
+    setResourceError(null)
+    try {
+      await createResource.mutateAsync({
+        title: resourceTitle.trim(),
+        kind: 'link',
+        curriculumSubjectId: courseId,
+        url: resourceUrl.trim(),
+        body: null,
+      })
+      setResourceTitle('')
+      setResourceUrl('')
+    } catch {
+      // Keep both fields for correction; mutation error appears below the form.
+    }
   }
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="blue-screen">
       <BackLink />
 
       <PageHeader
@@ -139,192 +153,294 @@ function CourseDetailScreen() {
         }
       />
 
-      {/* CAP-PLAN-002 — changing this recalculates dependants in the domain. */}
-      <section aria-labelledby="estado" className="flex flex-col gap-3">
-        <SectionHeading id="estado">Tu estado</SectionHeading>
-        <div className="flex flex-wrap items-end gap-4">
-          <SelectField
-            label="¿Cómo vas?"
-            className="w-56"
-            // Derived statuses (available/blocked/pending) have no stored value,
-            // so the select falls back to "Sin marcar".
-            value={STORED_STATUSES.has(subject.status) ? subject.status : ''}
-            disabled={setStatus.isPending}
-            onChange={(e) =>
-              setStatus.mutate({
-                curriculumSubjectId: subject.id,
-                status: (e.target.value || null) as StoredSubjectStatus | null,
-                ...(subject.manual ? { manual: true } : {}),
-              })
-            }
-          >
-            {STATUS_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </SelectField>
-          <div className="flex flex-col gap-0.5 pb-2.5">
-            <p>
-              <AcademicStatus status={subject.status} />
-            </p>
-            {finalBlockedSentence(subject) ? (
-              <p className="text-ink-muted text-sm">{finalBlockedSentence(subject)}</p>
-            ) : null}
-          </div>
-        </div>
-        <OrderConflictNote subject={subject} dismissible />
-        {setStatus.error ? (
-          <p role="alert" className="text-danger text-sm font-medium">
-            {(setStatus.error as Error).message}
-          </p>
-        ) : null}
-        <MutationAlert error={toggleItem.error ?? deleteResource.error} />
-      </section>
-
-      <section aria-labelledby="fechas" className="flex flex-col gap-1">
-        <SectionHeading id="fechas">Fechas</SectionHeading>
-        {/* A failed fetch is not an empty list: telling the student "no tenés nada"
-            here makes them re-add an entrega they already had. */}
-        {itemsQuery.error ? (
-          <ErrorState
-            className="mt-2"
-            title="No pudimos cargar tus fechas"
-            error={itemsQuery.error as Error}
-            onRetry={() => void itemsQuery.refetch()}
-          />
-        ) : items.length === 0 ? (
-          <EmptyState quiet title="No tenés nada anotado para esta materia." />
-        ) : (
-          <div>
-            {items.map((item) => (
-              <SubjectDateRow
-                key={item.id}
-                item={item}
-                onToggle={(done) => toggleItem.mutate({ id: item.id, done })}
-              />
-            ))}
-          </div>
-        )}
-      </section>
-
-      {/* Local folder only: the component renders nothing without one. */}
-      <SubjectNotes subject={subject} />
-
-      <section aria-labelledby="correlativas" className="flex flex-col gap-3">
-        <SectionHeading id="correlativas">Correlativas</SectionHeading>
-
-        {subject.requirements.length > 0 ? (
-          <CorrelativasPanel subject={subject} />
-        ) : (
-          <p className="text-ink-muted text-sm">
-            {/* Saying "no te falta ninguna" when we never had the graph would be
-                asserting an academic fact we do not have. */}
-            {correlativasNote(subject, plan.prerequisitesKnown)}
-          </p>
-        )}
-
-        {unlocks.length > 0 ? (
-          <div className="flex flex-col gap-1.5 pt-2">
-            <p className="text-ink-muted text-xs font-medium tracking-wide uppercase">
-              Habilita
-            </p>
-            <ul className="flex flex-col gap-1">
-              {unlocks.map((target) => (
-                <li key={target!.id} className="flex items-center gap-2">
-                  <StatusGlyph status={target!.status} />
-                  <Link
-                    to="/courses/$courseId"
-                    params={{ courseId: target!.id }}
-                    className="text-ink text-sm underline-offset-4 hover:underline"
-                  >
-                    {target!.name}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-        ) : null}
-      </section>
-
-      <section aria-labelledby="material" className="flex flex-col gap-3">
-        <SectionHeading id="material">Material</SectionHeading>
-
-        {resourcesQuery.error ? (
-          <ErrorState
-            title="No pudimos cargar tu material"
-            error={resourcesQuery.error as Error}
-            onRetry={() => void resourcesQuery.refetch()}
-          />
-        ) : null}
-
-        {resources.length > 0 ? (
-          <ul>
-            {resources.map((resource) => (
-              <li
-                key={resource.id}
-                className="border-rule-soft flex items-center gap-3 border-b py-2.5"
+      <div className="blue-layout blue-layout-wide">
+        <div className="grid min-w-0 gap-5">
+          {/* CAP-PLAN-002 — changing this recalculates dependants in the domain. */}
+          <section aria-labelledby="estado" className="blue-panel flex flex-col gap-3">
+            <SectionHeading id="estado">Tu estado</SectionHeading>
+            <div className="flex flex-wrap items-end gap-4">
+              <SelectField
+                label="¿Cómo vas?"
+                className="w-56"
+                // Derived statuses (available/blocked/pending) have no stored value,
+                // so the select falls back to "Sin marcar".
+                value={STORED_STATUSES.has(subject.status) ? subject.status : ''}
+                disabled={setStatus.isPending}
+                onChange={(e) =>
+                  setStatus.mutate({
+                    curriculumSubjectId: subject.id,
+                    status: (e.target.value || null) as StoredSubjectStatus | null,
+                    ...(subject.manual ? { manual: true } : {}),
+                  })
+                }
               >
-                <a
-                  href={resource.url ?? '#'}
-                  target="_blank"
-                  rel="noreferrer noopener"
-                  className="text-ink flex min-w-0 flex-1 items-center gap-2 text-sm underline-offset-4 hover:underline"
-                >
-                  <span className="truncate">{resource.title}</span>
-                  <ExternalLink
-                    aria-hidden="true"
-                    className="text-ink-faint size-3.5 shrink-0"
-                  />
-                </a>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  aria-label={`Borrar ${resource.title}`}
-                  onClick={() => deleteResource.mutate(resource.id)}
-                >
-                  <Trash2 aria-hidden="true" className="size-4" />
-                </Button>
-              </li>
-            ))}
-          </ul>
-        ) : null}
+                {STATUS_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </SelectField>
+              <div className="flex flex-col gap-0.5 pb-2.5">
+                <p>
+                  <AcademicStatus status={subject.status} />
+                </p>
+                {finalBlockedSentence(subject) ? (
+                  <p className="text-ink-muted text-sm">{finalBlockedSentence(subject)}</p>
+                ) : null}
+              </div>
+            </div>
+            <OrderConflictNote subject={subject} dismissible />
+            {setStatus.error ? (
+              <p role="alert" className="text-danger text-sm font-medium">
+                {(setStatus.error as Error).message}
+              </p>
+            ) : null}
+            <MutationAlert error={toggleItem.error ?? deleteResource.error} />
+          </section>
 
-        <form
-          onSubmit={handleAddResource}
-          className="flex flex-col gap-3 sm:flex-row sm:items-end"
-        >
-          {/* The layout classes go on a wrapper: `TextField` applies `className` to
+          <section aria-labelledby="fechas" className="blue-panel flex flex-col gap-2">
+            <SectionHeading id="fechas">Fechas</SectionHeading>
+            {/* A failed fetch is not an empty list: telling the student "no tenés nada"
+            here makes them re-add an entrega they already had. */}
+            {itemsQuery.error ? (
+              <ErrorState
+                className="mt-2"
+                title="No pudimos cargar tus fechas"
+                error={itemsQuery.error as Error}
+                onRetry={() => void itemsQuery.refetch()}
+              />
+            ) : items.length === 0 ? (
+              <EmptyState quiet title="No tenés nada anotado para esta materia." />
+            ) : (
+              <div>
+                {items.map((item) => (
+                  <SubjectDateRow
+                    key={item.id}
+                    item={item}
+                    onToggle={(done) => toggleItem.mutate({ id: item.id, done })}
+                  />
+                ))}
+              </div>
+            )}
+          </section>
+
+          {/* Local folder only: the component renders nothing without one. */}
+          <div className="blue-panel">
+            <SubjectNotes subject={subject} />
+          </div>
+
+          <section aria-labelledby="correlativas" className="blue-panel flex flex-col gap-3">
+            <SectionHeading id="correlativas">Correlativas</SectionHeading>
+
+            {subject.requirements.length > 0 ? (
+              <CorrelativasPanel subject={subject} />
+            ) : (
+              <p className="text-ink-muted text-sm">
+                {/* Saying "no te falta ninguna" when we never had the graph would be
+                asserting an academic fact we do not have. */}
+                {correlativasNote(subject, plan.prerequisitesKnown)}
+              </p>
+            )}
+
+            {unlocks.length > 0 ? (
+              <div className="flex flex-col gap-1.5 pt-2">
+                <p className="text-ink-muted text-xs font-medium tracking-wide uppercase">
+                  Habilita
+                </p>
+                <ul className="flex flex-col gap-1">
+                  {unlocks.map((target) => (
+                    <li key={target!.id} className="flex items-center gap-2">
+                      <StatusGlyph status={target!.status} />
+                      <Link
+                        to="/courses/$courseId"
+                        params={{ courseId: target!.id }}
+                        className="text-ink text-sm underline-offset-4 hover:underline"
+                      >
+                        {target!.name}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+          </section>
+
+          <section aria-labelledby="material" className="blue-panel flex flex-col gap-3">
+            <SectionHeading id="material">Material</SectionHeading>
+
+            {resourcesQuery.error ? (
+              <ErrorState
+                title="No pudimos cargar tu material"
+                error={resourcesQuery.error as Error}
+                onRetry={() => void resourcesQuery.refetch()}
+              />
+            ) : null}
+
+            {resources.length > 0 ? (
+              <ul>
+                {resources.map((resource) => (
+                  <li
+                    key={resource.id}
+                    className="border-rule-soft flex items-center gap-3 border-b py-2.5"
+                  >
+                    <div className="min-w-0 flex-1">
+                      {resource.kind === 'link' && resource.url ? (
+                        <a
+                          href={resource.url}
+                          target="_blank"
+                          rel="noreferrer noopener"
+                          className="text-ink inline-flex max-w-full items-center gap-2 text-sm underline-offset-4 hover:underline"
+                        >
+                          <span className="truncate">{resource.title}</span>
+                          <ExternalLink
+                            aria-hidden="true"
+                            className="text-ink-faint size-3.5 shrink-0"
+                          />
+                        </a>
+                      ) : (
+                        <button
+                          type="button"
+                          className="text-ink text-left text-sm font-medium underline-offset-4 hover:underline"
+                          aria-expanded={expandedResourceId === resource.id}
+                          onClick={() =>
+                            setExpandedResourceId((id) =>
+                              id === resource.id ? null : resource.id,
+                            )
+                          }
+                        >
+                          {resource.title} ·{' '}
+                          {expandedResourceId === resource.id ? 'Ocultar nota' : 'Leer nota'}
+                        </button>
+                      )}
+                      {resource.kind === 'note' && expandedResourceId === resource.id ? (
+                        <p className="text-ink-muted mt-2 text-sm whitespace-pre-wrap">
+                          {resource.body || 'Nota vacía.'}
+                        </p>
+                      ) : null}
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      aria-label={`Borrar ${resource.title}`}
+                      onClick={() => deleteResource.mutate(resource.id)}
+                    >
+                      <Trash2 aria-hidden="true" className="size-4" />
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+
+            <form
+              onSubmit={handleAddResource}
+              className="flex flex-col gap-3 sm:flex-row sm:items-end"
+            >
+              {/* The layout classes go on a wrapper: `TextField` applies `className` to
               the <input>, so a width on the field itself left the Link field's
               wrapper to shrink to its content (22px). */}
-          <div className="sm:w-56">
-            <TextField
-              label="Título"
-              placeholder="Apunte de la cátedra"
-              value={resourceTitle}
-              onChange={(e) => setResourceTitle(e.target.value)}
-              required
-            />
-          </div>
-          <div className="min-w-0 sm:flex-1">
-            <TextField
-              label="Link"
-              type="url"
-              placeholder="https://…"
-              value={resourceUrl}
-              onChange={(e) => setResourceUrl(e.target.value)}
-              required
-            />
-          </div>
-          <Button
-            type="submit"
-            variant="secondary"
-            disabled={createResource.isPending || !resourceTitle.trim() || !resourceUrl.trim()}
-          >
-            Guardar
-          </Button>
-        </form>
-      </section>
+              <div className="sm:w-56">
+                <TextField
+                  label="Título"
+                  placeholder="Apunte de la cátedra"
+                  value={resourceTitle}
+                  onChange={(e) => setResourceTitle(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="min-w-0 sm:flex-1">
+                <TextField
+                  label="Link"
+                  type="url"
+                  placeholder="https://…"
+                  value={resourceUrl}
+                  onChange={(e) => setResourceUrl(e.target.value)}
+                  required
+                />
+              </div>
+              <Button
+                type="submit"
+                variant="secondary"
+                disabled={
+                  createResource.isPending || !resourceTitle.trim() || !resourceUrl.trim()
+                }
+              >
+                Guardar
+              </Button>
+            </form>
+            {resourceError ? (
+              <p role="alert" className="text-danger text-sm">
+                {resourceError}
+              </p>
+            ) : null}
+            <MutationAlert error={createResource.error} />
+          </section>
+        </div>
+
+        <aside aria-label="Resumen de la materia" className="grid min-w-0 content-start gap-4">
+          <section className="blue-panel">
+            <div className="blue-panel-head">
+              <h2>Estado académico</h2>
+            </div>
+            <div className="mb-3">
+              <span
+                className="blue-chip"
+                data-status={
+                  subject.status === 'regularized'
+                    ? 'regularized'
+                    : subject.status === 'passed'
+                      ? 'passed'
+                      : 'in_progress'
+                }
+              >
+                <AcademicStatus status={subject.status} />
+              </span>
+            </div>
+            <dl className="grid gap-2 text-sm">
+              <div className="blue-stat-row">
+                <dt className="text-ink-muted">Año</dt>
+                <dd className="ml-auto font-medium">{subject.yearLevel}°</dd>
+              </div>
+              <div className="blue-stat-row">
+                <dt className="text-ink-muted">Régimen</dt>
+                <dd className="ml-auto font-medium">{TERM_LABEL[subject.term]}</dd>
+              </div>
+              {subject.grade !== null ? (
+                <div className="blue-stat-row">
+                  <dt className="text-ink-muted">Nota</dt>
+                  <dd className="ml-auto font-medium">{subject.grade}</dd>
+                </div>
+              ) : null}
+            </dl>
+          </section>
+          <section className="blue-panel">
+            <div className="blue-panel-head">
+              <h2>Próximos pasos</h2>
+            </div>
+            <p className="text-ink-muted mb-3 text-sm">
+              {items.length} {items.length === 1 ? 'fecha registrada' : 'fechas registradas'}{' '}
+              para esta materia.
+            </p>
+            <Button variant="primary" onClick={() => setCaptureOpen(true)} className="w-full">
+              Agregar entrega
+            </Button>
+            <Link to="/calendar" className="blue-text-link mt-3 inline-flex">
+              Abrir calendario →
+            </Link>
+          </section>
+          <section className="blue-panel">
+            <div className="blue-panel-head">
+              <h2>Material</h2>
+            </div>
+            <p className="text-ink-muted text-sm">
+              {resources.length}{' '}
+              {resources.length === 1 ? 'recurso guardado' : 'recursos guardados'}
+            </p>
+            <Link to="/library" className="blue-text-link mt-3 inline-flex">
+              Ver biblioteca →
+            </Link>
+          </section>
+        </aside>
+      </div>
 
       <QuickCapture
         open={captureOpen}

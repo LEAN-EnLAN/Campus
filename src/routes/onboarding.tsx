@@ -569,6 +569,12 @@ function Choice({
                 value={option.id}
                 checked={value === option.id}
                 onChange={() => onChange(option.id)}
+                // The sole faculty/plan is preselected by the catalog. Clicking
+                // that already-checked radio does not fire change, but should
+                // still advance the wizard to the next step.
+                onClick={() => {
+                  if (value === option.id) onChange(option.id)
+                }}
                 className="size-4 shrink-0 accent-[var(--color-accent)]"
               />
               <span className="min-w-0 flex-1">

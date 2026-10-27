@@ -78,6 +78,8 @@
   border-bottom: 1px solid var(--color-rule-soft);
 }
 .campus-blue-search {
+  flex: 1 1 0%;
+  min-width: 0;
   border: 1px solid var(--color-rule);
   background: #f7faff;
   border-radius: 10px;
@@ -94,7 +96,7 @@
   padding: 0.25rem 0.45rem;
   border-radius: 5px;
   background: #e7effb;
-  color: #627ca6;
+  color: #395782;
   white-space: nowrap;
 }
 .campus-blue-top-action {
@@ -343,7 +345,7 @@
   font-size: 1.05rem;
 }
 .campus-blue .blue-dashboard-hero p {
-  color: #5b759d;
+  color: #405e89;
   font-size: 0.82rem;
   margin-top: 0.15rem;
 }

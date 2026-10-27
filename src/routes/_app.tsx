@@ -81,7 +81,7 @@ function AppFrame() {
     void navigate({ to: '/onboarding' })
   }, [loading, session, plan.contextSettled, plan.contextError, plan.hasContext, navigate])
 
-  // Cmd/Ctrl+K captures, "/" searches — the two things a student does most.
+  // Search uses the familiar command palette shortcut; capture has its own.
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
       const target = event.target as HTMLElement | null
@@ -92,6 +92,11 @@ function AppFrame() {
         target?.isContentEditable
 
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault()
+        setSearchOpen(true)
+        return
+      }
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'n' && !typing) {
         event.preventDefault()
         setCaptureOpen(true)
         return

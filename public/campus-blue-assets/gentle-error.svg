@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="400" viewBox="0 0 640 400" fill="none" role="img" aria-labelledby="title">
+  <title id="title">Ocurrió un problema que requiere revisión</title>
+  <circle cx="317" cy="188" r="153" stroke="#DCE6FC" stroke-width="2" stroke-dasharray="4 11"/>
+  <circle cx="317" cy="188" r="120" fill="#F2F5FF"/>
+  <path d="M103 329H537" stroke="#CAD9F6" stroke-width="2" stroke-linecap="round"/>
+  <rect x="153" y="114" width="261" height="194" rx="11" fill="#DDE7FE" stroke="#24417D" stroke-width="5"/>
+  <path d="M154 152H412" stroke="#587BD6" stroke-width="4"/>
+  <circle cx="174" cy="133" r="5" fill="#8FA5EA"/>
+  <circle cx="189" cy="133" r="5" fill="#BAC7F2"/>
+  <circle cx="204" cy="133" r="5" fill="#BAC7F2"/>
+  <rect x="175" y="181" width="122" height="9" rx="4.5" fill="#889CE9"/>
+  <rect x="175" y="204" width="186" height="7" rx="3.5" fill="#C6D4F6"/>
+  <rect x="175" y="221" width="164" height="7" rx="3.5" fill="#C6D4F6"/>
+  <rect x="175" y="238" width="174" height="7" rx="3.5" fill="#C6D4F6"/>
+  <path d="M181 269H265" stroke="#9CAFE8" stroke-width="5" stroke-linecap="round"/>
+  <circle cx="423" cy="223" r="64" fill="#FAFBFF" stroke="#3659B5" stroke-width="5"/>
+  <circle cx="423" cy="223" r="48" fill="#E5ECFF"/>
+  <path d="M423 195V229" stroke="#4165CA" stroke-width="8" stroke-linecap="round"/>
+  <circle cx="423" cy="248" r="5" fill="#4165CA"/>
+  <path d="M116 212H139M128 200V224" stroke="#90A5E9" stroke-width="3" stroke-linecap="round"/>
+  <circle cx="487" cy="118" r="5" fill="#839BED"/>
+  <path d="M486 292C497 281 512 281 523 292" stroke="#8EA2E9" stroke-width="3" stroke-linecap="round"/>
+</svg>

@@ -1,5 +1,5 @@
 import { Link, useRouterState } from '@tanstack/react-router'
-import { Ellipsis, Plus, Search } from 'lucide-react'
+import { Bell, BookOpen, ChevronDown, Ellipsis, Plus, Search } from 'lucide-react'
 import { useEffect, useState, type ReactNode } from 'react'
 
 import { cn } from '@/lib/utils'
@@ -14,6 +14,7 @@ import {
   type NavItem,
 } from './nav-model'
 import { Button } from './ui/button'
+import '../styles/campus-blue.css'
 
 /**
  * Routes whose surface is a WORKSPACE, not a document.
@@ -55,7 +56,12 @@ export function AcademicShell({
   const isWorkspace = WORKSPACE_ROUTES.some((to) => pathname.startsWith(to))
 
   return (
-    <div className={cn('bg-paper', isWorkspace ? 'h-dvh overflow-hidden' : 'min-h-dvh')}>
+    <div
+      className={cn(
+        'campus-blue bg-paper',
+        isWorkspace ? 'h-dvh overflow-hidden' : 'min-h-dvh',
+      )}
+    >
       <a href="#contenido" className="skip-link">
         Saltar al contenido
       </a>
@@ -65,17 +71,17 @@ export function AcademicShell({
           the top stays pinned by `h-dvh` — which is why the calendar looked
           like it shrank from three edges and not the fourth. Documents keep the
           cap; the calendar and the vault take the whole window. */}
-      <div className={cn('flex w-full', isWorkspace ? 'h-full' : 'mx-auto max-w-[1440px]')}>
+      <div className={cn('flex w-full', isWorkspace && 'h-full')}>
         {/* ---- Desktop navigation ---- */}
         <nav
           aria-label="Principal"
-          className="w-nav border-rule sticky top-0 hidden h-dvh shrink-0 flex-col gap-1 border-r px-3 py-5 md:flex"
+          className="campus-blue-nav w-nav sticky top-0 hidden h-dvh shrink-0 flex-col gap-1 px-3 py-6 md:flex"
         >
           <Link
             to="/today"
-            className="text-ink mb-4 flex min-h-8 items-center gap-2 px-2 font-serif text-lg"
+            className="campus-blue-logo mb-8 flex min-h-8 items-center gap-3 px-2 font-serif text-xl"
           >
-            <span aria-hidden="true" className="bg-accent inline-block h-5 w-1 rounded-full" />
+            <BookOpen aria-hidden="true" className="size-6 fill-blue-300/30 text-blue-300" />
             Campus
           </Link>
 
@@ -83,7 +89,12 @@ export function AcademicShell({
             <NavLink key={item.to} item={item} current={isCurrent(item.to)} />
           ))}
 
-          <div className="mt-auto flex flex-col gap-2 pt-4">
+          <div className="campus-blue-nav-footer mt-auto flex flex-col gap-2 pt-4">
+            <p className="campus-blue-institution px-2 text-xs leading-relaxed">
+              UTN Facultad Regional Rosario
+              <span className="block">Ingeniería en Sistemas</span>
+              <span className="block">Plan académico</span>
+            </p>
             <Button
               variant="ghost"
               onClick={onSearch}
@@ -106,10 +117,12 @@ export function AcademicShell({
         <div className={cn('flex min-w-0 flex-1 flex-col', isWorkspace && 'min-h-0')}>
           <MobileTopBar onSearch={onSearch} />
 
+          <DesktopTopBar onSearch={onSearch} onQuickCapture={onQuickCapture} />
+
           <div
             className={cn(
               'flex min-w-0 flex-1 flex-col',
-              isWorkspace ? 'min-h-0 pb-16 md:pb-0' : 'lg:flex-row lg:gap-8 lg:px-8',
+              isWorkspace ? 'min-h-0 pb-16 md:pb-0' : 'lg:flex-row lg:gap-6 lg:px-7',
             )}
           >
             <main
@@ -128,7 +141,7 @@ export function AcademicShell({
                     // the calendar measured 33554432px, the browser's ceiling.
                     'flex min-h-0 flex-col overflow-hidden'
                   : cn(
-                      'lg:max-w-measure px-4 pt-5 sm:px-6 md:pt-8 lg:px-0 lg:pb-16',
+                      'campus-blue-main px-4 pt-5 sm:px-6 md:pt-7 lg:px-0 lg:pb-16',
                       // Room for the tab bar, and for the floating "+" only when
                       // there is one: padding for a button that is not there is
                       // dead paper, and a button with no padding covers rows.
@@ -136,7 +149,7 @@ export function AcademicShell({
                     ),
                 // With no context rail the reserved 260px would read as dead space
                 // on a wide screen, so the notebook surface centres instead.
-                !rail && !isWorkspace && 'lg:mx-auto',
+                !rail && !isWorkspace && 'w-full',
               )}
             >
               {children}
@@ -175,26 +188,73 @@ function NavLink({ item, current }: { item: NavItem; current: boolean }) {
       to={item.to}
       aria-current={current ? 'page' : undefined}
       className={cn(
-        'relative flex items-center gap-2.5 rounded-md px-2 py-2 text-sm transition-colors duration-150',
-        current
-          ? 'bg-accent-soft text-accent-ink font-medium'
-          : 'text-ink-muted hover:bg-paper-sunken hover:text-ink',
+        'campus-blue-nav-link relative flex min-h-12 items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors duration-150',
+        current ? 'campus-blue-nav-current font-semibold' : 'campus-blue-nav-idle',
       )}
     >
-      <Icon aria-hidden="true" className="size-4 shrink-0" />
+      <Icon aria-hidden="true" className="size-5 shrink-0" />
       {item.label}
     </Link>
   )
 }
 
+function DesktopTopBar({
+  onSearch,
+  onQuickCapture,
+}: {
+  onSearch: () => void
+  onQuickCapture: () => void
+}) {
+  return (
+    <header className="campus-blue-topbar hidden min-h-19 items-center justify-between gap-5 px-7 md:flex">
+      <button
+        type="button"
+        onClick={onSearch}
+        className="campus-blue-search flex min-h-11 w-full max-w-[800px] items-center gap-3 px-4 text-left text-sm"
+        aria-label="Abrir búsqueda global"
+      >
+        <Search aria-hidden="true" className="size-4" />
+        <span className="min-w-0 flex-1 truncate">
+          Buscar materias, clases, tareas, fechas…
+        </span>
+        <kbd className="campus-blue-kbd text-xs">Ctrl + K</kbd>
+      </button>
+      <div className="flex shrink-0 items-center gap-3">
+        <button
+          type="button"
+          onClick={onQuickCapture}
+          className="campus-blue-top-action"
+          aria-label="Agregar tarea"
+        >
+          <Plus className="size-5" aria-hidden="true" />
+        </button>
+        <Link
+          to="/settings"
+          className="campus-blue-top-action"
+          aria-label="Configurar notificaciones"
+        >
+          <Bell className="size-5" aria-hidden="true" />
+        </Link>
+        <Link
+          to="/settings"
+          className="campus-blue-avatar"
+          aria-label="Abrir ajustes de cuenta"
+        >
+          C <ChevronDown aria-hidden="true" className="ml-1 size-3" />
+        </Link>
+      </div>
+    </header>
+  )
+}
+
 function MobileTopBar({ onSearch }: { onSearch: () => void }) {
   return (
-    <header className="border-rule bg-paper/90 sticky top-0 z-30 flex items-center justify-between gap-3 border-b px-4 py-3 backdrop-blur-sm md:hidden">
+    <header className="campus-blue-mobile-top sticky top-0 z-30 flex items-center justify-between gap-3 px-4 py-3 md:hidden">
       <Link
         to="/today"
-        className="text-ink -my-2.5 flex items-center gap-2 py-2.5 font-serif text-base"
+        className="-my-2.5 flex items-center gap-2 py-2.5 font-serif text-xl text-white"
       >
-        <span aria-hidden="true" className="bg-accent inline-block h-4 w-1 rounded-full" />
+        <BookOpen aria-hidden="true" className="size-5 text-blue-300" />
         Campus
       </Link>
       <Button variant="ghost" size="icon-touch" onClick={onSearch} aria-label="Buscar">

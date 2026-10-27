@@ -1,0 +1,456 @@
+/* Campus proposal 2: production design layer over existing real product logic.
+ * Tokens intentionally scoped so onboarding and third-party controls remain safe. */
+.campus-blue {
+  --color-paper: #f8fafd;
+  --color-paper-elevated: #ffffff;
+  --color-paper-sunken: #eef4fd;
+  --color-ink: #10224a;
+  --color-ink-muted: #566d95;
+  --color-ink-faint: #798dac;
+  --color-rule: #d6e1f1;
+  --color-rule-soft: #e6edf7;
+  --color-field: #8397b7;
+  --color-accent: #155dd6;
+  --color-accent-soft: #e7f0ff;
+  --color-accent-ink: #1454bd;
+  --color-accent-hover: #0e4dbb;
+  --color-focus: #155dd6;
+  --color-on-tint: #ffffff;
+  --color-success: #10a777;
+  --color-success-ink: #067b55;
+  --color-success-soft: #e3f7ef;
+  --color-warning: #a96808;
+  --color-warning-soft: #fff2d5;
+  --color-danger: #c63743;
+  --color-danger-soft: #fff0f2;
+  --color-selection: #d7e7ff;
+  --shadow-tint: 24 50 94;
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family:
+    'Inter',
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    sans-serif;
+}
+
+.campus-blue :is(button, a, input, select, textarea):focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 3px;
+}
+
+.campus-blue-nav {
+  background: linear-gradient(165deg, #102944 0%, #173858 48%, #102a43 100%);
+  color: #e3efff;
+  box-shadow: 2px 0 18px rgb(23 44 79 / 0.08);
+}
+.campus-blue-logo {
+  color: #fff;
+  letter-spacing: -0.035em;
+}
+.campus-blue-nav-link {
+  color: #c6d7ed;
+}
+.campus-blue-nav-current {
+  background: #285487;
+  color: #fff;
+}
+.campus-blue-nav-idle:hover {
+  color: #fff;
+  background: rgb(255 255 255 / 0.1);
+}
+.campus-blue-institution {
+  color: #b5cce7;
+  border-top: 1px solid rgb(255 255 255 / 0.15);
+  padding-top: 1.25rem;
+}
+.campus-blue-nav-footer button:not(.bg-accent) {
+  color: #cce0f8;
+}
+.campus-blue-nav-footer button.bg-accent {
+  background: #276bde;
+  color: white;
+}
+.campus-blue-topbar {
+  background: #fbfdff;
+  border-bottom: 1px solid var(--color-rule-soft);
+}
+.campus-blue-search {
+  border: 1px solid var(--color-rule);
+  background: #f7faff;
+  border-radius: 10px;
+  color: var(--color-ink-muted);
+  transition:
+    border-color 0.15s,
+    background 0.15s;
+}
+.campus-blue-search:hover {
+  border-color: #a5bee4;
+  background: #fff;
+}
+.campus-blue-kbd {
+  padding: 0.25rem 0.45rem;
+  border-radius: 5px;
+  background: #e7effb;
+  color: #627ca6;
+  white-space: nowrap;
+}
+.campus-blue-top-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.6rem;
+  height: 2.6rem;
+  border-radius: 9px;
+  color: #2a4d83;
+}
+.campus-blue-top-action:hover {
+  background: var(--color-accent-soft);
+}
+.campus-blue-avatar {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  justify-content: center;
+  color: #18335a;
+  text-decoration: none;
+  font-weight: 700;
+  background: #e5edfa;
+  border-radius: 50%;
+  min-width: 2.7rem;
+  height: 2.7rem;
+}
+.campus-blue-mobile-top {
+  background: #133354;
+  color: #fff;
+}
+.campus-blue-mobile-top button {
+  color: #e9f2ff;
+}
+.campus-blue main {
+  color: var(--color-ink);
+}
+.campus-blue .font-serif {
+  font-family: 'Newsreader', Georgia, 'Times New Roman', serif;
+  letter-spacing: -0.025em;
+}
+
+/* Use the actual app elements, not screenshots, for responsive dashboards. */
+.campus-blue .blue-screen {
+  display: grid;
+  gap: 1.5rem;
+  min-width: 0;
+}
+.campus-blue .blue-screen-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+}
+.campus-blue .blue-screen-title {
+  margin: 0;
+  font:
+    600 clamp(2rem, 3vw, 2.6rem)/1.08 'Newsreader',
+    Georgia,
+    serif;
+  letter-spacing: -0.04em;
+  color: #0d2046;
+}
+.campus-blue .blue-screen-subtitle {
+  margin-top: 0.35rem;
+  color: #577099;
+  font-size: 0.95rem;
+}
+.campus-blue .blue-layout {
+  display: grid;
+  gap: 1.5rem;
+  align-items: start;
+  min-width: 0;
+}
+.campus-blue .blue-panel {
+  background: white;
+  border: 1px solid var(--color-rule-soft);
+  border-radius: 12px;
+  padding: 1rem;
+  min-width: 0;
+}
+.campus-blue .blue-panel-soft {
+  background: #e9f2ff;
+  border: 1px solid #d8e8ff;
+  border-radius: 12px;
+  padding: 1rem;
+}
+.campus-blue .blue-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.8rem;
+}
+.campus-blue .blue-panel-head h2 {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #0c2146;
+}
+.campus-blue .blue-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.5rem;
+  height: 1.5rem;
+  padding: 0 0.42rem;
+  color: #174eac;
+  background: #e1edff;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  margin-left: 0.35rem;
+}
+.campus-blue .blue-section-label {
+  color: #172c53;
+  font-size: 1rem;
+  font-weight: 700;
+  margin: 0.25rem 0 0.7rem;
+}
+.campus-blue .blue-list {
+  overflow: hidden;
+  border: 1px solid var(--color-rule);
+  border-radius: 11px;
+  background: white;
+}
+.campus-blue .blue-list > * + * {
+  border-top: 1px solid var(--color-rule-soft);
+}
+.campus-blue .blue-list > * {
+  padding-left: 0.9rem;
+  padding-right: 0.9rem;
+}
+.campus-blue .blue-list .group:last-child {
+  border-bottom: 0;
+}
+.campus-blue .blue-text-link {
+  color: #145acb;
+  text-decoration: none;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.campus-blue .blue-text-link:hover {
+  text-decoration: underline;
+}
+.campus-blue .blue-button {
+  background: #155dd6;
+  color: white;
+  border: 1px solid #155dd6;
+  border-radius: 9px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem 1rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+.campus-blue .blue-button:hover {
+  background: #0e4dbb;
+}
+.campus-blue .blue-button-outline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.85rem;
+  border-radius: 8px;
+  border: 1px solid var(--color-rule);
+  background: white;
+  color: #23446f;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+.campus-blue .blue-button-outline:hover {
+  border-color: #7eacfd;
+  background: #f3f8ff;
+}
+.campus-blue .blue-status-dot {
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 50%;
+  flex: none;
+  background: #347ceb;
+}
+.campus-blue .blue-status-dot[data-status='regularized'] {
+  background: #efa918;
+}
+.campus-blue .blue-status-dot[data-status='passed'],
+.campus-blue .blue-status-dot[data-status='equivalent'] {
+  background: #10a777;
+}
+.campus-blue .blue-status-dot[data-status='available'],
+.campus-blue .blue-status-dot[data-status='pending'] {
+  background: #a5b5cc;
+}
+.campus-blue .blue-stat-row {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.55rem 0;
+  color: #263f66;
+  font-size: 0.86rem;
+}
+.campus-blue .blue-stat-row + .blue-stat-row {
+  border-top: 1px solid var(--color-rule-soft);
+}
+.campus-blue .blue-stat-row a {
+  min-width: 0;
+  color: inherit;
+  text-decoration: none;
+}
+.campus-blue .blue-stat-row a:hover {
+  color: #145acb;
+}
+.campus-blue .blue-stat-row .blue-stat-time {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+  color: #56729b;
+  font-size: 0.76rem;
+  white-space: nowrap;
+}
+.campus-blue .blue-subject-summary {
+  display: grid;
+  gap: 0.35rem;
+}
+.campus-blue .blue-progress-track {
+  height: 0.5rem;
+  width: 100%;
+  border-radius: 999px;
+  background: #e4ecf8;
+  overflow: hidden;
+}
+.campus-blue .blue-progress-fill {
+  height: 100%;
+  background: #276fe4;
+  border-radius: inherit;
+}
+.campus-blue .blue-dashboard-hero {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  min-height: 5rem;
+}
+.campus-blue .blue-dashboard-hero strong {
+  display: block;
+  font-size: 1.05rem;
+}
+.campus-blue .blue-dashboard-hero p {
+  color: #5b759d;
+  font-size: 0.82rem;
+  margin-top: 0.15rem;
+}
+.campus-blue .blue-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.7rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 6px;
+  padding: 0 0.55rem;
+  background: #e8f1ff;
+  color: #1556bf;
+  white-space: nowrap;
+}
+.campus-blue .blue-chip[data-status='regularized'] {
+  color: #8f5d06;
+  background: #fff2d9;
+}
+.campus-blue .blue-chip[data-status='passed'] {
+  color: #08734f;
+  background: #ddf7ec;
+}
+.campus-blue .blue-chip[data-status='available'] {
+  color: #647b9c;
+  background: #eef2f8;
+}
+.campus-blue .blue-compact-table > li {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid var(--color-rule-soft);
+}
+.campus-blue .blue-compact-table > li:last-child {
+  border-bottom: 0;
+}
+.campus-blue .blue-search-input {
+  border: 1px solid var(--color-rule);
+  background: #fff;
+  color: #172e55;
+  border-radius: 8px;
+  padding: 0.67rem 0.8rem;
+  min-width: 0;
+  width: 100%;
+}
+
+/* The actual DayFlow and agenda views, retaining keyboard/event behavior. */
+.campus-blue .blue-calendar {
+  background: #fbfdff;
+  color: #152b53;
+}
+.campus-blue .blue-calendar-toolbar {
+  background: #fff;
+  border-color: #dce6f4;
+  gap: 0.75rem;
+}
+.campus-blue .blue-calendar-toolbar :is(button, [role='button']) {
+  border-radius: 8px;
+}
+.campus-blue .blue-calendar .df-campus-chip {
+  border-radius: 7px;
+}
+.campus-blue .blue-calendar [class*='df-month'],
+.campus-blue .blue-calendar [class*='df-week'] {
+  --df-color-background: #fff;
+  --df-color-foreground: #19315a;
+}
+.campus-blue .blue-calendar :is([role='gridcell'], [class*='df-day']) {
+  border-color: #e3ebf7;
+}
+
+@media (min-width: 1100px) {
+  .campus-blue .blue-layout {
+    grid-template-columns: minmax(0, 1fr) minmax(260px, 320px);
+  }
+  .campus-blue .blue-layout-wide {
+    grid-template-columns: minmax(0, 1fr) 280px;
+  }
+}
+@media (max-width: 767px) {
+  .campus-blue .blue-screen-title {
+    font-size: 2.05rem;
+  }
+  .campus-blue .blue-panel {
+    padding: 0.85rem;
+  }
+  .campus-blue .blue-screen {
+    gap: 1.2rem;
+  }
+  .campus-blue nav[aria-label='Secciones'] {
+    background: white;
+    border-color: #dce6f4;
+    box-shadow: 0 -3px 12px rgb(19 56 96 / 0.05);
+  }
+  .campus-blue nav[aria-label='Secciones'] a[aria-current='page'] {
+    background: #edf4ff;
+    color: #1454bd;
+    border-radius: 8px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .campus-blue *,
+  .campus-blue *::before,
+  .campus-blue *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}

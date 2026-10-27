@@ -152,10 +152,11 @@ function PlanScreen() {
   const earned = plan.progress.passed + plan.progress.equivalent
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="blue-screen">
       <PageHeader
         eyebrow={plan.curriculum?.version}
-        title={plan.programName ?? 'Tu plan'}
+        title="Plan académico"
+        description={plan.programName ?? 'Tu carrera'}
         actions={
           <Link to="/plan/progress" className={cn(buttonVariants({ variant: 'secondary' }))}>
             Cargar mi avance
@@ -184,54 +185,119 @@ function PlanScreen() {
         </p>
       ) : null}
 
-      <ProgressLine value={earned} total={plan.progress.total} />
+      <div className="blue-layout">
+        <div className="grid min-w-0 gap-5">
+          <div className="blue-panel-soft">
+            <div className="blue-panel-head">
+              <h2>Tu progreso en la carrera</h2>
+              <span className="blue-chip">
+                {plan.progress.total ? Math.round((earned / plan.progress.total) * 100) : 0}%
+                completado
+              </span>
+            </div>
+            <ProgressLine value={earned} total={plan.progress.total} />
+          </div>
 
-      {plan.progress.flagged > 0 ? (
-        <p className="text-ink-muted -mt-6 text-xs">
-          {plan.progress.flagged} con correlativas pendientes
-        </p>
-      ) : null}
+          {plan.progress.flagged > 0 ? (
+            <p className="text-ink-muted -mt-6 text-xs">
+              {plan.progress.flagged} con correlativas pendientes
+            </p>
+          ) : null}
 
-      {plan.prerequisitesKnown && plan.progress.blocked > 0 ? (
-        <p className="text-ink-muted text-sm">
-          {plan.progress.available} disponible{plan.progress.available === 1 ? '' : 's'} ·{' '}
-          {plan.progress.blocked} bloqueada{plan.progress.blocked === 1 ? '' : 's'} por
-          correlativas
-        </p>
-      ) : null}
+          {plan.prerequisitesKnown && plan.progress.blocked > 0 ? (
+            <p className="text-ink-muted text-sm">
+              {plan.progress.available} disponible{plan.progress.available === 1 ? '' : 's'} ·{' '}
+              {plan.progress.blocked} bloqueada{plan.progress.blocked === 1 ? '' : 's'} por
+              correlativas
+            </p>
+          ) : null}
 
-      {/* Silence here would read as "nada te bloquea", which is a claim we cannot make.
+          {/* Silence here would read as "nada te bloquea", which is a claim we cannot make.
           A plan with no correlativa graph has to say so, or Campus is quietly asserting
           an academic fact it does not have (P-05). */}
-      {!plan.prerequisitesKnown && plan.views.length > 0 ? (
-        <p className="border-rule bg-paper-elevated text-ink-muted rounded-lg border border-dashed px-4 py-3 text-sm">
-          Esta facultad todavía no publicó las correlatividades de este plan, así que Campus no
-          puede decirte qué te habilita cada materia. Cuando salgan, las cargamos.{' '}
-          <span className="text-ink">No las inventamos.</span>
-        </p>
-      ) : null}
+          {!plan.prerequisitesKnown && plan.views.length > 0 ? (
+            <p className="border-rule bg-paper-elevated text-ink-muted rounded-lg border border-dashed px-4 py-3 text-sm">
+              Esta facultad todavía no publicó las correlatividades de este plan, así que Campus
+              no puede decirte qué te habilita cada materia. Cuando salgan, las cargamos.{' '}
+              <span className="text-ink">No las inventamos.</span>
+            </p>
+          ) : null}
 
-      {plan.byYear.map((group) => (
-        <section
-          key={group.yearLevel}
-          aria-labelledby={`anio-${group.yearLevel}`}
-          className="flex flex-col gap-1"
-        >
-          <SectionHeading
-            id={`anio-${group.yearLevel}`}
-            aside={`${group.subjects.length} materias`}
-          >
-            {group.yearLevel}° año
-          </SectionHeading>
-          <ul>
-            {group.subjects.map((subject) => (
-              <li key={subject.id}>
-                <SubjectRow subject={subject} />
-              </li>
-            ))}
-          </ul>
-        </section>
-      ))}
+          {plan.byYear.map((group) => (
+            <section
+              key={group.yearLevel}
+              aria-labelledby={`anio-${group.yearLevel}`}
+              className="blue-panel flex flex-col gap-2"
+            >
+              <SectionHeading
+                id={`anio-${group.yearLevel}`}
+                aside={`${group.subjects.length} materias`}
+              >
+                {group.yearLevel}° año
+              </SectionHeading>
+              <ul className="blue-list">
+                {group.subjects.map((subject) => (
+                  <li key={subject.id}>
+                    <SubjectRow subject={subject} />
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ))}
+        </div>
+        <aside aria-label="Resumen del plan" className="grid min-w-0 content-start gap-4">
+          <section className="blue-panel">
+            <div className="blue-panel-head">
+              <h2>Tu avance</h2>
+            </div>
+            <div className="flex items-center justify-center py-4">
+              <div className="flex size-32 items-center justify-center rounded-full border-[12px] border-blue-100 text-center">
+                <div>
+                  <strong className="block text-3xl text-blue-800">
+                    {plan.progress.total ? Math.round((earned / plan.progress.total) * 100) : 0}
+                    %
+                  </strong>
+                  <span className="text-ink-muted text-xs">completado</span>
+                </div>
+              </div>
+            </div>
+            <p className="text-ink-muted text-center text-sm">
+              {earned} de {plan.progress.total} materias aprobadas o equivalentes
+            </p>
+            <div className="blue-stat-row">
+              <span className="blue-status-dot" data-status="passed" />
+              Aprobadas y equivalentes<strong className="ml-auto">{earned}</strong>
+            </div>
+            <div className="blue-stat-row">
+              <span className="blue-status-dot" />
+              Cursando
+              <strong className="ml-auto">
+                {plan.views.filter((v) => v.status === 'in_progress').length}
+              </strong>
+            </div>
+            <div className="blue-stat-row">
+              <span className="blue-status-dot" data-status="regularized" />
+              Final pendiente
+              <strong className="ml-auto">
+                {plan.views.filter((v) => v.status === 'regularized').length}
+              </strong>
+            </div>
+          </section>
+          <section className="blue-panel">
+            <div className="blue-panel-head">
+              <h2>Correlativas</h2>
+            </div>
+            <p className="text-ink-muted text-sm">
+              {plan.prerequisitesKnown
+                ? `Campus muestra ${plan.progress.available} materias disponibles según las correlativas registradas.`
+                : 'Todavía no tenemos información oficial suficiente para afirmar qué materias tenés habilitadas.'}
+            </p>
+          </section>
+          <Link to="/plan/progress" className="blue-button justify-center">
+            Actualizar avance
+          </Link>
+        </aside>
+      </div>
     </div>
   )
 }

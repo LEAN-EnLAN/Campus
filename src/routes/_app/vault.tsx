@@ -1,4 +1,4 @@
-import { createFileRoute, useBlocker, useNavigate } from '@tanstack/react-router'
+import { createFileRoute, Link, useBlocker, useNavigate } from '@tanstack/react-router'
 import { useCallback, useRef } from 'react'
 
 import { WorkspaceShell } from '@/components/workspace/workspace-shell'
@@ -46,24 +46,25 @@ function VaultScreen() {
 
   if (!files || !vaultKey) {
     return (
-      <div className="grid h-full place-items-center p-8">
-        <div className="max-w-sm text-center">
-          <svg
-            aria-hidden
-            viewBox="0 0 96 72"
-            className="text-ink-faint mx-auto mb-4 h-20 w-24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.5"
-          >
-            <path d="M10 20 h28 l6 8 h42 v34 a4 4 0 0 1 -4 4 h-68 a4 4 0 0 1 -4 -4 z" />
-            <line x1="10" y1="36" x2="86" y2="36" strokeDasharray="3 4" />
-          </svg>
-          <h1 className="text-ink text-lg font-semibold">Tus notas viven en tu computadora</h1>
+      <div className="bg-paper grid h-full place-items-center overflow-y-auto px-5 py-8">
+        <div className="blue-panel w-full max-w-xl p-6 text-center sm:p-9">
+          <img
+            src="/campus-blue-assets/vault-cloud-unavailable.svg"
+            alt=""
+            width={640}
+            height={400}
+            className="mx-auto mb-2 h-48 w-full max-w-72 object-contain"
+          />
+          <h1 className="text-ink font-serif text-2xl font-semibold">
+            Tus notas todavía no están disponibles en Cloud
+          </h1>
           <p className="text-ink-muted mt-2 text-sm">
             Tus notas son archivos de una carpeta tuya, y Campus Cloud no las tiene. Para
             usarlas, abrí Campus en tu computadora y elegí una carpeta.
           </p>
+          <Link to="/settings" className="blue-button mt-5">
+            Cambiar de espacio de trabajo →
+          </Link>
         </div>
       </div>
     )

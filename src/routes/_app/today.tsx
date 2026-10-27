@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
+import { BlueTodayScreen } from '@/features/blue/blue-today-screen'
 import { useMemo } from 'react'
 
 import { DeadlineRow } from '@/components/deadline-row'
@@ -14,7 +15,7 @@ import { useCompleteItem } from '@/features/items/use-complete-item'
 import { buildToday, daysLeftLabel, todayHeadline } from '@/features/items/today-model'
 
 export const Route = createFileRoute('/_app/today')({
-  component: TodayScreen,
+  component: BlueTodayScreen,
 })
 
 const DATE_FORMAT = new Intl.DateTimeFormat('es-AR', {
@@ -40,7 +41,7 @@ function capitalize(text: string): string {
 }
 
 /** Today, not a dashboard. The hero is the date and one honest sentence. */
-function TodayScreen() {
+export function LegacyTodayScreen() {
   const plan = useAcademicPlan()
   const itemsQuery = useAcademicItems()
 

@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { Columns3, List } from 'lucide-react'
+import { Columns3, List, Search } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
 import { EmptyState, ErrorState, LoadingRows } from '@/components/empty-state'
@@ -39,6 +39,7 @@ function CoursesScreen() {
   const plan = useAcademicPlan()
   const [chosen, setChosen] = useState<Filter | null>(null)
   const [view, setView] = useState<View>('list')
+  const [query, setQuery] = useState('')
   // Subjects whose status the student changed while on this filter. They stay in
   // place until the filter changes: a row that vanishes the moment it is marked
   // takes its "Guardado" with it, and looks like the tap did nothing.
@@ -76,10 +77,13 @@ function CoursesScreen() {
 
   const visible = useMemo(
     () =>
-      filter === 'todas'
+      (filter === 'todas'
         ? plan.views
-        : plan.views.filter((v) => statusGroupOf(v.status) === filter || pinned.has(v.id)),
-    [plan.views, filter, pinned],
+        : plan.views.filter((v) => statusGroupOf(v.status) === filter || pinned.has(v.id))
+      ).filter((v) =>
+        v.name.toLocaleLowerCase('es-AR').includes(query.trim().toLocaleLowerCase('es-AR')),
+      ),
+    [plan.views, filter, pinned, query],
   )
 
   function chooseFilter(next: Filter) {
@@ -132,129 +136,227 @@ function CoursesScreen() {
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="blue-screen">
       <PageHeader
-        eyebrow={plan.isUnmapped ? plan.context?.unmappedLabel : plan.curriculum?.version}
-        title="Tus materias"
+        eyebrow={
+          plan.isUnmapped
+            ? plan.context?.unmappedLabel
+            : (plan.programName ?? plan.curriculum?.version)
+        }
+        title="Materias"
         description={
           plan.isUnmapped
             ? manualSubjectsBanner
-            : 'Marcá en qué estás y Campus recalcula qué se te habilita.'
+            : (plan.curriculum?.version ?? 'Tu recorrido académico')
         }
       />
-
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        {/* The board shows every column at once, so status chips would only
+      <div className="blue-layout">
+        <div className="grid min-w-0 gap-5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <label className="border-rule bg-paper-elevated flex min-w-[190px] flex-1 items-center gap-2 rounded-lg border px-3">
+              <Search aria-hidden="true" className="text-ink-muted size-4" />
+              <span className="sr-only">Buscar materias</span>
+              <input
+                className="min-h-10 w-full min-w-0 bg-transparent text-sm outline-none"
+                type="search"
+                placeholder="Buscar materias…"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+              />
+            </label>
+            {/* The board shows every column at once, so status chips would only
             contradict it (a pressed chip over a board that ignores it). */}
-        {showBoard ? (
-          <div />
-        ) : (
-          <div role="group" aria-label="Filtrar materias" className="flex flex-wrap gap-1.5">
-            {filters.map((f) => (
-              <Button
-                key={f.value}
-                size="sm"
-                variant={filter === f.value ? 'primary' : 'secondary'}
-                aria-pressed={filter === f.value}
-                onClick={() => chooseFilter(f.value)}
+            {showBoard ? (
+              <div className="hidden" />
+            ) : (
+              <div
+                role="group"
+                aria-label="Filtrar materias"
+                className="flex flex-wrap gap-1.5"
               >
-                {f.label}
-                {/* No opacity at all. opacity-70 composited to 3.84:1 and failed; 90%
+                {filters.map((f) => (
+                  <Button
+                    key={f.value}
+                    size="sm"
+                    variant={filter === f.value ? 'primary' : 'secondary'}
+                    aria-pressed={filter === f.value}
+                    onClick={() => chooseFilter(f.value)}
+                  >
+                    {f.label}
+                    {/* No opacity at all. opacity-70 composited to 3.84:1 and failed; 90%
                   measured ~5.3:1 yet still tripped axe at 390px, which means it was
                   sitting close enough to the threshold to be decided by rounding.
                   A value that passes at four viewports out of five is not passing. */}
-                <span className="text-xs" data-numeric>
-                  {counts.get(f.value) ?? 0}
-                </span>
-              </Button>
-            ))}
-          </div>
-        )}
-
-        <div role="group" aria-label="Cómo ver tus materias" className="flex gap-1.5">
-          <Button
-            size="sm"
-            variant={view === 'list' ? 'primary' : 'secondary'}
-            aria-pressed={view === 'list'}
-            onClick={() => setView('list')}
-          >
-            <List aria-hidden="true" />
-            Lista
-          </Button>
-          <Button
-            size="sm"
-            variant={view === 'board' ? 'primary' : 'secondary'}
-            aria-pressed={view === 'board'}
-            onClick={() => setView('board')}
-          >
-            <Columns3 aria-hidden="true" />
-            Tablero
-          </Button>
-        </div>
-      </div>
-
-      <section aria-labelledby="listado" className="flex flex-col gap-1">
-        <SectionHeading id="listado">{showBoard ? 'Tablero' : spec.label}</SectionHeading>
-        {showBoard ? (
-          <div className="mt-2">
-            <SubjectBoardView />
-          </div>
-        ) : visible.length === 0 ? (
-          <EmptyState
-            className="mt-2"
-            title={
-              plan.isUnmapped && plan.views.length === 0
-                ? 'Todavía no cargaste materias'
-                : filter === 'cursando'
-                  ? 'No estás cursando nada todavía'
-                  : filter === 'final_pendiente'
-                    ? 'No tenés finales pendientes'
-                    : 'No hay materias acá'
-            }
-            description={
-              plan.isUnmapped && plan.views.length === 0
-                ? 'Agregalas más abajo y marcá en qué estás.'
-                : filter === 'cursando'
-                  ? 'Pasá a "Todas" y marcá una materia como "Cursando" para que aparezca en Hoy, o cargá todo tu avance de una.'
-                  : undefined
-            }
-            action={
-              filter === 'cursando' && plan.views.length > 0 ? (
-                <Link
-                  to="/plan/progress"
-                  className="text-accent-ink text-sm font-medium underline-offset-4 hover:underline"
-                >
-                  Cargar mi avance
-                </Link>
-              ) : undefined
-            }
-          />
-        ) : (
-          <ul>
-            {visible.map((subject) => (
-              <li key={subject.id}>
-                <SubjectRow
-                  subject={subject}
-                  showYear
-                  control={
-                    <span className="flex items-center gap-1">
-                      <SubjectStatusControl subject={subject} onChange={keepInPlace} />
-                      {subject.manual ? <RemoveManualSubjectButton subject={subject} /> : null}
+                    <span className="text-xs" data-numeric>
+                      {counts.get(f.value) ?? 0}
                     </span>
-                  }
-                />
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+                  </Button>
+                ))}
+              </div>
+            )}
 
-      {plan.isUnmapped ? (
-        <section aria-labelledby="agregar-materia" className="flex flex-col gap-3">
-          <SectionHeading id="agregar-materia">Agregar una materia</SectionHeading>
-          <AddManualSubjectForm />
-        </section>
-      ) : null}
+            <div role="group" aria-label="Cómo ver tus materias" className="flex gap-1.5">
+              <Button
+                size="sm"
+                variant={view === 'list' ? 'primary' : 'secondary'}
+                aria-pressed={view === 'list'}
+                onClick={() => setView('list')}
+              >
+                <List aria-hidden="true" />
+                Lista
+              </Button>
+              <Button
+                size="sm"
+                variant={view === 'board' ? 'primary' : 'secondary'}
+                aria-pressed={view === 'board'}
+                onClick={() => setView('board')}
+              >
+                <Columns3 aria-hidden="true" />
+                Tablero
+              </Button>
+            </div>
+          </div>
+
+          <section aria-labelledby="listado" className="flex min-w-0 flex-col gap-1">
+            <SectionHeading id="listado">{showBoard ? 'Tablero' : spec.label}</SectionHeading>
+            {showBoard ? (
+              <div className="mt-2 min-w-0 overflow-x-auto">
+                <SubjectBoardView />
+              </div>
+            ) : visible.length === 0 ? (
+              <EmptyState
+                className="mt-2"
+                title={
+                  plan.isUnmapped && plan.views.length === 0
+                    ? 'Todavía no cargaste materias'
+                    : filter === 'cursando'
+                      ? 'No estás cursando nada todavía'
+                      : filter === 'final_pendiente'
+                        ? 'No tenés finales pendientes'
+                        : 'No hay materias acá'
+                }
+                description={
+                  plan.isUnmapped && plan.views.length === 0
+                    ? 'Agregalas más abajo y marcá en qué estás.'
+                    : filter === 'cursando'
+                      ? 'Pasá a "Todas" y marcá una materia como "Cursando" para que aparezca en Hoy, o cargá todo tu avance de una.'
+                      : undefined
+                }
+                action={
+                  filter === 'cursando' && plan.views.length > 0 ? (
+                    <Link
+                      to="/plan/progress"
+                      className="text-accent-ink text-sm font-medium underline-offset-4 hover:underline"
+                    >
+                      Cargar mi avance
+                    </Link>
+                  ) : undefined
+                }
+              />
+            ) : (
+              <ul className="blue-list">
+                {visible.map((subject) => (
+                  <li key={subject.id}>
+                    <SubjectRow
+                      subject={subject}
+                      showYear
+                      control={
+                        <span className="flex items-center gap-1">
+                          <SubjectStatusControl subject={subject} onChange={keepInPlace} />
+                          {subject.manual ? (
+                            <RemoveManualSubjectButton subject={subject} />
+                          ) : null}
+                        </span>
+                      }
+                    />
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+
+          {plan.isUnmapped ? (
+            <section aria-labelledby="agregar-materia" className="flex flex-col gap-3">
+              <SectionHeading id="agregar-materia">Agregar una materia</SectionHeading>
+              <AddManualSubjectForm />
+            </section>
+          ) : null}
+        </div>
+        <aside aria-label="Resumen de materias" className="grid min-w-0 content-start gap-4">
+          <section className="blue-panel">
+            <div className="blue-panel-head">
+              <h2>Resumen de materias</h2>
+              <Link to="/plan" className="blue-text-link">
+                Ver plan →
+              </Link>
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="flex size-24 shrink-0 items-center justify-center rounded-full border-[10px] border-blue-100 text-xl font-bold text-blue-800">
+                {plan.progress.total
+                  ? Math.round(
+                      ((plan.progress.passed + plan.progress.equivalent) /
+                        plan.progress.total) *
+                        100,
+                    )
+                  : 0}
+                %
+              </div>
+              <div className="min-w-0 flex-1">
+                {STATUS_GROUPS.map((group) => (
+                  <div key={group.id} className="blue-stat-row">
+                    <span
+                      className="blue-status-dot"
+                      data-status={
+                        group.id === 'aprobadas'
+                          ? 'passed'
+                          : group.id === 'final_pendiente'
+                            ? 'regularized'
+                            : group.id === 'disponibles'
+                              ? 'available'
+                              : 'in_progress'
+                      }
+                    />{' '}
+                    <strong>{groups[group.id].length}</strong>{' '}
+                    <span className="truncate">{group.label}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <p className="text-ink-muted mt-2 text-xs">Total: {plan.progress.total} materias</p>
+          </section>
+          <section className="blue-panel">
+            <div className="blue-panel-head">
+              <h2>Estado actual</h2>
+            </div>
+            <div className="blue-stat-row">
+              <span className="blue-status-dot" />
+              {groups.cursando.length} materias cursando
+            </div>
+            <div className="blue-stat-row">
+              <span className="blue-status-dot" data-status="regularized" />
+              {groups.final_pendiente.length} finales pendientes
+            </div>
+            {plan.prerequisitesKnown ? (
+              <div className="blue-stat-row">
+                <span className="blue-status-dot" data-status="available" />
+                {groups.disponibles.length} disponibles
+              </div>
+            ) : (
+              <p className="text-ink-muted mt-2 text-xs">
+                Las correlativas no se muestran como disponibles sin información oficial.
+              </p>
+            )}
+          </section>
+          <section className="blue-panel">
+            <div className="blue-panel-head">
+              <h2>Continuá tu recorrido</h2>
+            </div>
+            <Link to="/plan/progress" className="blue-text-link">
+              Actualizar avance académico →
+            </Link>
+          </section>
+        </aside>
+      </div>
     </div>
   )
 }

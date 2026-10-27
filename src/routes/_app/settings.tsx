@@ -11,6 +11,7 @@ import { useWorkspace } from '@/lib/runtime/workspace'
 import { useTheme } from '@/lib/theme/theme-context'
 import type { ThemePreference } from '@/lib/theme/theme'
 import { cn } from '@/lib/utils'
+import '@/styles/blue-secondary.css'
 
 export const Route = createFileRoute('/_app/settings')({
   component: SettingsScreen,
@@ -60,10 +61,16 @@ function SettingsScreen() {
       : (ACCENT_PRESETS.find((preset) => preset.hue === accentHue)?.name ?? DEFAULT_ACCENT_NAME)
 
   return (
-    <div className="flex flex-col gap-8">
-      <PageHeader title="Ajustes" />
+    <div className="blue-secondary blue-settings blue-screen">
+      <PageHeader
+        title="Ajustes"
+        description="Personalizá Campus y consultá el espacio de trabajo actual."
+      />
 
-      <section aria-labelledby="apariencia" className="flex flex-col gap-3">
+      <section
+        aria-labelledby="apariencia"
+        className="blue-secondary-panel flex flex-col gap-3"
+      >
         <SectionHeading id="apariencia">Apariencia</SectionHeading>
         <p className="text-ink-muted text-sm">
           «Como el sistema» sigue lo que tenga configurado tu máquina, y cambia solo si la
@@ -135,7 +142,7 @@ function SettingsScreen() {
         </div>
       </section>
 
-      <section aria-labelledby="espacio" className="flex flex-col gap-3">
+      <section aria-labelledby="espacio" className="blue-secondary-panel flex flex-col gap-3">
         <SectionHeading id="espacio">
           {workspace.folder ? 'Tu carpeta' : 'Dónde trabajás'}
         </SectionHeading>
@@ -159,7 +166,8 @@ function SettingsScreen() {
           </>
         ) : (
           <p className="text-ink-muted text-sm">
-            Estás trabajando en Campus Cloud, sincronizado con tu cuenta.
+            Este espacio usa tu cuenta de Campus Cloud. No implica que las notas de una carpeta
+            Local se sincronicen.
           </p>
         )}
         <Button variant="secondary" className="self-start" onClick={workspace.change}>
@@ -168,7 +176,7 @@ function SettingsScreen() {
       </section>
 
       {requiresAccount ? (
-        <section aria-labelledby="cuenta" className="flex flex-col gap-3">
+        <section aria-labelledby="cuenta" className="blue-secondary-panel flex flex-col gap-3">
           <SectionHeading id="cuenta">Tu cuenta</SectionHeading>
           <dl className="flex flex-col gap-2 text-sm">
             <div className="border-rule-soft flex justify-between gap-4 border-b py-2">
@@ -189,7 +197,7 @@ function SettingsScreen() {
         </section>
       ) : null}
 
-      <section aria-labelledby="carrera" className="flex flex-col gap-3">
+      <section aria-labelledby="carrera" className="blue-secondary-panel flex flex-col gap-3">
         <SectionHeading id="carrera">Tu carrera</SectionHeading>
         {plan.hasContext ? (
           <dl className="flex flex-col gap-2 text-sm">
@@ -237,7 +245,10 @@ function SettingsScreen() {
         </Link>
       </section>
 
-      <section aria-labelledby="privacidad" className="flex flex-col gap-3">
+      <section
+        aria-labelledby="privacidad"
+        className="blue-secondary-panel flex flex-col gap-3"
+      >
         <SectionHeading id="privacidad">Privacidad</SectionHeading>
         <div className="text-ink-muted flex flex-col gap-2 text-sm">
           <p>

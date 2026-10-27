@@ -10,6 +10,7 @@ import { vaultErrorMessage } from '@/lib/vault/error-messages'
 
 import { suggestFolder, type FolderSuggestion } from './default-folder'
 import { FolderPicker } from './folder-picker'
+import '../styles/blue-startup.css'
 
 /**
  * The startup surface — the ONE place allowed to talk about local and cloud as
@@ -105,7 +106,7 @@ export function Startup() {
   // decision was made once, in the composition root — this branch only renders it.
   if (!vaultAvailable) {
     return (
-      <main className="mx-auto grid min-h-dvh max-w-xl content-center gap-8 p-6">
+      <main className="blue-startup mx-auto grid min-h-dvh max-w-xl content-center gap-8 p-6">
         <header className="space-y-2">
           <h1 className="text-3xl font-semibold">Campus</h1>
           <p className="text-ink-muted">Entrá con tu cuenta para trabajar.</p>
@@ -148,9 +149,10 @@ export function Startup() {
   const placeholder = suggestion?.path ?? 'Pegá la ruta de tu carpeta'
 
   return (
-    <main className="mx-auto grid min-h-dvh max-w-3xl content-center gap-8 p-6">
+    <main className="blue-startup mx-auto grid min-h-dvh max-w-5xl content-center gap-8 p-6">
       <header className="space-y-2">
-        <h1 className="text-3xl font-semibold">Campus</h1>
+        <p className="blue-startup-step">Tu espacio de trabajo</p>
+        <h1 className="text-3xl font-semibold">Elegí cómo querés usar Campus</h1>
         <p className="text-ink-muted">¿Dónde querés guardar tus materias y tus notas?</p>
       </header>
 
@@ -240,11 +242,18 @@ export function Startup() {
         </section>
       )}
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="blue-startup-options grid gap-4 sm:grid-cols-2">
         <section
           aria-labelledby="startup-local"
-          className="border-rule bg-paper-elevated flex flex-col gap-3 rounded-lg border p-5"
+          className="blue-startup-option border-rule bg-paper-elevated flex flex-col gap-3 rounded-lg border p-5"
         >
+          <img
+            src="/campus-blue-assets/workspace-local.svg"
+            alt=""
+            width={640}
+            height={400}
+            className="blue-startup-illustration"
+          />
           <h2 id="startup-local" className="font-serif text-lg">
             En esta computadora
           </h2>
@@ -348,8 +357,15 @@ export function Startup() {
 
         <section
           aria-labelledby="startup-cloud"
-          className="border-rule bg-paper-elevated flex flex-col gap-3 rounded-lg border p-5"
+          className="blue-startup-option border-rule bg-paper-elevated flex flex-col gap-3 rounded-lg border p-5"
         >
+          <img
+            src="/campus-blue-assets/workspace-cloud.svg"
+            alt=""
+            width={640}
+            height={400}
+            className="blue-startup-illustration"
+          />
           <h2 id="startup-cloud" className="font-serif text-lg">
             En la nube
           </h2>

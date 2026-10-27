@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
-import { Check } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Check, Cloud, FolderOpen, GraduationCap } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 
 import { ErrorState } from '@/components/empty-state'
@@ -18,6 +18,8 @@ import { useRequiresAccount } from '@/lib/runtime/identity'
 import { useWorkspace } from '@/lib/runtime/workspace'
 import { useAuth } from '@/features/auth/auth-context'
 import { cn } from '@/lib/utils'
+
+import '@/styles/blue-onboarding.css'
 
 export const Route = createFileRoute('/onboarding')({
   component: OnboardingScreen,
@@ -46,6 +48,8 @@ function OnboardingScreen() {
   const [curriculumId, setCurriculumId] = useState<string | null>(null)
   const [manual, setManual] = useState(false)
   const [manualLabel, setManualLabel] = useState('')
+  const [activeStep, setActiveStep] = useState(0)
+  const [confirmed, setConfirmed] = useState(false)
 
   const institutions = useInstitutions()
   const units = useAcademicUnits(institutionId)
@@ -58,7 +62,7 @@ function OnboardingScreen() {
     // Same rule as the app layout: LOCAL mode has no account, and a student
     // choosing their carrera does not need one.
     if (requiresAccount && !loading && !session) void navigate({ to: '/login' })
-  }, [loading, session, navigate])
+  }, [loading, session, navigate, requiresAccount])
 
   // Coming back: start from what the student already chose, not from a blank
   // form that reads like "start over". Once, and only if they have not touched
@@ -77,6 +81,7 @@ function OnboardingScreen() {
     setUnitId(current.academicUnitId)
     setProgramId(current.programId)
     setCurriculumId(current.curriculumId)
+    if (current.programId) setActiveStep(3)
   }, [existing.data])
 
   // Pre-select when there is only one option — a list of one is not a decision.
@@ -91,22 +96,37 @@ function OnboardingScreen() {
   // checked — and never otherwise. It used to be derived from "how far along",
   // which put four green checks on the free-text path where nothing was chosen.
   const stepDone = [institutionId, unitId, programId, curriculumId].map((id) => id !== null)
-  const currentStep = stepDone.findIndex((isDone) => !isDone)
 
   const coverage = coverageLine((institutions.data ?? []).map((i) => i.shortName))
+  const selectedInstitution = institutions.data?.find((item) => item.id === institutionId)?.name
+  const selectedUnit = units.data?.find((item) => item.id === unitId)?.name
+  const selectedProgram = programs.data?.find((item) => item.id === programId)?.name
+  const selectedCurriculum = curricula.data?.find((item) => item.id === curriculumId)
+  const selected = [
+    selectedInstitution,
+    selectedUnit,
+    selectedProgram,
+    selectedCurriculum?.version,
+  ]
+  const canVisit = [true, Boolean(institutionId), Boolean(unitId), Boolean(programId)]
+  const workspaceName = workspace.folder ? 'En esta computadora' : 'Campus Cloud'
+  const workspaceDetail = workspace.folder
+    ? workspace.folder.name
+    : 'Tu espacio vinculado a tu cuenta'
 
   async function confirm() {
-    await save.mutateAsync({
-      institutionId: manual ? null : institutionId,
-      academicUnitId: manual ? null : unitId,
-      programId: manual ? null : programId,
-      curriculumId: manual ? null : curriculumId,
-      unmappedLabel: manual ? manualLabel.trim() || 'Carrera no listada' : null,
-    })
-    // A catalog career has a plan whose statuses are worth marking first; a
-    // manual one has no plan yet, so the plan page is where its materias get
-    // added. Neither starts on an empty Hoy.
-    void navigate({ to: manual ? '/plan' : '/plan/progress' })
+    try {
+      await save.mutateAsync({
+        institutionId: manual ? null : institutionId,
+        academicUnitId: manual ? null : unitId,
+        programId: manual ? null : programId,
+        curriculumId: manual ? null : curriculumId,
+        unmappedLabel: manual ? manualLabel.trim() || 'Carrera no listada' : null,
+      })
+      setConfirmed(true)
+    } catch {
+      // The mutation exposes its error in the form, and keeps all selections.
+    }
   }
 
   // Gate on the session too, not just the auth load: otherwise the whole wizard
@@ -114,176 +134,367 @@ function OnboardingScreen() {
   if (requiresAccount && (loading || !session)) return null
 
   return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-xl flex-col px-5 py-10 sm:px-6">
-      <p className="text-ink flex items-center gap-2 font-serif text-lg">
-        <span aria-hidden="true" className="bg-accent inline-block h-5 w-1 rounded-full" />
-        Campus
-      </p>
+    <main className="blue-onboarding">
+      <div className="blue-onboarding-container">
+        <header className="blue-onboarding-top">
+          <div className="blue-onboarding-brand">
+            <span aria-hidden="true" className="blue-onboarding-brand-mark">
+              C
+            </span>
+            <span>
+              Campus<span className="blue-onboarding-brand-dot">.</span>
+            </span>
+          </div>
+          {existing.data ? (
+            <Link to="/settings" className="blue-onboarding-text-link">
+              <ArrowLeft size={16} aria-hidden="true" /> Volver a ajustes
+            </Link>
+          ) : (
+            <span className="blue-onboarding-top-note">Tu espacio de estudio</span>
+          )}
+        </header>
 
-      {existing.data ? (
-        <Link
-          to="/settings"
-          className="text-ink-muted hover:text-ink mt-6 -mb-4 inline-flex min-h-8 items-center self-start text-sm underline-offset-4 hover:underline"
-        >
-          Volver
-        </Link>
-      ) : null}
+        {confirmed ? (
+          <section className="blue-onboarding-complete" role="status">
+            <img
+              src="/campus-blue-assets/onboarding-ready.svg"
+              alt="Documento académico con una marca de confirmación"
+              width={640}
+              height={400}
+            />
+            <span className="blue-onboarding-eyebrow">Configuración guardada</span>
+            <h1>Tu plan ya está en Campus.</h1>
+            <p>
+              {manual
+                ? 'Podés agregar tus materias manualmente desde el plan. No se cargaron materias que no están en el catálogo.'
+                : 'Ahora elegí cuáles materias ya aprobaste, regularizaste o te faltan cursar. Así tu progreso reflejará tu situación real.'}
+            </p>
+            <Button
+              variant="primary"
+              size="lg"
+              onClick={() => void navigate({ to: manual ? '/plan' : '/plan/progress' })}
+            >
+              {manual ? 'Ir a mi plan' : 'Marcar estado de materias'}{' '}
+              <ArrowRight size={18} aria-hidden="true" />
+            </Button>
+          </section>
+        ) : (
+          <div className="blue-onboarding-layout">
+            <section className="blue-onboarding-primary" aria-labelledby="onboarding-title">
+              <header className="blue-onboarding-intro">
+                <p className="blue-onboarding-eyebrow">
+                  <GraduationCap size={17} aria-hidden="true" /> Configuración académica
+                </p>
+                <h1 id="onboarding-title">
+                  {manual ? 'Empezá con tu propia carrera.' : 'Organicemos tu recorrido.'}
+                </h1>
+                <p>
+                  {manual
+                    ? 'Si tu carrera no está en nuestro catálogo, podés crear un plan manual.'
+                    : 'Elegí tu universidad, facultad, carrera y plan de estudios. Vamos paso a paso.'}
+                </p>
+                {!manual && coverage ? (
+                  <p className="blue-onboarding-coverage">{coverage}</p>
+                ) : null}
+              </header>
 
-      <h1 className="text-ink mt-8 font-serif text-2xl leading-tight">
-        Contanos dónde estudiás.
-      </h1>
-      <p className="text-ink-muted mt-2 text-sm">
-        Con esto armamos tu plan, tus materias y tus correlativas.{' '}
-        {manual ? null : 'Son cuatro pasos.'}
-      </p>
-      {coverage ? <p className="text-ink mt-1 text-sm font-medium">{coverage}</p> : null}
-
-      {manual ? null : (
-        <ol
-          aria-label="Pasos"
-          className="mt-6 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs"
-        >
-          {STEPS.map((label, index) => (
-            <li key={label} className="flex items-center gap-2">
-              <span
-                className={cn(
-                  'flex items-center gap-1.5',
-                  stepDone[index]
-                    ? 'text-success-ink'
-                    : index === currentStep
-                      ? 'text-ink'
-                      : 'text-ink-muted',
-                )}
-              >
-                {stepDone[index] ? (
-                  <>
-                    <Check aria-hidden="true" className="size-3.5" />
-                    <span className="sr-only">(listo)</span>
-                  </>
-                ) : (
-                  <span aria-hidden="true" className="w-3.5 text-center">
-                    {index + 1}
-                  </span>
-                )}
-                {label}
-              </span>
-              {index < STEPS.length - 1 ? (
-                <span aria-hidden="true" className="text-ink-muted">
-                  ·
-                </span>
+              {!manual ? (
+                <nav className="blue-onboarding-progress" aria-label="Pasos de configuración">
+                  <ol>
+                    {STEPS.map((label, index) => (
+                      <li key={label}>
+                        <button
+                          type="button"
+                          disabled={!canVisit[index]}
+                          aria-current={activeStep === index ? 'step' : undefined}
+                          data-active={activeStep === index}
+                          data-complete={stepDone[index]}
+                          onClick={() => setActiveStep(index)}
+                        >
+                          <span className="blue-onboarding-step-number">
+                            {stepDone[index] ? (
+                              <Check size={16} aria-hidden="true" />
+                            ) : (
+                              index + 1
+                            )}
+                          </span>
+                          <span>{label}</span>
+                        </button>
+                      </li>
+                    ))}
+                  </ol>
+                </nav>
               ) : null}
-            </li>
-          ))}
-        </ol>
-      )}
 
-      {institutions.error ? (
-        <ErrorState
-          className="mt-8"
-          error={institutions.error as Error}
-          onRetry={() => void institutions.refetch()}
-        />
-      ) : null}
+              <div className="blue-onboarding-form-panel">
+                {!manual ? (
+                  <div className="blue-onboarding-section-heading">
+                    <span>
+                      Paso {activeStep + 1} de {STEPS.length}
+                    </span>
+                    <h2>{STEPS[activeStep]}</h2>
+                    <p>
+                      {
+                        [
+                          '¿En qué universidad estudiás?',
+                          'Seleccioná tu facultad o regional.',
+                          'Elegí la carrera que estás cursando.',
+                          'Seleccioná la versión de tu plan de estudios.',
+                        ][activeStep]
+                      }
+                    </p>
+                  </div>
+                ) : (
+                  <div className="blue-onboarding-section-heading">
+                    <span>Carga manual</span>
+                    <h2>Tu carrera</h2>
+                    <p>
+                      Guardaremos el nombre que indiques para empezar a organizar tus materias.
+                    </p>
+                  </div>
+                )}
 
-      {!manual ? (
-        <div className="mt-8 flex flex-col gap-7">
-          <Choice
-            legend="Universidad"
-            options={(institutions.data ?? []).map((i) => ({
-              id: i.id,
-              label: i.name,
-              hint: i.shortName,
-            }))}
-            loading={institutions.isLoading}
-            value={institutionId}
-            onChange={(id) => {
-              setInstitutionId(id)
-              setUnitId(null)
-              setProgramId(null)
-              setCurriculumId(null)
-            }}
-          />
+                {!manual && activeStep === 0 && (
+                  <>
+                    {institutions.error ? (
+                      <ErrorState
+                        error={institutions.error as Error}
+                        onRetry={() => void institutions.refetch()}
+                      />
+                    ) : (
+                      <Choice
+                        legend="Universidad"
+                        options={(institutions.data ?? []).map((i) => ({
+                          id: i.id,
+                          label: i.name,
+                          hint: i.shortName,
+                        }))}
+                        loading={institutions.isLoading}
+                        value={institutionId}
+                        onChange={(id) => {
+                          if (id !== institutionId) {
+                            setInstitutionId(id)
+                            setUnitId(null)
+                            setProgramId(null)
+                            setCurriculumId(null)
+                          }
+                          setActiveStep(1)
+                        }}
+                      />
+                    )}
+                  </>
+                )}
 
-          {institutionId ? (
-            <Choice
-              legend="Facultad o regional"
-              options={(units.data ?? []).map((u) => ({ id: u.id, label: u.name }))}
-              loading={units.isLoading}
-              value={unitId}
-              onChange={(id) => {
-                setUnitId(id)
-                setProgramId(null)
-                setCurriculumId(null)
-              }}
-            />
-          ) : null}
+                {!manual && activeStep === 1 && (
+                  <>
+                    {units.error ? (
+                      <ErrorState
+                        error={units.error as Error}
+                        onRetry={() => void units.refetch()}
+                      />
+                    ) : (
+                      <Choice
+                        legend="Facultad o regional"
+                        options={(units.data ?? []).map((u) => ({ id: u.id, label: u.name }))}
+                        loading={units.isLoading}
+                        value={unitId}
+                        onChange={(id) => {
+                          if (id !== unitId) {
+                            setUnitId(id)
+                            setProgramId(null)
+                            setCurriculumId(null)
+                          }
+                          setActiveStep(2)
+                        }}
+                      />
+                    )}
+                  </>
+                )}
 
-          {unitId ? (
-            <Choice
-              legend="Carrera"
-              options={(programs.data ?? []).map((p) => ({ id: p.id, label: p.name }))}
-              loading={programs.isLoading}
-              value={programId}
-              onChange={(id) => {
-                setProgramId(id)
-                setCurriculumId(null)
-              }}
-            />
-          ) : null}
+                {!manual && activeStep === 2 && (
+                  <>
+                    {programs.error ? (
+                      <ErrorState
+                        error={programs.error as Error}
+                        onRetry={() => void programs.refetch()}
+                      />
+                    ) : (
+                      <Choice
+                        legend="Carrera"
+                        options={(programs.data ?? []).map((p) => ({
+                          id: p.id,
+                          label: p.name,
+                        }))}
+                        loading={programs.isLoading}
+                        value={programId}
+                        onChange={(id) => {
+                          if (id !== programId) {
+                            setProgramId(id)
+                            setCurriculumId(null)
+                          }
+                          setActiveStep(3)
+                        }}
+                      />
+                    )}
+                  </>
+                )}
 
-          {programId ? (
-            <Choice
-              legend="Plan de estudios"
-              options={(curricula.data ?? []).map((c) => ({
-                id: c.id,
-                label: c.version,
-                // The full resolution text is a citation, not a choice: one tap
-                // away, not three lines under every option.
-                detail: c.name,
-              }))}
-              loading={curricula.isLoading}
-              value={curriculumId}
-              onChange={setCurriculumId}
-            />
-          ) : null}
-        </div>
-      ) : (
-        <div className="mt-8 flex flex-col gap-4">
-          <TextField
-            label="Carrera y universidad"
-            placeholder="Psicología — UBA"
-            value={manualLabel}
-            onChange={(e) => setManualLabel(e.target.value)}
-            hint={`Esto queda guardado solo en ${workspace.folder ? 'tu carpeta' : 'tu cuenta'}: todavía no le avisamos a nadie que falta tu plan. No inventamos materias ni correlativas que no pudimos verificar.`}
-          />
-        </div>
-      )}
+                {!manual && activeStep === 3 && (
+                  <>
+                    {curricula.error ? (
+                      <ErrorState
+                        error={curricula.error as Error}
+                        onRetry={() => void curricula.refetch()}
+                      />
+                    ) : (
+                      <Choice
+                        legend="Plan de estudios"
+                        options={(curricula.data ?? []).map((c) => ({
+                          id: c.id,
+                          label: c.version,
+                          detail: c.name,
+                        }))}
+                        loading={curricula.isLoading}
+                        value={curriculumId}
+                        onChange={setCurriculumId}
+                      />
+                    )}
+                    {curriculumId ? (
+                      <p className="blue-onboarding-confirm-hint">
+                        <Check size={16} aria-hidden="true" />
+                        Plan seleccionado. Revisá tus datos y guardá la configuración.
+                      </p>
+                    ) : null}
+                  </>
+                )}
 
-      {save.error ? (
-        <p role="alert" className="text-danger mt-6 text-sm font-medium">
-          {(save.error as Error).message}
-        </p>
-      ) : null}
+                {manual ? (
+                  <TextField
+                    label="Carrera y universidad"
+                    placeholder="Psicología — UBA"
+                    value={manualLabel}
+                    onChange={(e) => setManualLabel(e.target.value)}
+                    hint={
+                      workspace.folder
+                        ? 'Este nombre se guarda en tu carpeta. Podés agregar tus materias manualmente.'
+                        : 'Este nombre se guarda en tu cuenta. Podés agregar tus materias manualmente.'
+                    }
+                    required
+                  />
+                ) : null}
 
-      <div className="mt-9 flex flex-wrap items-center gap-3">
-        <Button
-          variant="primary"
-          size="lg"
-          disabled={
-            save.isPending || (manual ? manualLabel.trim().length === 0 : !curriculumId)
-          }
-          onClick={confirm}
-        >
-          {save.isPending ? 'Guardando…' : 'Listo, empezar'}
-        </Button>
+                {save.error ? (
+                  <p role="alert" className="blue-onboarding-error">
+                    {(save.error as Error).message}
+                  </p>
+                ) : null}
 
-        <button
-          type="button"
-          onClick={() => setManual((m) => !m)}
-          className="text-ink-muted hover:text-ink text-sm underline-offset-4 hover:underline"
-        >
-          {manual ? 'Volver a elegir de la lista' : 'No encuentro mi carrera'}
-        </button>
+                <div className="blue-onboarding-actions">
+                  {!manual && activeStep > 0 ? (
+                    <Button
+                      variant="secondary"
+                      size="lg"
+                      onClick={() => setActiveStep((step) => Math.max(0, step - 1))}
+                    >
+                      <ArrowLeft size={16} aria-hidden="true" /> Anterior
+                    </Button>
+                  ) : null}
+                  {(manual || activeStep === 3) && (
+                    <Button
+                      variant="primary"
+                      size="lg"
+                      disabled={
+                        save.isPending || (manual ? !manualLabel.trim() : !curriculumId)
+                      }
+                      onClick={() => void confirm()}
+                    >
+                      {save.isPending ? 'Guardando…' : 'Guardar y continuar'}
+                      {!save.isPending && <ArrowRight size={17} aria-hidden="true" />}
+                    </Button>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  className="blue-onboarding-manual-toggle"
+                  onClick={() => setManual((previous) => !previous)}
+                >
+                  {manual ? 'Volver a elegir del catálogo' : 'No encuentro mi carrera'}
+                </button>
+              </div>
+            </section>
+
+            <aside className="blue-onboarding-aside" aria-label="Espacio y resumen">
+              <div className="blue-onboarding-aside-heading">
+                <span className="blue-onboarding-eyebrow">Dónde se guarda</span>
+                <h2>Tu espacio de trabajo</h2>
+                <p>Ya elegiste cómo usar Campus. Podés cambiarlo desde acá.</p>
+              </div>
+              <div className="blue-onboarding-workspaces">
+                <div
+                  className="blue-onboarding-workspace-card"
+                  data-active={Boolean(workspace.folder)}
+                >
+                  <img
+                    src="/campus-blue-assets/workspace-local.svg"
+                    width={640}
+                    height={400}
+                    alt="Ilustración de una carpeta de materias guardada en esta computadora"
+                  />
+                  <span>
+                    <FolderOpen size={16} aria-hidden="true" /> En esta computadora
+                  </span>
+                  <small>
+                    {workspace.folder ? 'Espacio actual' : 'Disponible desde la app local'}
+                  </small>
+                </div>
+                <div className="blue-onboarding-workspace-card" data-active={!workspace.folder}>
+                  <img
+                    src="/campus-blue-assets/workspace-cloud.svg"
+                    width={640}
+                    height={400}
+                    alt="Ilustración de un espacio académico almacenado en Cloud"
+                  />
+                  <span>
+                    <Cloud size={16} aria-hidden="true" /> Campus Cloud
+                  </span>
+                  <small>{!workspace.folder ? 'Espacio actual' : 'Requiere una cuenta'}</small>
+                </div>
+              </div>
+              <p className="blue-onboarding-workspace-current">
+                <Check size={15} aria-hidden="true" />
+                {workspaceName}: {workspaceDetail}
+              </p>
+              <button
+                className="blue-onboarding-text-link"
+                type="button"
+                onClick={workspace.change}
+              >
+                Cambiar espacio de trabajo <ArrowRight size={16} aria-hidden="true" />
+              </button>
+
+              <div className="blue-onboarding-summary">
+                <h3>Tu selección</h3>
+                {manual ? (
+                  <p>{manualLabel.trim() || 'Escribí tu carrera para continuar.'}</p>
+                ) : (
+                  <ol>
+                    {STEPS.map((label, index) => (
+                      <li key={label}>
+                        <span>{label}</span>
+                        <strong>{selected[index] || 'Por elegir'}</strong>
+                      </li>
+                    ))}
+                  </ol>
+                )}
+              </div>
+              <p className="blue-onboarding-next">
+                {manual
+                  ? 'Después vas a poder agregar materias propias a tu plan.'
+                  : 'Al finalizar vas a marcar cuáles materias aprobaste, regularizaste o te falta cursar.'}
+              </p>
+            </aside>
+          </div>
+        )}
       </div>
     </main>
   )
@@ -330,7 +541,7 @@ function Choice({
   loading?: boolean
 }) {
   return (
-    <fieldset className="flex flex-col gap-1">
+    <fieldset className="blue-onboarding-options flex flex-col gap-1">
       <legend className="text-2xs text-ink-muted mb-1.5 font-semibold tracking-[0.12em] uppercase">
         {legend}
       </legend>

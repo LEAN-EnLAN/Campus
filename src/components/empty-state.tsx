@@ -3,14 +3,11 @@ import type { ReactNode } from 'react'
 
 import { cn } from '@/lib/utils'
 
-/**
- * Empty state — no mascot, no illustration, direct academic language.
- *
- * An empty screen is a normal state, not an error, so it reads calm rather than
- * apologetic.
- */
+/** Quiet academic empty state. Optional illustration is a real external SVG asset. */
 export function EmptyState({
   icon: Icon,
+  illustration,
+  illustrationAlt = '',
   title,
   description,
   action,
@@ -18,6 +15,10 @@ export function EmptyState({
   className,
 }: {
   icon?: LucideIcon
+  /** e.g. /campus-blue-assets/material-empty.svg; no image as a CSS background. */
+  illustration?: string
+  /** Empty when the nearby title already explains the illustration. */
+  illustrationAlt?: string
   /** The sentence. One. */
   title: string
   description?: string
@@ -35,6 +36,17 @@ export function EmptyState({
         className,
       )}
     >
+      {illustration ? (
+        <img
+          src={illustration}
+          alt={illustrationAlt}
+          width={640}
+          height={400}
+          loading="lazy"
+          decoding="async"
+          className="h-auto w-full max-w-52 object-contain"
+        />
+      ) : null}
       {Icon ? <Icon aria-hidden="true" className="text-ink-faint size-5" /> : null}
       <p className={quiet ? 'text-ink-muted text-sm' : 'text-ink font-serif text-lg'}>
         {title}

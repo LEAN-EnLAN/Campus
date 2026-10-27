@@ -1,0 +1,66 @@
+.blue-startup {
+  --color-ink: #14264b;
+  --color-ink-muted: #597197;
+  --color-rule: #d7e4f5;
+  --color-paper-elevated: #fff;
+  --color-accent: #155fd7;
+  --color-accent-ink: #145acb;
+  color: #14264b;
+  background: radial-gradient(circle at 65% 5%, #eaf3ff, transparent 37%), #f8fbff;
+}
+.blue-startup > header {
+  text-align: center;
+}
+.blue-startup > header h1 {
+  font-family: 'Newsreader', Georgia, serif;
+  font-size: clamp(2rem, 4vw, 2.65rem);
+  line-height: 1.14;
+  letter-spacing: -0.03em;
+}
+.blue-startup-step {
+  color: #155fd7;
+  font-weight: 700;
+  font-size: 0.8rem;
+  letter-spacing: 0.04em;
+}
+.blue-startup-option {
+  border-radius: 16px;
+  border-color: #d6e3f7;
+  box-shadow: 0 8px 25px rgba(24, 65, 120, 0.035);
+}
+.blue-startup-option:first-child {
+  border-color: #83b0fa;
+  background: linear-gradient(160deg, #edf5ff, #fff 75%);
+}
+.blue-startup-option h2 {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #142650;
+}
+.blue-startup-illustration {
+  width: min(100%, 250px);
+  height: 150px;
+  object-fit: contain;
+  align-self: center;
+}
+.blue-startup-option button {
+  border-radius: 8px;
+}
+.blue-startup button:focus-visible,
+.blue-startup input:focus-visible {
+  outline: 2px solid #155fd7;
+  outline-offset: 3px;
+}
+@media (max-width: 639px) {
+  .blue-startup {
+    align-content: start;
+    gap: 1.3rem;
+    padding-top: 2rem;
+  }
+  .blue-startup-illustration {
+    height: 115px;
+  }
+  .blue-startup-option {
+    padding: 1rem;
+  }
+}

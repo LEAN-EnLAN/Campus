@@ -10,12 +10,18 @@
  */
 import { execFileSync, spawn } from 'node:child_process'
 import process from 'node:process'
+import { fileURLToPath } from 'node:url'
 
-const SUPABASE_BIN = './node_modules/.bin/supabase'
+// Invoke the actual Node CLI entrypoint. pnpm's .bin shims differ across
+// Windows and POSIX; execFileSync cannot execute the Windows .cmd shim.
+const SUPABASE_CLI = fileURLToPath(
+  new URL('../node_modules/supabase/dist/supabase.js', import.meta.url),
+)
+const VITEST_CLI = fileURLToPath(new URL('../node_modules/vitest/vitest.mjs', import.meta.url))
 
 function readStatus() {
   try {
-    const raw = execFileSync(SUPABASE_BIN, ['status', '-o', 'json'], {
+    const raw = execFileSync(process.execPath, [SUPABASE_CLI, 'status', '-o', 'json'], {
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'pipe'],
     })
@@ -54,7 +60,18 @@ if (!command) {
   process.exit(1)
 }
 
-const child = spawn(command, args, { env, stdio: 'inherit', shell: false })
+// The package script passes the pnpm Unix shim; use its portable JS entrypoint
+// instead of depending on which .cmd/.ps1 stub pnpm installed.
+const invokingVitest = /(?:^|[\\/])vitest(?:\.cmd)?$/i.test(command)
+const child = spawn(
+  invokingVitest ? process.execPath : command,
+  invokingVitest ? [VITEST_CLI, ...args] : args,
+  {
+    env,
+    stdio: 'inherit',
+    shell: false,
+  },
+)
 child.on('exit', (code, signal) => process.exit(signal ? 1 : (code ?? 1)))
 child.on('error', (error) => {
   console.error(`[with-supabase-env] failed to spawn ${command}: ${error.message}`)

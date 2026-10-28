@@ -27,6 +27,9 @@ beforeEach(() => {
 describe('/library form', () => {
   it('keeps Título and Link the same height', async () => {
     renderRoute(Library)
+    await userEvent.click(
+      (await screen.findAllByRole('button', { name: 'Agregar material' }))[0]!,
+    )
 
     const title = await screen.findByLabelText(/Título/)
     const link = screen.getByLabelText(/Link/, { selector: 'input' })
@@ -37,6 +40,7 @@ describe('/library form', () => {
   it('answers an empty save in Spanish, inline, without the browser bubble', async () => {
     const user = userEvent.setup()
     renderRoute(Library)
+    await user.click((await screen.findAllByRole('button', { name: 'Agregar material' }))[0]!)
 
     await user.click(await screen.findByRole('button', { name: 'Guardar' }))
 
@@ -49,6 +53,7 @@ describe('/library form', () => {
   it('rejects a link that is not a web address', async () => {
     const user = userEvent.setup()
     renderRoute(Library)
+    await user.click((await screen.findAllByRole('button', { name: 'Agregar material' }))[0]!)
 
     await user.type(await screen.findByLabelText(/Título/), 'Apunte')
     await user.type(
@@ -66,6 +71,7 @@ describe('/library form', () => {
   it('returns focus to Título after saving, ready for the next one', async () => {
     const user = userEvent.setup()
     renderRoute(Library)
+    await user.click((await screen.findAllByRole('button', { name: 'Agregar material' }))[0]!)
 
     await user.type(await screen.findByLabelText(/Título/), 'Apunte')
     await user.type(

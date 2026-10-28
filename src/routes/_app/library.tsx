@@ -91,8 +91,8 @@ function LibraryScreen() {
       setUrl('')
       setBody('')
       setSubmitted(false)
-      setShowForm(false)
-      // Ready for the next one: focus used to stay in the (now empty) last field.
+      // Keep the form visible for consecutive links or notes; a disappearing
+      // form would otherwise send keyboard focus into an unmounted field.
       titleRef.current?.focus()
     } catch {
       // Preserve user input and expose the mutation error in the form.

@@ -4,13 +4,13 @@ import {
   mkdtempSync,
   readFileSync,
   rmSync,
-  symlinkSync,
   writeFileSync,
 } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { nativeFileSymlinksAvailable, symlinkSync } from '../../tests/support/real-links'
 
 import { handleVaultRequest, mintToken, PREFIX, VaultSessions } from './vault-api'
 
@@ -90,14 +90,14 @@ describe('a manipulated browser payload is refused by the vault, not by the tran
     }
   })
 
-  it('a symlink escape', async () => {
+  it.skipIf(!nativeFileSymlinksAvailable)('a symlink escape', async () => {
     symlinkSync(join(outside, 'secret.txt'), join(root, 'Materias', 'leak.md'))
     const res = await read('Materias/leak.md')
     expect(res.status).toBe(400)
     expect(String(parse(res.body).error)).toMatch(/outside the vault/i)
   })
 
-  it('a DANGLING symlink escape', async () => {
+  it.skipIf(!nativeFileSymlinksAvailable)('a DANGLING symlink escape', async () => {
     symlinkSync(join(outside, 'not-yet.txt'), join(root, 'Materias', 'future.md'))
     const res = await write('Materias/future.md', 'pwned')
     expect(res.status).toBe(400)

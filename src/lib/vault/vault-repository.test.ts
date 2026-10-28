@@ -3,7 +3,6 @@ import {
   mkdtempSync,
   mkdirSync,
   rmSync,
-  symlinkSync,
   writeFileSync,
   readFileSync,
 } from 'node:fs'
@@ -11,6 +10,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { nativeFileSymlinksAvailable, symlinkSync } from '../../../tests/support/real-links'
 
 import { nodeFileSystem } from './node-fs'
 import { VaultRepository, VaultConflictError } from './vault-repository'
@@ -53,26 +53,32 @@ describe('resolve — the boundary a string cannot enforce', () => {
     if (!r.ok) expect(r.reason).toMatch(/traversal/i)
   })
 
-  it('refuses to follow a symlink that points outside the vault', async () => {
-    symlinkSync(join(outside, 'secret.txt'), join(root, 'Materias', 'leak.md'))
-    const r = await repo.resolve('Materias/leak.md')
-    expect(r.ok).toBe(false)
-    if (!r.ok) expect(r.reason).toMatch(/outside the vault/i)
-  })
+  it.skipIf(!nativeFileSymlinksAvailable)(
+    'refuses to follow a symlink that points outside the vault',
+    async () => {
+      symlinkSync(join(outside, 'secret.txt'), join(root, 'Materias', 'leak.md'))
+      const r = await repo.resolve('Materias/leak.md')
+      expect(r.ok).toBe(false)
+      if (!r.ok) expect(r.reason).toMatch(/outside the vault/i)
+    },
+  )
 
-  it('refuses a DANGLING symlink that points outside the vault', async () => {
-    // The bug this exists to prevent: existence checks follow symlinks, so a
-    // link whose target does not exist reports "absent", resolution gets
-    // skipped, and the literal in-vault path sails through. The target can be
-    // created a second later, and the intent was already outside.
-    symlinkSync(
-      join(outside, 'does-not-exist-yet.txt'),
-      join(root, 'Materias', 'future-leak.md'),
-    )
-    const r = await repo.resolve('Materias/future-leak.md')
-    expect(r.ok).toBe(false)
-    if (!r.ok) expect(r.reason).toMatch(/outside the vault/i)
-  })
+  it.skipIf(!nativeFileSymlinksAvailable)(
+    'refuses a DANGLING symlink that points outside the vault',
+    async () => {
+      // The bug this exists to prevent: existence checks follow symlinks, so a
+      // link whose target does not exist reports "absent", resolution gets
+      // skipped, and the literal in-vault path sails through. The target can be
+      // created a second later, and the intent was already outside.
+      symlinkSync(
+        join(outside, 'does-not-exist-yet.txt'),
+        join(root, 'Materias', 'future-leak.md'),
+      )
+      const r = await repo.resolve('Materias/future-leak.md')
+      expect(r.ok).toBe(false)
+      if (!r.ok) expect(r.reason).toMatch(/outside the vault/i)
+    },
+  )
 
   it('refuses a symlinked DIRECTORY that points outside the vault', async () => {
     symlinkSync(outside, join(root, 'Escapada'))
@@ -81,14 +87,17 @@ describe('resolve — the boundary a string cannot enforce', () => {
     if (!r.ok) expect(r.reason).toMatch(/outside the vault/i)
   })
 
-  it('allows a symlink that stays inside the vault', async () => {
-    // Students do symlink things. Refusing every link would be security theatre
-    // that breaks real vaults; the rule is about the destination, not the kind.
-    writeFileSync(join(root, 'Materias', 'real.md'), '# real\n')
-    symlinkSync(join(root, 'Materias', 'real.md'), join(root, 'Materias', 'alias.md'))
-    const r = await repo.resolve('Materias/alias.md')
-    expect(r.ok).toBe(true)
-  })
+  it.skipIf(!nativeFileSymlinksAvailable)(
+    'allows a symlink that stays inside the vault',
+    async () => {
+      // Students do symlink things. Refusing every link would be security theatre
+      // that breaks real vaults; the rule is about the destination, not the kind.
+      writeFileSync(join(root, 'Materias', 'real.md'), '# real\n')
+      symlinkSync(join(root, 'Materias', 'real.md'), join(root, 'Materias', 'alias.md'))
+      const r = await repo.resolve('Materias/alias.md')
+      expect(r.ok).toBe(true)
+    },
+  )
 
   it('rejects a rename target outside the vault', async () => {
     writeFileSync(join(root, 'Materias', 'nota.md'), '# nota\n')

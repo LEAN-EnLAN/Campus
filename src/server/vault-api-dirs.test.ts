@@ -1,15 +1,9 @@
-import {
-  mkdirSync,
-  mkdtempSync,
-  realpathSync,
-  rmSync,
-  symlinkSync,
-  writeFileSync,
-} from 'node:fs'
+import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { nativeFileSymlinksAvailable, symlinkSync } from '../../tests/support/real-links'
 
 import { handleVaultRequest, mintToken, PREFIX, VaultSessions } from './vault-api'
 
@@ -137,11 +131,14 @@ describe('confinement', () => {
     expect(body.dirs).toContain('atajo')
   })
 
-  it('a link to a FILE is not a directory and is not listed', async () => {
-    symlinkSync(join(home, 'archivo.txt'), join(home, 'enlace'))
-    const { body } = await list(home)
-    expect(body.dirs).not.toContain('enlace')
-  })
+  it.skipIf(!nativeFileSymlinksAvailable)(
+    'a link to a FILE is not a directory and is not listed',
+    async () => {
+      symlinkSync(join(home, 'archivo.txt'), join(home, 'enlace'))
+      const { body } = await list(home)
+      expect(body.dirs).not.toContain('enlace')
+    },
+  )
 
   it('tells missing, not-a-folder and relative apart INSIDE the roots', async () => {
     expect((await list(join(home, 'nada'))).body.code).toBe('folder_not_found')

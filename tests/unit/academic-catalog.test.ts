@@ -75,7 +75,10 @@ describe('portable academic catalog', () => {
       const read = (root: string) =>
         readdirSync(join(root, 'curricula'))
           .sort()
-          .map((f) => readFileSync(join(root, 'curricula', f), 'utf8'))
+          // Git checkout on Windows may use CRLF while the generator always
+          // writes LF. Compare canonical JSON content, not checkout EOLs.
+          .map((f) => JSON.parse(readFileSync(join(root, 'curricula', f), 'utf8')))
+          .map((entry) => JSON.stringify(entry))
           .join('\n')
 
       // A hand-edit of the catalog would show up here, which is the point: there is

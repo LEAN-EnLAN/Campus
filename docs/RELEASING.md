@@ -17,10 +17,12 @@
 Partiendo de un `main` limpio y sincronizado con `origin/main`:
 
 ```bash
-pnpm release:check --tag v0.1.0
+pnpm release:check --tag v0.1.0 --evidence <ruta-privada-al-json>
 ```
 
-El comando es de solo lectura. Bloquea etiquetas que no coinciden con `package.json`, ausencia de licencia/changelog, rama distinta de `main`, cambios locales y referencias remotas divergentes o ya etiquetadas. No confirma por sí solo el estado de CI, los backups, el funcionamiento de SMTP ni la autorización para publicar.
+El comando es de solo lectura. Bloquea etiquetas que no coinciden con `package.json`, ausencia de licencia/changelog, rama distinta de `main`, cambios locales y referencias remotas divergentes o ya etiquetadas. **Además requiere un archivo de evidencias operativas**, externo al repositorio, para **SMTP real + contraseña cambiada e inicio de sesión** y para **dump y restauración Cloud/Postgres aislada con comprobación de RLS**. El esquema está en [`RELEASE-EVIDENCE.example.json`](RELEASE-EVIDENCE.example.json), y los pasos se documentan en [`BACKUPS.md`](BACKUPS.md). La evidencia debe referir al SHA exacto de `main`, contener dos `result=pass` con verificador, entorno, URL HTTPS a evidencia inspeccionable y pruebas realizadas durante los últimos 30 días. No usar direcciones de email, passwords ni secretos reales en el archivo.
+
+**Límite del gate:** valida la **estructura y vigencia de declaraciones humanas**, no se conecta a SMTP ni a una base de producción. Una declaración falsa o un enlace sin respaldo puede pasar el chequeo sintáctico; el propietario debe inspeccionar resultados y CI en el commit exacto antes de autorizar release. Ningún test simulado reemplaza un ensayo real. La falta de credenciales o de evidencia implica `BLOCK`, no un pase implícito.
 
 ## Publicación manual, **solo después de aprobar todas las condiciones**
 

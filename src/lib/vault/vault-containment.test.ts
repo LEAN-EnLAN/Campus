@@ -12,7 +12,7 @@ import { join } from 'node:path'
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
-import { symlinkSync } from '../../../tests/support/real-links'
+import { nativeFileSymlinksAvailable, symlinkSync } from '../../../tests/support/real-links'
 
 import { nodeFileSystem } from './node-fs'
 import { VaultRepository } from './vault-repository'
@@ -48,7 +48,7 @@ afterEach(() => {
   rmSync(base, { recursive: true, force: true })
 })
 
-describe('two-hop file links', () => {
+describe.skipIf(!nativeFileSymlinksAvailable)('two-hop file links', () => {
   beforeEach(() => {
     // b -> <outside file>; a -> b. `a` is a link to an in-vault link.
     symlinkSync(join(outside, 'secret.txt'), join(root, 'b'))
@@ -145,27 +145,36 @@ describe('chains built from relative targets and dot-dot', () => {
     expect(existsSync(join(outside, 'x.md'))).toBe(false)
   })
 
-  it('refuses a dangling chained link, so the target cannot be planted later', async () => {
-    symlinkSync(join(outside, 'later.md'), join(root, 'b2'))
-    symlinkSync('b2', join(root, 'a2'))
-    await expect(repo.writeNote('a2', 'pwned', null)).rejects.toThrow(OUTSIDE)
-    expect(existsSync(join(outside, 'later.md'))).toBe(false)
-  })
+  it.skipIf(!nativeFileSymlinksAvailable)(
+    'refuses a dangling chained link, so the target cannot be planted later',
+    async () => {
+      symlinkSync(join(outside, 'later.md'), join(root, 'b2'))
+      symlinkSync('b2', join(root, 'a2'))
+      await expect(repo.writeNote('a2', 'pwned', null)).rejects.toThrow(OUTSIDE)
+      expect(existsSync(join(outside, 'later.md'))).toBe(false)
+    },
+  )
 
-  it('does not hang on a link loop, and refuses it', async () => {
-    symlinkSync('y', join(root, 'x'))
-    symlinkSync('x', join(root, 'y'))
-    await expect(repo.readNote('x')).rejects.toThrow(/symbolic links|outside the vault/i)
-  })
+  it.skipIf(!nativeFileSymlinksAvailable)(
+    'does not hang on a link loop, and refuses it',
+    async () => {
+      symlinkSync('y', join(root, 'x'))
+      symlinkSync('x', join(root, 'y'))
+      await expect(repo.readNote('x')).rejects.toThrow(/symbolic links|outside the vault/i)
+    },
+  )
 })
 
 describe('chained links that stay inside the vault remain allowed', () => {
-  it('reads through a chain of in-vault file links', async () => {
-    writeFileSync(join(root, 'Materias', 'real.md'), '# real\n')
-    symlinkSync(join(root, 'Materias', 'real.md'), join(root, 'one.md'))
-    symlinkSync('one.md', join(root, 'two.md'))
-    expect((await repo.readNote('two.md')).contents).toBe('# real\n')
-  })
+  it.skipIf(!nativeFileSymlinksAvailable)(
+    'reads through a chain of in-vault file links',
+    async () => {
+      writeFileSync(join(root, 'Materias', 'real.md'), '# real\n')
+      symlinkSync(join(root, 'Materias', 'real.md'), join(root, 'one.md'))
+      symlinkSync('one.md', join(root, 'two.md'))
+      expect((await repo.readNote('two.md')).contents).toBe('# real\n')
+    },
+  )
 
   it('writes a new file below a chain of in-vault directory links', async () => {
     symlinkSync('Materias', join(root, 'm1'))

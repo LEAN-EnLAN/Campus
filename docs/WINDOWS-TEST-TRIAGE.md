@@ -83,3 +83,23 @@ equivalente de dos junctions bajo Windows, cuya API normaliza destinos.
 
 La deuda `format:check` global (327 archivos en la estimación inicial) se
 mantiene fuera de este cambio; los archivos editados usan Prettier individual.
+
+## Revalidación por capacidad real de symlink (28/10/2026)
+
+En esta rama se agregó `canCreateNativeFileSymlink()` en `tests/support/real-links.ts`:
+en Windows intenta crear **un enlace de archivo verdadero** dentro de un directorio
+temporal y verifica `lstat.isSymbolicLink()`. Si Windows devuelve `EPERM` o
+`EACCES`, exactamente los **12 casos que necesitan un symlink de archivo real**
+permanecen registrados como `skipped` mediante `it.skipIf` / `describe.skipIf`.
+No se fabrican hardlinks, archivos planos ni junctions que pretendan ser
+symlinks de archivo. Los tests se ejecutan **sin saltos** en POSIX y también en
+Windows con permisos suficientes. Cualquier error inesperado del probe sigue
+fallando. Un test independiente comprueba que una **junction de directorio**
+es un enlace verdadero incluso en Windows sin privilegios.
+
+No se altera el helper `symlinkSync` ni la regla de confinamiento de producción.
+Los **casos de directorios** (escapes, cadenas, ACL, backend HTTP) siguen corriendo
+en Windows como junctions reales. El resultado verde local con 12 `skipped`
+debe informarse con ese desglose; **no equivale** a haber probado las 12
+condiciones de file symlink en Windows. El job `quality` Ubuntu de GitHub Actions
+ejecuta las 12 porque en POSIX no hay skip por capacidad.

@@ -1,7 +1,7 @@
 import { execFileSync, spawnSync } from 'node:child_process'
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join, resolve } from 'node:path'
+import { dirname, join, resolve } from 'node:path'
 
 import { afterEach, describe, expect, it } from 'vitest'
 
@@ -32,11 +32,36 @@ function candidate(options: { version?: string; license?: boolean; changelog?: b
   git(repo, 'add', '.')
   git(repo, 'commit', '--quiet', '-m', 'init release fixture')
   git(repo, 'push', '--quiet', '-u', 'origin', 'main')
+  // Synthetic operational attestations, solely in a temporary TEST fixture.
+  // They do not belong to Campus or demonstrate SMTP/Cloud E2E checks.
+  const checked = {
+    result: 'pass',
+    testedAt: new Date().toISOString(),
+    verifiedBy: 'Fixture Operator',
+    environment: 'isolated test fixture',
+    evidenceRef: 'https://example.invalid/test/evidence',
+  }
+  writeFileSync(
+    join(root, 'operational-evidence.json'),
+    JSON.stringify({
+      schema: 1,
+      releaseTag: 'v0.1.0',
+      commit: git(repo, 'rev-parse', 'HEAD'),
+      checks: { smtpPasswordReset: checked, cloudRestore: checked },
+    }),
+  )
   return repo
 }
 
-function preflight(repo: string, tag = 'v0.1.0') {
-  const result = spawnSync('node', [script, '--tag', tag], { cwd: repo, encoding: 'utf8' })
+function preflight(
+  repo: string,
+  tag = 'v0.1.0',
+  evidence = join(dirname(repo), 'operational-evidence.json'),
+) {
+  const result = spawnSync('node', [script, '--tag', tag, '--evidence', evidence], {
+    cwd: repo,
+    encoding: 'utf8',
+  })
   return { status: result.status, output: result.stdout + result.stderr }
 }
 
@@ -49,7 +74,8 @@ describe('release:check — real read-only Git preflight', () => {
     const repo = candidate()
     const result = preflight(repo)
     expect(result.status).toBe(0)
-    expect(result.output).toContain('metadata and Git state OK')
+    expect(result.output).toContain('evidence record checks OK')
+    expect(result.output).toContain('NOT independently verified')
     expect(git(repo, 'tag', '--list')).toBe('')
   }, 30000)
 
@@ -81,5 +107,34 @@ describe('release:check — real read-only Git preflight', () => {
     expect(result.output).toContain('already exists on the remote')
     git(repo, 'switch', '--quiet', '-c', 'feature')
     expect(preflight(repo).output).toContain('expected main')
+  }, 30000)
+
+  it('blocks when evidence is missing or SMTP/Cloud checks are not both attested', () => {
+    const repo = candidate()
+    const file = join(dirname(repo), 'operational-evidence.json')
+    expect(preflight(repo, 'v0.1.0', join(dirname(repo), 'missing.json')).output).toContain(
+      'operational evidence file is missing',
+    )
+    const record = JSON.parse(readFileSync(file, 'utf8'))
+    record.checks.smtpPasswordReset.result = 'pending'
+    delete record.checks.cloudRestore
+    writeFileSync(file, JSON.stringify(record))
+    const output = preflight(repo).output
+    expect(output).toContain('real SMTP password-reset receipt')
+    expect(output).toContain('isolated Cloud/Postgres dump and restore')
+  }, 30000)
+
+  it('rejects stale, mismatched and insufficient operational records', () => {
+    const repo = candidate()
+    const file = join(dirname(repo), 'operational-evidence.json')
+    const record = JSON.parse(readFileSync(file, 'utf8'))
+    record.commit = '0'.repeat(40)
+    record.checks.smtpPasswordReset.testedAt = '2020-01-01T00:00:00.000Z'
+    record.checks.cloudRestore.evidenceRef = 'not-a-link'
+    writeFileSync(file, JSON.stringify(record))
+    const output = preflight(repo).output
+    expect(output).toContain('exact HEAD SHA')
+    expect(output).toContain('recent, exact ISO UTC timestamp')
+    expect(output).toContain('inspectable HTTPS evidence URL')
   }, 30000)
 })

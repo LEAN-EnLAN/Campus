@@ -90,26 +90,87 @@ export function inspectReleaseGit(root, tag, runGit = git) {
   return failures
 }
 
+/**
+ * These are human-supplied, commit-bound operational attestations, NOT proof
+ * that this script delivered email or connected to a production database.
+ * Keep the record outside the repo so release evidence does not leak test data.
+ */
+export function inspectOperationalEvidence(root, path, tag, head, now = Date.now()) {
+  if (!path) return ['operational evidence missing: pass --evidence <private-json-path>']
+  let record
+  try {
+    record = JSON.parse(readFileSync(resolve(root, path), 'utf8'))
+  } catch {
+    return ['operational evidence file is missing or invalid JSON']
+  }
+  const failures = []
+  if (record?.schema !== 1 || record.releaseTag !== tag || record.commit !== head) {
+    failures.push('operational evidence must match schema 1, this tag and exact HEAD SHA')
+  }
+  for (const [key, description] of [
+    ['smtpPasswordReset', 'real SMTP password-reset receipt and sign-in'],
+    ['cloudRestore', 'isolated Cloud/Postgres dump and restore with RLS checks'],
+  ]) {
+    const check = record?.checks?.[key]
+    if (!check || check.result !== 'pass') {
+      failures.push(`${description}: signed-off evidence not present (result=pass required)`)
+      continue
+    }
+    const when = Date.parse(check.testedAt)
+    if (
+      typeof check.testedAt !== 'string' ||
+      !Number.isFinite(when) ||
+      new Date(when).toISOString() !== check.testedAt ||
+      when > now ||
+      now - when > 30 * 24 * 60 * 60 * 1000
+    ) {
+      failures.push(`${description}: testedAt must be a recent, exact ISO UTC timestamp`)
+    }
+    if (
+      typeof check.verifiedBy !== 'string' ||
+      check.verifiedBy.trim().length < 2 ||
+      typeof check.environment !== 'string' ||
+      check.environment.trim().length < 3 ||
+      typeof check.evidenceRef !== 'string' ||
+      !/^https:\/\/[^\s/]+\/\S+$/i.test(check.evidenceRef)
+    ) {
+      failures.push(
+        `${description}: verifier, environment and inspectable HTTPS evidence URL required`,
+      )
+    }
+  }
+  return failures
+}
+
 async function main() {
-  const { values } = parseArgs({ options: { tag: { type: 'string' } } })
+  const { values } = parseArgs({
+    options: { tag: { type: 'string' }, evidence: { type: 'string' } },
+  })
   if (!values.tag) {
-    console.error('Usage: pnpm release:check --tag v0.1.0')
+    console.error('Usage: pnpm release:check --tag v0.1.0 --evidence <private-json-path>')
     process.exitCode = 1
     return
   }
   const root = process.cwd()
+  let head = ''
+  try {
+    head = git(root, 'rev-parse', 'HEAD')
+  } catch {
+    // inspectReleaseGit reports the underlying Git failure separately.
+  }
   const failures = [
     ...inspectReleaseFiles(root, values.tag),
     ...inspectReleaseGit(root, values.tag),
+    ...inspectOperationalEvidence(root, values.evidence, values.tag, head),
   ]
   if (failures.length) {
     failures.forEach((failure) => console.error(`BLOCK  ${failure}`))
     process.exitCode = 1
     return
   }
-  console.log(`release-preflight ${values.tag}: local metadata and Git state OK`)
+  console.log(`release-preflight ${values.tag}: metadata, Git and evidence record checks OK`)
   console.log(
-    'Still required: GitHub CI green, release notes review, backup checks and approval.',
+    'Human evidence attestations are NOT independently verified by this CLI. Still required: GitHub CI on this SHA, evidence inspection, release notes and approval.',
   )
 }
 

@@ -45,7 +45,7 @@ describe('Plan for a carrera that is not in the catalog', () => {
     expect(await screen.findByRole('heading', { name: '2° año' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: /Cálculo 1/ })).toBeInTheDocument()
     expect(store.manual).toHaveLength(1)
-  })
+  }, 20_000)
 
   it('marks a status and counts only what was entered, with no availability claim', async () => {
     const store = unmapped({

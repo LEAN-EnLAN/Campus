@@ -9,14 +9,14 @@
 
 La familia usa una geometría editorial y académica: planos rectangulares, pequeñas curvas funcionales, un motivo orbital punteado de fondo, contornos navy y una sola familia cromática de azul. Son ilustraciones silenciosas; **el mensaje, las acciones y el estado pertenecen siempre al HTML/React**, no están escritos dentro del SVG.
 
-| Token | HEX | Uso |
-| --- | --- | --- |
-| Navy / contorno | `#1E3976`–`#24417D` | Contorno de pantalla, carpeta, calendario y documentos |
-| Navy profundo | `#101F4C` | Figura de computadora, siluetas |
-| Sapphire | `#416BDE`–`#4D73DB` | Superficie activa y símbolo principal |
-| Periwinkle | `#849BF4`–`#9EB0F5` | Superficie secundaria y símbolos complementarios |
-| Ice / papel | `#F0F5FF`–`#FAFBFF` | Fondo interno; el exterior es transparente |
-| Rule / ornamento | `#CBD9F6`–`#DEE7FC` | Líneas, aros, estructura tenue |
+| Token            | HEX                 | Uso                                                    |
+| ---------------- | ------------------- | ------------------------------------------------------ |
+| Navy / contorno  | `#1E3976`–`#24417D` | Contorno de pantalla, carpeta, calendario y documentos |
+| Navy profundo    | `#101F4C`           | Figura de computadora, siluetas                        |
+| Sapphire         | `#416BDE`–`#4D73DB` | Superficie activa y símbolo principal                  |
+| Periwinkle       | `#849BF4`–`#9EB0F5` | Superficie secundaria y símbolos complementarios       |
+| Ice / papel      | `#F0F5FF`–`#FAFBFF` | Fondo interno; el exterior es transparente             |
+| Rule / ornamento | `#CBD9F6`–`#DEE7FC` | Líneas, aros, estructura tenue                         |
 
 Los colores están incorporados en cada SVG para que pueda montarse mediante `<img src>` sin requerir CSS ni inyección de SVG en el DOM. Las formas no tienen degradados, filtros, sombras, CSS externo, fuentes, imágenes raster, animaciones ni elementos de marca de terceros.
 
@@ -24,16 +24,16 @@ Los colores están incorporados en cada SVG para que pueda montarse mediante `<i
 
 Todas las ilustraciones tienen **dimensión intrínseca `640 × 400`**, `viewBox="0 0 640 400"`, fondo exterior transparente, `role="img"` y `<title>` accesible para inserción inline. Pesan menos de 3 KB individualmente.
 
-| Ruta URL pública | Superficie / estado | `alt` recomendado (es-AR) |
-| --- | --- | --- |
-| `/campus-blue-assets/workspace-local.svg` | S00, selector de carpeta local | `Ilustración de una carpeta de materias guardada en esta computadora` |
-| `/campus-blue-assets/workspace-cloud.svg` | S00, selector Campus Cloud | `Ilustración de un espacio académico almacenado en Cloud` |
-| `/campus-blue-assets/vault-cloud-unavailable.svg` | S14, Vault inaccesible desde Cloud | `Carpeta de apuntes local separada del espacio Cloud` |
-| `/campus-blue-assets/calendar-empty.svg` | S09–S11, calendario sin eventos cargados | `Calendario académico todavía sin fechas registradas` |
-| `/campus-blue-assets/material-empty.svg` | S12, lista de material sin recursos | `Libro de estudio con un símbolo de enlace para material académico` |
-| `/campus-blue-assets/notes-empty.svg` | S13, carpeta local sin archivos de notas | `Cuaderno de apuntes preparado para empezar una nota` |
-| `/campus-blue-assets/onboarding-ready.svg` | S02–S03, confirmación visual posterior a completar onboarding | `Documento académico con una marca de confirmación` |
-| `/campus-blue-assets/gentle-error.svg` | Estados de error recuperable / fallo al cargar | `Panel de Campus con un símbolo de atención` |
+| Ruta URL pública                                  | Superficie / estado                                           | `alt` recomendado (es-AR)                                             |
+| ------------------------------------------------- | ------------------------------------------------------------- | --------------------------------------------------------------------- |
+| `/campus-blue-assets/workspace-local.svg`         | S00, selector de carpeta local                                | `Ilustración de una carpeta de materias guardada en esta computadora` |
+| `/campus-blue-assets/workspace-cloud.svg`         | S00, selector Campus Cloud                                    | `Ilustración de un espacio académico almacenado en Cloud`             |
+| `/campus-blue-assets/vault-cloud-unavailable.svg` | S14, Vault inaccesible desde Cloud                            | `Carpeta de apuntes local separada del espacio Cloud`                 |
+| `/campus-blue-assets/calendar-empty.svg`          | S09–S11, calendario sin eventos cargados                      | `Calendario académico todavía sin fechas registradas`                 |
+| `/campus-blue-assets/material-empty.svg`          | S12, lista de material sin recursos                           | `Libro de estudio con un símbolo de enlace para material académico`   |
+| `/campus-blue-assets/notes-empty.svg`             | S13, carpeta local sin archivos de notas                      | `Cuaderno de apuntes preparado para empezar una nota`                 |
+| `/campus-blue-assets/onboarding-ready.svg`        | S02–S03, confirmación visual posterior a completar onboarding | `Documento académico con una marca de confirmación`                   |
+| `/campus-blue-assets/gentle-error.svg`            | Estados de error recuperable / fallo al cargar                | `Panel de Campus con un símbolo de atención`                          |
 
 **Nota semántica:** si el título adyacente a la imagen explica por completo el estado, se recomienda `alt=""` para evitar que el lector de pantalla anuncie información redundante. No usar `onboarding-ready.svg` antes de confirmar que la operación terminó correctamente, ni sugerir sincronización Cloud↔notas locales con `vault-cloud-unavailable.svg`.
 

@@ -16,8 +16,11 @@ const repo = resolve(fileURLToPath(new URL('..', import.meta.url)))
 const require = createRequire(import.meta.url)
 const vite = join(repo, 'node_modules', 'vite', 'bin', 'vite.js')
 const cli = join(repo, 'node_modules', '@playwright', 'test', 'cli.js')
-const runName = new Date().toISOString().replaceAll(':', '-').replaceAll('.', '-') + '-' + process.pid
-const artifacts = resolve(process.env.CAMPUS_BLUE_QA_OUTPUT ?? join(tmpdir(), 'campus-blue-qa', runName))
+const runName =
+  new Date().toISOString().replaceAll(':', '-').replaceAll('.', '-') + '-' + process.pid
+const artifacts = resolve(
+  process.env.CAMPUS_BLUE_QA_OUTPUT ?? join(tmpdir(), 'campus-blue-qa', runName),
+)
 const fixtureRoot = mkdtempSync(join(tmpdir(), 'campus-blue-local-'))
 const env = {
   ...process.env,
@@ -34,7 +37,14 @@ const env = {
   CAMPUS_BLUE_QA_HEADLESS: process.env.CAMPUS_BLUE_QA_HEADLESS ?? '1',
 }
 // Avoid inheriting alternate proxy/TLS origin settings from an interactive session.
-for (const key of ['CAMPUS_SUPABASE_TARGET', 'CAMPUS_TLS_CERT', 'CAMPUS_TLS_KEY', 'CAMPUS_HMR_HOST', 'CAMPUS_VAULT_ALLOWED_ORIGINS']) delete env[key]
+for (const key of [
+  'CAMPUS_SUPABASE_TARGET',
+  'CAMPUS_TLS_CERT',
+  'CAMPUS_TLS_KEY',
+  'CAMPUS_HMR_HOST',
+  'CAMPUS_VAULT_ALLOWED_ORIGINS',
+])
+  delete env[key]
 
 function findUnusedPort() {
   return new Promise((done, reject) => {
@@ -43,7 +53,7 @@ function findUnusedPort() {
     server.listen(0, '127.0.0.1', () => {
       const address = server.address()
       const port = typeof address === 'object' && address ? address.port : null
-      server.close(() => port ? done(port) : reject(new Error('Could not allocate a port')))
+      server.close(() => (port ? done(port) : reject(new Error('Could not allocate a port'))))
     })
   })
 }
@@ -62,7 +72,9 @@ async function ready(url, child, output) {
       } finally {
         clearTimeout(timeout)
       }
-    } catch { /* startup in progress */ }
+    } catch {
+      /* startup in progress */
+    }
     await new Promise((done) => setTimeout(done, 300))
   }
   throw new Error('Isolated Vite did not become ready: ' + output().slice(-3000))
@@ -72,7 +84,10 @@ async function stopOwnProcess(child) {
   if (!child || child.exitCode !== null) return
   // On Windows stop only the PID that we spawned and its descendants.
   if (process.platform === 'win32') {
-    spawnSync('taskkill', ['/PID', String(child.pid), '/T', '/F'], { windowsHide: true, timeout: 7000 })
+    spawnSync('taskkill', ['/PID', String(child.pid), '/T', '/F'], {
+      windowsHide: true,
+      timeout: 7000,
+    })
   } else {
     child.kill('SIGTERM')
   }
@@ -86,28 +101,44 @@ try {
   try {
     require.resolve('@dayflow/core/dist/styles.components.css', { paths: [repo] })
   } catch {
-    throw new Error('Preflight: @dayflow/core/dist/styles.components.css is unavailable. Repair the @dayflow dependency installation outside this QA-only scope; Vite would render an error overlay instead of Campus.')
+    throw new Error(
+      'Preflight: @dayflow/core/dist/styles.components.css is unavailable. Repair the @dayflow dependency installation outside this QA-only scope; Vite would render an error overlay instead of Campus.',
+    )
   }
   mkdirSync(artifacts, { recursive: true })
   const port = await findUnusedPort()
   const url = `http://127.0.0.1:${port}`
   env.CAMPUS_BLUE_BASE_URL = url
   const output = []
-  server = spawn(process.execPath, [vite, '--host', '127.0.0.1', '--port', String(port), '--strictPort'], {
-    cwd: repo, env, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'],
-  })
+  server = spawn(
+    process.execPath,
+    [vite, '--host', '127.0.0.1', '--port', String(port), '--strictPort'],
+    {
+      cwd: repo,
+      env,
+      windowsHide: true,
+      stdio: ['ignore', 'pipe', 'pipe'],
+    },
+  )
   server.stdout.on('data', (buffer) => output.push(buffer.toString()))
   server.stderr.on('data', (buffer) => output.push(buffer.toString()))
   console.log('Local-only Campus QA · isolated Vite ' + url)
   console.log('Fixtures: ' + fixtureRoot)
   console.log('Evidence: ' + artifacts)
   await ready(url, server, () => output.join(''))
-  const runner = spawn(process.execPath, [cli, 'test', '--config', 'tests/e2e-blue/playwright.config.mjs', ...process.argv.slice(2)], {
-    cwd: repo, env, windowsHide: true, stdio: 'inherit',
-  })
+  const runner = spawn(
+    process.execPath,
+    [cli, 'test', '--config', 'tests/e2e-blue/playwright.config.mjs', ...process.argv.slice(2)],
+    {
+      cwd: repo,
+      env,
+      windowsHide: true,
+      stdio: 'inherit',
+    },
+  )
   const exitCode = await new Promise((done, reject) => {
     runner.once('error', reject)
-    runner.once('close', (code, signal) => done(signal ? 1 : code ?? 1))
+    runner.once('close', (code, signal) => done(signal ? 1 : (code ?? 1)))
   })
   process.exitCode = exitCode
 } catch (error) {

@@ -19,15 +19,28 @@ Las capturas PNG (startup, onboarding, Hoy, Plan, Materias, Calendario, Material
 
 Cada uno de **390×844, 768×1024 y 1440×900** verifica: primer acceso Local, Vault real, onboarding y contexto guardado; cada ruta existente accesible; scrollWidth de documento/body; JavaScript `pageerror`, `console.error` y HTTP 4xx/5xx locales; capturas; eje WCAG A/AA con axe (serious/critical bloquean); foco mediante Tab; atajo Ctrl+K, combobox y Escape. Las infracciones axe de impacto moderate/minor se adjuntan como anotaciones, no se silencian.
 
-## Verificación de esta ejecución (27-10-2026)
+## Resultado verificado (28-10-2026)
 
-**Resultado: bloqueado antes de mostrar Campus.** Se ejecutó `node scripts/blue-local-qa.mjs --grep 390x844` en un puerto aislado, con Edge. El primer aserto de startup falló porque Vite mostró su overlay de desarrollo:
+**PASS — 3/3 tests, Edge real, 3,4 minutos.** Comando:
 
+```powershell
+node scripts/blue-local-qa.mjs
 ```
-[plugin:@tailwindcss/vite:generate:serve]
-Can't resolve '@dayflow/core/dist/styles.components.css' in src/styles/globals.css
-```
 
-No es lícito concluir que el diseño, el flujo Local o axe fallaron: **la app no llegó a renderizarse**. El runner incorpora un preflight explícito para esta dependencia y ahora informa el bloqueo antes de lanzar el navegador. Corregir instalación/resolución Dayflow en el árbol de producto (fuera de los archivos autorizados a este worker) y volver a ejecutar. También validar catálogos, rutas y labels si cambian los componentes de prime: la suite exige controles reales.
+| Edge     | Resultado | Capturas | Incidencias bloqueantes |
+| -------- | --------- | -------- | ----------------------- |
+| 390×844  | PASS      | 11       | 0                       |
+| 768×1024 | PASS      | 11       | 0                       |
+| 1440×900 | PASS      | 11       | 0                       |
 
-**Limitaciones:** no se validó la matriz completa con este harness por la dependencia bloqueante; la revisión visual externa de prime es independiente y no se presenta como resultado de esta suite. Los resultados y PNG generados antes del bloqueo permanecen en el directorio temporal de QA. El runner no edita `src/**`, CSS, `routeTree.gen.ts`, ramas, PR ni despliegues.
+Se ejercitaron el startup, el wizard del catálogo real, las 8 rutas enumeradas en el spec, la creación/eliminación de una nota de Material, el foco y el atajo Ctrl+K/Escape. Por viewport se evaluaron overflow, consola y HTTP local, errores JS, WCAG AA con axe y capturas. Ninguna expectativa falló y el directorio `axe/` no contiene violaciones registradas para esta ejecución.
+
+Evidencia local (no versionada): `%TEMP%/campus-blue-qa/2026-10-28T15-49-17-820Z-5160/` (33 PNG, `results.json`, traces cuando aplican). Los artefactos históricos de fallos previos permanecen en otros directorios temporales.
+
+## Causa de bloqueo anterior y corrección
+
+El primer intento del 27/10 estaba **bloqueado por dependencias**, no por la UI: Vite mostraba su overlay `Can't resolve '@dayflow/core/dist/styles.components.css'` porque `src/styles/globals.css` importa directamente `@dayflow/core`, pero el paquete estaba sólo como dependencia transitiva de `@dayflow/react`. La solución, aplicada por el agente principal el 28/10, fue declararlo directamente como `"@dayflow/core": "3.7.1"`, actualizar `pnpm-lock.yaml` e instalarlo con pnpm. El preflight del harness comprueba que el import sea resoluble antes de crear el servidor.
+
+El propio harness corrigió dos localizadores erróneos detectados al correrlo: el `radio.check()` aguardaba un elemento que se desmonta al avanzar de paso (reemplazado con `click()`), y el nombre accesible del campo era `Título*` (ahora localizado por rol/regex). El encabezado real de `/plan` es `Plan académico`; para Ctrl+K se espera la hidratación de Hoy antes de simular el atajo. No se alteró el código de producto.
+
+**Limitaciones:** Cloud real, login, sincronización y políticas remotas no se comprueban sin Supabase real. Axe automatizado no sustituye una inspección manual con lector de pantalla; las capturas no se comparan visualmente con un baseline. El runner no edita `src/**`, CSS ni `routeTree.gen.ts`; no hace push, merge ni PR.

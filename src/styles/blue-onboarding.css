@@ -67,7 +67,7 @@
 }
 .blue-onboarding-top-note {
   font-size: 13px;
-  color: #61789a;
+  color: #405b81;
 }
 .blue-onboarding-text-link {
   display: inline-flex;
@@ -296,7 +296,7 @@
   letter-spacing: -0.03em;
 }
 .blue-onboarding-aside-heading p {
-  color: #60779b;
+  color: #405b81;
   font-size: 13px;
   line-height: 1.5;
 }
@@ -341,7 +341,7 @@
 }
 .blue-onboarding-workspace-card small {
   font-size: 10px;
-  color: #6680a5;
+  color: #405b81;
   line-height: 1.3;
   margin-top: 5px;
 }
@@ -380,7 +380,7 @@
   min-width: 0;
 }
 .blue-onboarding-summary li span {
-  color: #647c9f;
+  color: #405b81;
   font-size: 11px;
 }
 .blue-onboarding-summary li strong {

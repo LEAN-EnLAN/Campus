@@ -21,10 +21,11 @@ export const Route = createFileRoute('/login')({
   component: LoginScreen,
 })
 
-type Mode = 'signin' | 'signup'
+type Mode = 'signin' | 'signup' | 'reset' | 'new-password'
 
 function LoginScreen() {
-  const { signIn, signUp, session, loading } = useAuth()
+  const { signIn, signUp, session, loading, recovering, requestPasswordReset, updatePassword } =
+    useAuth()
   const workspace = useWorkspace()
   useDocumentTitle('Entrar · Campus')
   const navigate = useNavigate()
@@ -39,8 +40,9 @@ function LoginScreen() {
   const [submitted, setSubmitted] = useState(false)
 
   useEffect(() => {
-    if (!loading && session) void navigate({ to: '/today' })
-  }, [loading, session, navigate])
+    if (recovering) setMode('new-password')
+    else if (!loading && session && mode !== 'new-password') void navigate({ to: '/today' })
+  }, [loading, session, navigate, recovering, mode])
 
   const emailError =
     email.trim() === ''
@@ -58,8 +60,31 @@ function LoginScreen() {
     setSubmitted(true)
     // Our own checks, in our own words. The form opts out of the browser's
     // (`noValidate`), whose text follows the browser language.
-    if (emailError || passwordError) return
+    if ((mode !== 'new-password' && emailError) || (mode !== 'reset' && passwordError)) return
     setPending(true)
+
+    if (mode === 'reset') {
+      const result = await requestPasswordReset(email.trim())
+      setPending(false)
+      if (result.error) setError(result.error)
+      else
+        setNotice(
+          'Si existe una cuenta con ese email, recibirás un enlace para restablecer tu contraseña.',
+        )
+      return
+    }
+    if (mode === 'new-password') {
+      const result = await updatePassword(password)
+      setPending(false)
+      if (result.error) setError(result.error)
+      else {
+        setPassword('')
+        setMode('signin')
+        setNotice('Contraseña actualizada. Ya podés continuar.')
+        void navigate({ to: '/today' })
+      }
+      return
+    }
 
     const result =
       mode === 'signin'
@@ -115,12 +140,22 @@ function LoginScreen() {
                 <Cloud size={16} aria-hidden="true" /> Acceso a Campus Cloud
               </p>
               <h1>
-                {mode === 'signup' ? 'Tu recorrido empieza acá.' : 'Bienvenido de nuevo.'}
+                {mode === 'signup'
+                  ? 'Tu recorrido empieza acá.'
+                  : mode === 'reset'
+                    ? 'Recuperá tu cuenta.'
+                    : mode === 'new-password'
+                      ? 'Elegí una contraseña nueva.'
+                      : 'Bienvenido de nuevo.'}
               </h1>
               <p className="blue-login-lead">
-                {mode === 'signup'
-                  ? 'Creá tu cuenta para organizar materias, entregas y tu plan de estudios desde distintos dispositivos.'
-                  : 'Ingresá con tu cuenta para continuar con tu cursada.'}
+                {mode === 'reset'
+                  ? 'Te enviaremos un enlace a tu correo para recuperar el acceso.'
+                  : mode === 'new-password'
+                    ? 'Guardá una contraseña nueva para tu cuenta de Campus.'
+                    : mode === 'signup'
+                      ? 'Creá tu cuenta para organizar materias, entregas y tu plan de estudios desde distintos dispositivos.'
+                      : 'Ingresá con tu cuenta para continuar con tu cursada.'}
               </p>
             </div>
 
@@ -162,26 +197,58 @@ function LoginScreen() {
                 />
               ) : null}
 
-              <TextField
-                label="Email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                autoComplete="email"
-                error={submitted ? emailError : null}
-                required
-              />
+              {mode !== 'new-password' && (
+                <TextField
+                  label="Email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  autoComplete="email"
+                  error={submitted ? emailError : null}
+                  required
+                />
+              )}
 
-              <TextField
-                label="Contraseña"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
-                hint={mode === 'signup' ? 'Mínimo 6 caracteres.' : undefined}
-                error={submitted ? passwordError : null}
-                required
-              />
+              {mode !== 'reset' && (
+                <TextField
+                  label="Contraseña"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
+                  hint={mode === 'signup' ? 'Mínimo 6 caracteres.' : undefined}
+                  error={submitted ? passwordError : null}
+                  required
+                />
+              )}
+
+              {mode === 'signin' ? (
+                <button
+                  type="button"
+                  className="blue-onboarding-text-link"
+                  onClick={() => {
+                    setMode('reset')
+                    setNotice(null)
+                    setError(null)
+                    setSubmitted(false)
+                  }}
+                >
+                  Recuperar contraseña
+                </button>
+              ) : mode === 'reset' ? (
+                <button
+                  type="button"
+                  className="blue-onboarding-text-link"
+                  onClick={() => {
+                    setMode('signin')
+                    setNotice(null)
+                    setError(null)
+                    setSubmitted(false)
+                  }}
+                >
+                  Volver a iniciar sesión
+                </button>
+              ) : null}
 
               {notice ? (
                 <p role="status" className="blue-login-message">
@@ -196,7 +263,15 @@ function LoginScreen() {
               ) : null}
 
               <Button type="submit" variant="primary" size="lg" disabled={pending}>
-                {pending ? 'Un momento…' : mode === 'signup' ? 'Crear cuenta' : 'Entrar'}
+                {pending
+                  ? 'Un momento…'
+                  : mode === 'signup'
+                    ? 'Crear cuenta'
+                    : mode === 'reset'
+                      ? 'Enviar enlace'
+                      : mode === 'new-password'
+                        ? 'Guardar contraseña'
+                        : 'Entrar'}
                 {!pending && <ArrowRight size={17} aria-hidden="true" />}
               </Button>
             </form>

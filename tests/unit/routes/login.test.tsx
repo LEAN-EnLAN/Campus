@@ -11,6 +11,8 @@ import { renderRoute } from '../helpers/render-route'
 const auth = vi.hoisted(() => ({
   signIn: vi.fn(),
   signUp: vi.fn(),
+  requestPasswordReset: vi.fn(),
+  updatePassword: vi.fn(),
 }))
 
 vi.mock('@/features/auth/auth-context', () => ({
@@ -29,17 +31,34 @@ const mount = () =>
 
 const submit = async () => {
   await screen.findByRole('group', { name: 'Acción de cuenta' })
-  return within(document.querySelector('form')!).getByRole('button')
+  return within(document.querySelector('form')!).getByRole('button', {
+    name: /^(Crear cuenta|Entrar|Enviar enlace|Guardar contraseña)$/,
+  })
 }
 const modeButtons = () => screen.getByRole('group', { name: 'Acción de cuenta' })
 
 beforeEach(() => {
   auth.signIn = vi.fn()
   auth.signUp = vi.fn()
+  auth.requestPasswordReset = vi.fn()
+  auth.updatePassword = vi.fn()
   change.mockReset()
 })
 
 describe('/login', () => {
+  it('requests a reset using only the email and keeps the response neutral', async () => {
+    const user = userEvent.setup()
+    auth.requestPasswordReset = vi.fn(async () => ({ error: null }))
+    mount()
+    await user.click(await screen.findByRole('button', { name: 'Iniciar sesión' }))
+    await user.click(screen.getByRole('button', { name: 'Recuperar contraseña' }))
+    expect(screen.queryByLabelText(/Contraseña/)).toBeNull()
+    await user.type(screen.getByLabelText(/Email/), 'estudiante@unr.edu.ar')
+    await user.click(await submit())
+    expect(auth.requestPasswordReset).toHaveBeenCalledWith('estudiante@unr.edu.ar')
+    expect(auth.signIn).not.toHaveBeenCalled()
+    expect(await screen.findByRole('status')).toHaveTextContent('Si existe una cuenta')
+  })
   it('has a way back to the place where the student chooses where to work', async () => {
     const user = userEvent.setup()
     mount()

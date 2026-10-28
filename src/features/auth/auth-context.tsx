@@ -10,6 +10,9 @@ interface AuthValue {
   userId: string | null
   /** True until the first session check resolves — routes must not redirect before this. */
   loading: boolean
+  recovering: boolean
+  requestPasswordReset: (email: string) => Promise<{ error: string | null }>
+  updatePassword: (password: string) => Promise<{ error: string | null }>
   signIn: (email: string, password: string) => Promise<{ error: string | null }>
   signUp: (
     email: string,
@@ -24,6 +27,7 @@ const AuthContext = createContext<AuthValue | null>(null)
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
+  const [recovering, setRecovering] = useState(false)
 
   useEffect(() => {
     let active = true
@@ -34,7 +38,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false)
     })
 
-    const { data: subscription } = supabase.auth.onAuthStateChange((_event, next) => {
+    const { data: subscription } = supabase.auth.onAuthStateChange((event, next) => {
+      if (event === 'PASSWORD_RECOVERY') setRecovering(true)
       setSession(next)
     })
 
@@ -49,6 +54,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       session,
       userId: session?.user.id ?? null,
       loading,
+      recovering,
+      requestPasswordReset: async (email) => {
+        try {
+          const { error } = await supabase.auth.resetPasswordForEmail(email, {
+            redirectTo: `${window.location.origin}/login`,
+          })
+          return { error: error ? translateAuthError(error.message, navigator.onLine) : null }
+        } catch (cause) {
+          return { error: translateAuthError(String(cause), navigator.onLine) }
+        }
+      },
+      updatePassword: async (password) => {
+        try {
+          const { error } = await supabase.auth.updateUser({ password })
+          if (!error) setRecovering(false)
+          return { error: error ? translateAuthError(error.message, navigator.onLine) : null }
+        } catch (cause) {
+          return { error: translateAuthError(String(cause), navigator.onLine) }
+        }
+      },
       signIn: async (email, password) => {
         try {
           const { error } = await supabase.auth.signInWithPassword({ email, password })
@@ -94,7 +119,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await supabase.auth.signOut()
       },
     }),
-    [session, loading],
+    [session, loading, recovering],
   )
 
   return <AuthContext value={value}>{children}</AuthContext>

@@ -1,6 +1,7 @@
 import { execFile } from 'node:child_process'
 import { homedir, tmpdir } from 'node:os'
 import { delimiter, resolve } from 'node:path'
+import { platform } from 'node:os'
 import { promisify } from 'node:util'
 
 import { describe, expect, it } from 'vitest'
@@ -42,7 +43,7 @@ describe('dev server spawned by the verify scripts', () => {
     expect(rejected).toEqual([])
     expect(roots).toContain(resolve(homedir()))
     expect(roots).toContain(resolve(tmpdir()))
-    expect(roots).toContain('/tmp')
+    if (platform() !== 'win32') expect(roots).toContain('/tmp')
     expect(env.CAMPUS_VAULT_ALLOWED_ROOTS).toContain(delimiter)
   })
 

@@ -45,7 +45,9 @@ const ALLOWED = [
 ]
 
 describe('backend boundary', () => {
-  const files = walk(join(ROOT, 'src')).map((f) => relative(ROOT, f))
+  // The source tree contract is expressed in repository paths, not OS-native
+  // separators. Keep all policy checks active on Windows.
+  const files = walk(join(ROOT, 'src')).map((f) => relative(ROOT, f).replaceAll('\\', '/'))
 
   it('finds the source tree', () => {
     expect(files.length).toBeGreaterThan(20)

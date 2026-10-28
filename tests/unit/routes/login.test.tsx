@@ -48,6 +48,32 @@ beforeEach(() => {
 })
 
 describe('/login', () => {
+  it('keeps the recovery form and its email after a service failure', async () => {
+    const user = userEvent.setup()
+    auth.requestPasswordReset = vi.fn(async () => ({
+      error: 'Demasiados intentos. Probá de nuevo en un rato.',
+    }))
+    mount()
+    await user.click(await screen.findByRole('button', { name: 'Iniciar sesión' }))
+    await user.click(screen.getByRole('button', { name: 'Recuperar contraseña' }))
+    await user.type(screen.getByLabelText(/Email/), 'cursada@example.com')
+    await user.click(await submit())
+    expect(await screen.findByRole('alert')).toHaveTextContent('Demasiados intentos')
+    expect(screen.getByLabelText(/Email/)).toHaveValue('cursada@example.com')
+  })
+  it('does not claim a new password was saved when Cloud rejects it', async () => {
+    const user = userEvent.setup()
+    auth.recovering = true
+    auth.updatePassword = vi.fn(async () => ({
+      error: 'No pudimos completar la operación. Probá de nuevo.',
+    }))
+    mount()
+    await screen.findByRole('heading', { name: 'Elegí una contraseña nueva.' })
+    await user.type(screen.getByLabelText(/Contraseña/), 'nueva-segura-123')
+    await user.click(await submit())
+    expect(await screen.findByRole('alert')).toHaveTextContent('No pudimos completar')
+    expect(screen.getByLabelText(/Contraseña/)).toHaveValue('nueva-segura-123')
+  })
   it('accepts a valid new password only after a recovery session', async () => {
     const user = userEvent.setup()
     auth.recovering = true

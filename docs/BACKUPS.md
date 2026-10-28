@@ -31,6 +31,8 @@ pnpm vault:backup verify "D:\Copias\Campus-2026-10-27"
 
 ## Cloud / SMTP / release: límites del alcance
 
+**Ensayo PostgreSQL local disponible:** [DB_RESTORE_REHEARSAL.md](./DB_RESTORE_REHEARSAL.md) documenta el dump completo de la instancia Supabase local, su restauración en otra base temporal, comparación de estructura/filas/ACL/RLS y limpieza. El resultado local verificado no acredita por sí mismo el gate Cloud hospedado.
+
 La base **Cloud** reside en Supabase Postgres: sus cuentas, RLS, tablas y políticas **no** se guardan mediante `vault:backup`. Antes de publicar un release hay que comprobar por separado un dump de PostgreSQL y un **restore aislado con verificación de filas y políticas**, usando el mecanismo autorizado de la instalación (credenciales fuera de Git y del frontend). No se realizó esa operación sobre un proyecto hospedado ni se afirma disponibilidad de Point-in-Time Recovery o backups de un plan contratado.
 
 Para ensayar **Cloud** cuando el responsable tenga acceso autorizado: registrar el SHA exacto de `main`, versión de Postgres y hora; obtener un dump consistente del proyecto de prueba con la herramienta oficial (`pg_dump`/Supabase CLI según permisos); crear una base **temporal aislada, distinta de producción**; restaurar allí; cotejar recuentos y claves de tablas académicas y datos del usuario de prueba, probar consultas autenticadas/anon para confirmar RLS y abrir un registro privado del ensayo **sin secretos ni emails**. Nunca ejecutar `pg_restore --clean` contra la base de origen. Borrar la base temporal solo después de conservar la evidencia y obtener aprobación operativa. Sin credenciales se puede validar el guion y los tests del preflight, **pero no afirmar que el restore Cloud se realizó**.

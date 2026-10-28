@@ -13,6 +13,7 @@ const auth = vi.hoisted(() => ({
   signUp: vi.fn(),
   requestPasswordReset: vi.fn(),
   updatePassword: vi.fn(),
+  recovering: false,
 }))
 
 vi.mock('@/features/auth/auth-context', () => ({
@@ -42,10 +43,22 @@ beforeEach(() => {
   auth.signUp = vi.fn()
   auth.requestPasswordReset = vi.fn()
   auth.updatePassword = vi.fn()
+  auth.recovering = false
   change.mockReset()
 })
 
 describe('/login', () => {
+  it('accepts a valid new password only after a recovery session', async () => {
+    const user = userEvent.setup()
+    auth.recovering = true
+    auth.updatePassword = vi.fn(async () => ({ error: null }))
+    mount()
+    await screen.findByRole('heading', { name: 'Elegí una contraseña nueva.' })
+    expect(screen.queryByLabelText(/Email/)).toBeNull()
+    await user.type(screen.getByLabelText(/Contraseña/), 'nueva-segura-123')
+    await user.click(await submit())
+    expect(auth.updatePassword).toHaveBeenCalledWith('nueva-segura-123')
+  })
   it('requests a reset using only the email and keeps the response neutral', async () => {
     const user = userEvent.setup()
     auth.requestPasswordReset = vi.fn(async () => ({ error: null }))

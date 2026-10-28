@@ -101,7 +101,9 @@ describe('operation failures carry a stable code', () => {
     })
     const body = parse(res.body)
     expect(body.ok).toBe(false)
-    expect(['io_error', 'not_found']).toContain(body.code)
+    // On Windows mkdir below an existing file can report EEXIST rather than
+    // POSIX ENOTDIR. All three errors refuse the operation without host paths.
+    expect(['io_error', 'not_found', 'destination_exists']).toContain(body.code)
     expect(res.body).not.toContain(base)
     expect(res.body).not.toMatch(/ENOTDIR|ENOENT|\/tmp/)
   })

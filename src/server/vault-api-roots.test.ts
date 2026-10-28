@@ -100,7 +100,10 @@ describe('open', () => {
     expect(parse((await open('Campus')).body).code).toBe('folder_not_absolute')
   })
 
-  it('reports no permission as its own code', async () => {
+  it.skipIf(process.platform === 'win32')('reports no permission as its own code', async () => {
+    // chmod(000) does not modify Windows ACLs; keep the POSIX permission
+    // integration test real rather than asserting a denial Windows cannot give.
+    // Windows API/junction confinement and errno mapping have separate coverage.
     // A path whose parent cannot be traversed. Skipped where the OS lets us through (root).
     if (process.getuid?.() === 0) return
     const locked = join(home, 'locked')

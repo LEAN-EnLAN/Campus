@@ -113,15 +113,29 @@ describe('A-10 — both adapters answer the same contract', () => {
     ]
   }, 60_000)
 
-  it('both expose exactly the sixteen methods', async () => {
+  it('both expose exactly the twenty documented methods', async () => {
+    const contract = {
+      catalog: ['institutions', 'academicUnits', 'programs', 'curricula', 'curriculumBundle'],
+      academic: [
+        'context',
+        'saveContext',
+        'subjectStates',
+        'setSubjectStatus',
+        'setSubjectStatuses',
+        'manualSubjects',
+        'addManualSubject',
+        'removeManualSubject',
+      ],
+      items: ['list', 'create', 'setDone', 'remove'],
+      resources: ['list', 'create', 'remove'],
+    } as const
     for (const fixture of fixtures) {
       const b = await fixture.backend()
-      const count =
-        Object.keys(b.catalog).length +
-        Object.keys(b.academic).length +
-        Object.keys(b.items).length +
-        Object.keys(b.resources).length
-      expect(count, `${fixture.name} exposes ${count} methods`).toBe(16)
+      for (const group of Object.keys(contract) as (keyof typeof contract)[]) {
+        expect(Object.keys(b[group]).sort(), `${fixture.name} ${group} methods`).toEqual(
+          [...contract[group]].sort(),
+        )
+      }
     }
   })
 

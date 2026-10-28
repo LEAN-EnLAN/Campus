@@ -12,6 +12,10 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'jsdom',
+    // Windows filesystem/React tests do real IO and browser-like updates.
+    // Spawning dozens of jsdom workers there causes incidental 5s timeouts
+    // under load without changing product behaviour or security assertions.
+    maxWorkers: process.platform === 'win32' ? 2 : undefined,
     setupFiles: ['./tests/setup.ts'],
     include: ['src/**/*.test.{ts,tsx}', 'tests/unit/**/*.test.{ts,tsx}'],
     css: false,

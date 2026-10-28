@@ -47,6 +47,10 @@ const env = {
   SUPABASE_ANON_KEY: status.ANON_KEY ?? '',
   SUPABASE_SERVICE_ROLE_KEY: status.SERVICE_ROLE_KEY ?? '',
   SUPABASE_DB_URL: status.DB_URL ?? '',
+  // SupabaseBackend imports the same Vite-configured client in the DB
+  // conformance suite. Use exactly the local stack's values, never dummy keys.
+  VITE_SUPABASE_URL: status.API_URL ?? 'http://127.0.0.1:54321',
+  VITE_SUPABASE_ANON_KEY: status.ANON_KEY ?? '',
 }
 
 if (!env.SUPABASE_ANON_KEY || !env.SUPABASE_SERVICE_ROLE_KEY) {

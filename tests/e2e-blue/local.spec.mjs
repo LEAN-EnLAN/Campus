@@ -73,12 +73,10 @@ async function accessible(page, route, size) {
     )
     .toEqual([])
   if (result.violations.length) {
-    test
-      .info()
-      .annotations.push({
-        type: 'a11y',
-        description: `${route}: ${result.violations.map((v) => v.id + '=' + v.impact + '/' + v.nodes.length).join(' ')}`,
-      })
+    test.info().annotations.push({
+      type: 'a11y',
+      description: `${route}: ${result.violations.map((v) => v.id + '=' + v.impact + '/' + v.nodes.length).join(' ')}`,
+    })
   }
 }
 

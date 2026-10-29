@@ -12,10 +12,10 @@ Fuente de verdad para el hilo de T3 Code. Actualizar casillas **únicamente** co
 - [x] Añadir ambiente visual dinámico que cambie suavemente según hora local, sin pedir ubicación ni acceso a Internet y respetando reduced-motion y contraste.
 - [ ] Revisar capturas y accesibilidad a 390×844, 768×1024, 1440×900 y controles keyboard.
 
-## P1 — Automatización programática (vertical slice delegada; aprobación de herramienta pendiente)
+## P1 — Automatización programática (vertical slice Local verificada)
 
-- [ ] CLI de Campus: inspeccionar carrera/estado y listar, crear, actualizar y eliminar recursos y tareas con permisos equivalentes a UI, JSON estable, documentación y tests Local.
-- [ ] Servidor MCP **self-hosted**: tools tipadas sobre backend existente y stdio/loopback seguro, sin servidor expuesto por defecto.
+- [x] CLI de Campus: inspeccionar carrera/estado y listar, crear, actualizar y eliminar recursos y tareas con permisos equivalentes a UI, JSON estable, documentación y tests Local.
+- [x] Servidor MCP **self-hosted**: tools tipadas sobre backend existente y stdio/loopback seguro, sin servidor expuesto por defecto.
 - [ ] Diseñar conexión Cloud mediante túnel autenticado y opt-in, revocación de acceso, auditoría, aislamiento de workspace, sin secrets en querystrings ni endpoints públicos.
 - [ ] Arquitectura futura de app escritorio Rust con MCP embebido; abrir implementación Rust solo cuando flujo desktop, protocolo y seguridad estén especificados y validados.
 
@@ -41,5 +41,5 @@ Un único hilo con este documento como mensaje de arranque, y posteriores respue
 - Ajustes azul/blanco: commit 9ea9882, focal 10/10 tests PASS y persistencia de preferencias.
 - Anios colapsables: src/routes/_app/plan.tsx con <details>/<summary>; validación de build y accesibilidad pendiente del reporte E2E integrado.
 - Fondo horario: data-campus-period por hora local, update cada minuto y sin animación invasiva.
-- CLI/MCP: worker delegado, todavía NO validado y pendiente de aprobación.
+- CLI/MCP Local: 7/7 pruebas E2E reales sobre LocalBackend/VaultRepository, sin datastore paralelo, MCP stdio read-only por defecto y `--allow-write` explícito. Tunnel Cloud y desktop Rust no implementados.
 - T3 Code: hilo creado en proyecto campus-poc, agente bloqueado por proveedor Claude no autenticado; requiere claude auth login en entorno ZAFIRUS-B-032. No marcar ejecución automática como realizada.

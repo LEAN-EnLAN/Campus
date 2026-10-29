@@ -109,13 +109,21 @@ async function openRealVault(page, folder) {
 
 async function onboardThroughRealCatalog(page) {
   await expect(page.getByRole('heading', { name: /Organicemos tu recorrido/ })).toBeVisible()
+  const preferred = {
+    Universidad: /Universidad Tecnológica Nacional/i,
+    'Facultad o regional': /Facultad Regional Rosario/i,
+    Carrera: /Ingeniería en Sistemas/i,
+    'Plan de estudios': /Plan 2023/i,
+  }
   for (const legend of ['Universidad', 'Facultad o regional', 'Carrera', 'Plan de estudios']) {
     const options = page.getByRole('group', { name: legend, exact: true }).getByRole('radio')
     await expect(
       options.first(),
       `A real catalog must provide at least one ${legend} option`,
     ).toBeVisible()
-    const first = options.first()
+    const first = page
+      .getByRole('group', { name: legend, exact: true })
+      .getByRole('radio', { name: preferred[legend] })
     // Selecting a radio immediately advances/unmounts the current fieldset.
     // locator.check() waits to re-read checked after click and times out on
     // that intentional unmount; click is the correct user interaction here.
@@ -205,6 +213,37 @@ for (const size of VIEWPORTS) {
           await accessible(page, route.path, size.name)
         })
       }
+
+      // Proposal 2 design contract: local Prompt, one light theme, dynamic
+      // time-based backdrop, and keyboard-operable academic year disclosure.
+      await page.goto('/plan')
+      await expect(page.locator('html')).toHaveAttribute('data-theme', 'light')
+      await expect(page.locator('html')).toHaveAttribute(
+        'data-campus-period',
+        /^(morning|afternoon|evening|night)$/,
+      )
+      const years = page.locator('details.blue-year-group')
+      await expect(years.first()).toBeVisible()
+      const presentation = await page.evaluate(async () => {
+        await document.fonts.load('400 16px Prompt')
+        return {
+          promptLoaded: document.fonts.check('400 16px Prompt'),
+          fontFamily: getComputedStyle(document.body).fontFamily,
+          period: document.documentElement.dataset.campusPeriod,
+        }
+      })
+      expect(presentation.promptLoaded).toBe(true)
+      expect(presentation.fontFamily).toMatch(/Prompt/)
+      expect(['morning', 'afternoon', 'evening', 'night']).toContain(presentation.period)
+
+      expect(await years.count()).toBeGreaterThanOrEqual(1)
+      const firstYear = years.first()
+      await expect(firstYear).toHaveAttribute('open')
+      await firstYear.locator('summary').focus()
+      await page.keyboard.press('Enter')
+      await expect(firstYear).not.toHaveAttribute('open')
+      await page.keyboard.press('Enter')
+      await expect(firstYear).toHaveAttribute('open')
 
       // A real local resource mutation, not a synthetic fixture or hidden app API.
       await page.goto('/library')

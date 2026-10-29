@@ -6,7 +6,9 @@ const artifacts = process.env.CAMPUS_BLUE_QA_OUTPUT ?? join(tmpdir(), 'campus-bl
 
 export default defineConfig({
   testDir: '.',
-  testMatch: '*.spec.mjs',
+  // Cloud has its own authenticated runner and config. The isolated Local
+  // harness must never discover Cloud specs or attempt external API auth.
+  testMatch: 'local.spec.mjs',
   timeout: 150_000,
   expect: { timeout: 15_000 },
   retries: 0,

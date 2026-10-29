@@ -306,7 +306,7 @@
 }
 .campus-blue .blue-settings-detail-row dt {
   flex: none;
-  color: #647a9a;
+  color: #405b7d;
 }
 .campus-blue .blue-settings-detail-row dd {
   min-width: 0;
@@ -372,7 +372,7 @@
   font-size: 0.62rem;
   letter-spacing: 0.1em;
   font-weight: 700;
-  color: #6781a4;
+  color: #405b7d;
 }
 .campus-blue .blue-settings-academic strong {
   color: #1a3c6c;
@@ -380,7 +380,7 @@
   font-weight: 700;
 }
 .campus-blue .blue-settings-academic p {
-  color: #6981a1;
+  color: #405b7d;
   font-size: 0.74rem;
 }
 .campus-blue .blue-settings-plan-detail {

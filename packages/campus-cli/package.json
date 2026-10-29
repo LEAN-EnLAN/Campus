@@ -1,0 +1,9 @@
+{
+  "name": "@campus/cli",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node bin.mjs",
+    "test": "node --test tests/*.test.mjs"
+  }
+}

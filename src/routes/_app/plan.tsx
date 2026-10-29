@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 
 import { EmptyState, ErrorState, LoadingRows } from '@/components/empty-state'
+import { AcademicYearDisclosure } from '@/components/academic-year-disclosure'
 import { PageHeader, SectionHeading } from '@/components/page-header'
 import { ProgressLine } from '@/components/progress-line'
 import { SubjectRow } from '@/components/subject-row'
@@ -106,20 +107,16 @@ function PlanScreen() {
         ) : null}
 
         {plan.byYear.map((group) => (
-          <details
+          <AcademicYearDisclosure
             key={group.yearLevel}
-            className="blue-panel blue-year-group group flex flex-col gap-2"
-            open={group.yearLevel === 1 ? true : undefined}
+            year={group.yearLevel}
+            summary={`${group.subjects.length} ${group.subjects.length === 1 ? 'materia' : 'materias'}`}
+            initiallyOpen={
+              plan.byYear.find((year) =>
+                year.subjects.some((subject) => subject.status === 'in_progress'),
+              )?.yearLevel === group.yearLevel
+            }
           >
-            <summary className="blue-year-toggle flex cursor-pointer list-none items-center justify-between gap-3 rounded-lg px-1 py-2 font-semibold">
-              <span id={`anio-${group.yearLevel}`}>{group.yearLevel}° año</span>
-              <span className="text-ink-muted flex items-center gap-2 text-xs font-normal">
-                {group.subjects.length} {group.subjects.length === 1 ? 'materia' : 'materias'}
-                <span aria-hidden="true" className="blue-year-chevron">
-                  ⌄
-                </span>
-              </span>
-            </summary>
             <ul className="blue-list">
               {group.subjects.map((subject) => (
                 <li key={subject.id}>
@@ -135,7 +132,7 @@ function PlanScreen() {
                 </li>
               ))}
             </ul>
-          </details>
+          </AcademicYearDisclosure>
         ))}
 
         <section aria-labelledby="agregar-materia" className="flex flex-col gap-3">
@@ -227,20 +224,16 @@ function PlanScreen() {
           ) : null}
 
           {plan.byYear.map((group) => (
-            <details
+            <AcademicYearDisclosure
               key={group.yearLevel}
-              className="blue-panel blue-year-group group flex flex-col gap-2"
-              open={group.yearLevel === 1 ? true : undefined}
+              year={group.yearLevel}
+              summary={`${group.subjects.length} materias`}
+              initiallyOpen={
+                plan.byYear.find((year) =>
+                  year.subjects.some((subject) => subject.status === 'in_progress'),
+                )?.yearLevel === group.yearLevel
+              }
             >
-              <summary className="blue-year-toggle focus-visible:outline-accent flex cursor-pointer list-none items-center justify-between gap-3 rounded-lg px-1 py-2 font-semibold focus-visible:outline-2 focus-visible:outline-offset-2">
-                <span id={`anio-${group.yearLevel}`}>{group.yearLevel}° año</span>
-                <span className="text-ink-muted flex items-center gap-2 text-xs font-normal">
-                  {group.subjects.length} materias
-                  <span aria-hidden="true" className="blue-year-chevron">
-                    ⌄
-                  </span>
-                </span>
-              </summary>
               <ul className="blue-list">
                 {group.subjects.map((subject) => (
                   <li key={subject.id}>
@@ -248,7 +241,7 @@ function PlanScreen() {
                   </li>
                 ))}
               </ul>
-            </details>
+            </AcademicYearDisclosure>
           ))}
         </div>
         <aside aria-label="Resumen del plan" className="grid min-w-0 content-start gap-4">

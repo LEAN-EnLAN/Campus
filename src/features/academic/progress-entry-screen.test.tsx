@@ -38,9 +38,31 @@ const plan = (): CurriculumSubject[] => [
   ),
 ]
 
-async function open(store: FakeStore) {
+async function expandYear(year: number) {
+  const summary = screen.getByText(`${year}° año`).closest('summary')
+  if (!summary) throw new Error('Year summary missing')
+  if (!summary.closest('details')?.open) await userEvent.click(summary)
+}
+
+async function chooseStatus(name: string, value: string) {
+  await userEvent.click(rowControl(name).getByRole('button'))
+  await userEvent.click(
+    within(screen.getByRole('group', { name: `Elegir estado de ${name}` })).getByRole(
+      'button',
+      {
+        name: value,
+      },
+    ),
+  )
+}
+
+async function open(store: FakeStore, expand = true) {
   await renderScreen(<ProgressEntryScreen />, fakeCampusBackend(store))
-  await screen.findAllByRole('group', { name: /^Estado de / })
+  await screen.findByText('1° año')
+  if (expand) {
+    await expandYear(1)
+    if (store.subjects.some((s) => s.yearLevel === 2)) await expandYear(2)
+  }
 }
 
 const rowControl = (name: string) =>
@@ -48,9 +70,11 @@ const rowControl = (name: string) =>
 
 describe('Cargar mi avance', () => {
   it('lists the plan by year with a state control per subject', async () => {
-    await open(emptyStore({ subjects: plan() }))
-    expect(screen.getByRole('heading', { name: '1° año' })).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: '2° año' })).toBeInTheDocument()
+    await open(emptyStore({ subjects: plan() }), false)
+    expect(screen.getByText('1° año').closest('details')).not.toHaveAttribute('open')
+    expect(screen.getByText('2° año').closest('details')).not.toHaveAttribute('open')
+    await expandYear(1)
+    await expandYear(2)
     expect(screen.getAllByRole('group', { name: /^Estado de / })).toHaveLength(18)
     expect(screen.getByText(/Marcá lo que ya tenés/)).toBeInTheDocument()
   })
@@ -66,9 +90,10 @@ describe('Cargar mi avance', () => {
     }
 
     await act(screen.getByRole('button', { name: 'Aprobé todo 1° año' }))
-    for (let i = 1; i <= 13; i += 1) {
-      const status = i <= 11 ? /Aprobada/ : /Cursando/
-      await act(rowControl(`Materia 2.${i}`).getByRole('button', { name: status }))
+    await act(screen.getByRole('button', { name: 'Aprobé todo 2° año' }))
+    for (let i = 12; i <= 13; i += 1) {
+      actions += 2
+      await chooseStatus(`Materia 2.${i}`, 'Cursando')
     }
     await act(screen.getByRole('button', { name: 'Listo' }))
 
@@ -116,7 +141,7 @@ describe('Cargar mi avance', () => {
     const user = userEvent.setup()
 
     // Física II approved while Física I is not: allowed, and quiet.
-    await user.click(rowControl('Física II').getByRole('button', { name: /Aprobada/ }))
+    await chooseStatus('Física II', 'Aprobada')
     await waitFor(() => expect(store.states).toHaveLength(1))
     expect(screen.queryByText(/El plan indica/)).toBeNull()
     expect(screen.queryByRole('region', { name: 'Para revisar' })).toBeNull()
@@ -138,7 +163,7 @@ describe('Cargar mi avance', () => {
     const store = emptyStore({ subjects, prerequisites: [edge('b', 'a', 'to_pass')] })
     await open(store)
     const user = userEvent.setup()
-    await user.click(rowControl('Física II').getByRole('button', { name: /Equivalencia/ }))
+    await chooseStatus('Física II', 'Equivalencia')
     await user.click(screen.getByRole('button', { name: 'Listo' }))
     expect(await screen.findByText(/Todo cierra con el plan/)).toBeInTheDocument()
     expect(screen.queryByRole('region', { name: 'Para revisar' })).toBeNull()

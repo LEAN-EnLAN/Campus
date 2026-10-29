@@ -1,4 +1,14 @@
-import { Lock } from 'lucide-react'
+import {
+  ArrowLeftRight,
+  CheckCircle2,
+  Circle,
+  CircleDot,
+  CircleHelp,
+  Clock3,
+  LockKeyhole,
+  XCircle,
+  type LucideIcon,
+} from 'lucide-react'
 
 import { statusLabel } from '@/domain/status-groups'
 import type { SubjectStatus } from '@/domain/types'
@@ -12,28 +22,23 @@ import { cn } from '@/lib/utils'
  */
 
 interface StatusSpec {
-  glyph: string
+  Icon: LucideIcon
   className: string
 }
 
 const STATUS: Record<SubjectStatus, StatusSpec> = {
-  passed: { glyph: '✓', className: 'text-success-ink' },
-  equivalent: { glyph: '≡', className: 'text-success-ink' },
-  in_progress: { glyph: '●', className: 'text-accent-ink' },
-  regularized: { glyph: '◐', className: 'text-accent-ink' },
-  available: { glyph: '○', className: 'text-ink' },
-  pending: { glyph: '◌', className: 'text-ink-muted' },
-  blocked: { glyph: '', className: 'text-ink-muted' },
-  failed: { glyph: '✕', className: 'text-danger' },
+  passed: { Icon: CheckCircle2, className: 'text-success-ink' },
+  equivalent: { Icon: ArrowLeftRight, className: 'text-success-ink' },
+  in_progress: { Icon: CircleDot, className: 'text-accent-ink' },
+  regularized: { Icon: Clock3, className: 'text-accent-ink' },
+  available: { Icon: Circle, className: 'text-ink' },
+  pending: { Icon: CircleHelp, className: 'text-ink-muted' },
+  blocked: { Icon: LockKeyhole, className: 'text-ink-muted' },
+  failed: { Icon: XCircle, className: 'text-danger' },
 }
 
 // The wording lives in the domain; re-exported so screens keep one import.
 export { statusLabel }
-
-/** The glyph character, for controls that colour it themselves. */
-export function statusGlyph(status: SubjectStatus): string {
-  return STATUS[status].glyph
-}
 
 /**
  * The status glyph on its own.
@@ -49,17 +54,18 @@ export function StatusGlyph({
   className?: string
 }) {
   const spec = STATUS[status]
+  const Icon = spec.Icon
 
   return (
     <span
       aria-hidden="true"
       className={cn(
-        'inline-flex w-4 shrink-0 justify-center text-[0.8em] leading-none select-none',
+        'inline-flex size-4 shrink-0 items-center justify-center',
         spec.className,
         className,
       )}
     >
-      {status === 'blocked' ? <Lock className="size-3" strokeWidth={2} /> : spec.glyph}
+      <Icon className="size-4" strokeWidth={1.9} />
     </span>
   )
 }

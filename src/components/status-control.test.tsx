@@ -1,4 +1,4 @@
-import { act, render, screen, waitFor } from '@testing-library/react'
+import { act, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
@@ -20,111 +20,119 @@ const renderControl = (
     />,
   )
 
-const group = () => screen.getByRole('group', { name: 'Estado de Álgebra' })
+async function openChoices() {
+  await userEvent.click(
+    screen.getByRole('button', { name: /Estado de Álgebra:.*Cambiar estado/ }),
+  )
+  return screen.getByRole('group', { name: 'Elegir estado de Álgebra' })
+}
 
 describe('StatusControl', () => {
-  it('offers the five states in order, each a button', () => {
+  it('uses one visible trigger and SVG Lucide icons instead of five permanent buttons', async () => {
     renderControl()
-    const names = screen.getAllByRole('button').map((b) => b.textContent)
-    expect(names.map((n) => n?.replace(/^\S\s?/, '').trim())).toEqual([
-      'Sin marcar',
-      'Cursando',
-      'Regularizada',
-      'Aprobada',
-      'Equivalencia',
-    ])
+    const trigger = screen.getByRole('button', { name: /Estado de Álgebra/ })
+    expect(screen.getAllByRole('button')).toHaveLength(1)
+    expect(trigger.querySelector('svg')).toBeInTheDocument()
+    expect(trigger).toHaveAttribute('aria-expanded', 'false')
+    const choices = await openChoices()
+    expect(trigger).toHaveAttribute('aria-expanded', 'true')
+    expect(within(choices).getAllByRole('button')).toHaveLength(5)
+    for (const button of within(choices).getAllByRole('button')) {
+      expect(button.querySelector('svg')).toBeInTheDocument()
+    }
   })
 
-  it('presses the current status; derived statuses read as "Sin marcar"', () => {
-    renderControl('available')
-    expect(screen.getByRole('button', { name: /Sin marcar/ })).toHaveAttribute(
+  it('preserves derived states without writing them as storage values', async () => {
+    renderControl('blocked')
+    expect(screen.getByRole('button', { name: /Bloqueada/ })).toBeInTheDocument()
+    const choices = await openChoices()
+    expect(within(choices).getByRole('button', { name: 'Sin marcar' })).toHaveAttribute(
       'aria-pressed',
       'true',
     )
-    expect(screen.getByRole('button', { name: /Aprobada/ })).toHaveAttribute(
-      'aria-pressed',
-      'false',
-    )
+    expect(within(choices).queryByRole('button', { name: 'Bloqueada' })).toBeNull()
   })
 
-  it('shows Desaprobada, only when that is the stored state, so it is never hidden', () => {
-    const { unmount } = renderControl('pending')
-    expect(screen.queryByRole('button', { name: /Desaprobada/ })).toBeNull()
+  it('shows the saved failed state only when present', async () => {
+    const { unmount } = renderControl()
+    expect(
+      within(await openChoices()).queryByRole('button', { name: 'Desaprobada' }),
+    ).toBeNull()
     unmount()
     renderControl('failed')
-    expect(screen.getByRole('button', { name: /Desaprobada/ })).toHaveAttribute(
+    expect(screen.getByRole('button', { name: /Desaprobada/ })).toBeInTheDocument()
+    const choices = await openChoices()
+    expect(within(choices).getByRole('button', { name: 'Desaprobada' })).toHaveAttribute(
       'aria-pressed',
       'true',
     )
   })
 
-  it('saves on one click and tells the student, briefly', async () => {
+  it('persists the selected state and gives feedback without changing merely on focus', async () => {
     const onChange = vi.fn(() => Promise.resolve())
     renderControl('pending', onChange)
-    await userEvent.click(screen.getByRole('button', { name: /Aprobada/ }))
-
+    const choices = await openChoices()
+    const approved = within(choices).getByRole('button', { name: 'Aprobada' })
+    approved.focus()
+    expect(onChange).not.toHaveBeenCalled()
+    await userEvent.click(approved)
     expect(onChange).toHaveBeenCalledWith('passed')
     expect(await screen.findByText('Guardado')).toBeInTheDocument()
+    expect(screen.queryByRole('group', { name: 'Elegir estado de Álgebra' })).toBeNull()
   })
 
-  it('maps "Sin marcar" to a clear, not to a placeholder status', async () => {
+  it('uses null to clear and does not re-write the selected state', async () => {
     const onChange = vi.fn(() => Promise.resolve())
     renderControl('passed', onChange)
-    await userEvent.click(screen.getByRole('button', { name: /Sin marcar/ }))
+    await userEvent.click(within(await openChoices()).getByRole('button', { name: 'Aprobada' }))
+    expect(onChange).not.toHaveBeenCalled()
+    await userEvent.click(
+      within(await openChoices()).getByRole('button', { name: 'Sin marcar' }),
+    )
     expect(onChange).toHaveBeenCalledWith(null)
   })
 
-  it('does not write again when the pressed option is clicked', async () => {
-    const onChange = vi.fn(() => Promise.resolve())
-    renderControl('passed', onChange)
-    await userEvent.click(screen.getByRole('button', { name: /Aprobada/ }))
-    expect(onChange).not.toHaveBeenCalled()
-  })
-
-  it("says why when saving fails, in the student's words", async () => {
-    renderControl('pending', () =>
-      Promise.reject(new Error('No pudimos actualizar la materia: x')),
-    )
-    await userEvent.click(screen.getByRole('button', { name: /Cursando/ }))
-    expect(await screen.findByRole('alert')).toHaveTextContent(
-      'No pudimos actualizar la materia',
-    )
-  })
-
-  it('keeps one tab stop per row, on the pressed option', () => {
-    renderControl('in_progress')
-    const stops = screen.getAllByRole('button').filter((b) => b.tabIndex === 0)
-    expect(stops).toHaveLength(1)
-    expect(stops[0]).toHaveTextContent('Cursando')
-  })
-
-  it('moves focus with the arrows (wrapping) without saving; Enter saves', async () => {
-    const onChange = vi.fn(() => Promise.resolve())
+  it('reports persistence errors, retains the value, and allows retry', async () => {
+    const onChange = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('No pudimos actualizar la materia'))
+      .mockResolvedValue(undefined)
     renderControl('pending', onChange)
-    const user = userEvent.setup()
-
-    screen.getByRole('button', { name: /Sin marcar/ }).focus()
-    await user.keyboard('{ArrowRight}')
-    expect(screen.getByRole('button', { name: /Cursando/ })).toHaveFocus()
-    await user.keyboard('{ArrowRight}{ArrowRight}')
-    expect(screen.getByRole('button', { name: /Aprobada/ })).toHaveFocus()
-    expect(onChange).not.toHaveBeenCalled()
-
-    await user.keyboard('{Enter}')
-    expect(onChange).toHaveBeenCalledWith('passed')
-
-    await user.keyboard('{End}')
-    expect(screen.getByRole('button', { name: /Equivalencia/ })).toHaveFocus()
-    await user.keyboard('{ArrowRight}')
-    expect(screen.getByRole('button', { name: /Sin marcar/ })).toHaveFocus()
-    await user.keyboard('{ArrowLeft}')
-    expect(screen.getByRole('button', { name: /Equivalencia/ })).toHaveFocus()
-    await user.keyboard('{Home}')
-    expect(screen.getByRole('button', { name: /Sin marcar/ })).toHaveFocus()
+    await userEvent.click(within(await openChoices()).getByRole('button', { name: 'Cursando' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('No pudimos actualizar')
+    expect(screen.getByRole('button', { name: /Sin marcar/ })).toBeInTheDocument()
+    await userEvent.click(within(await openChoices()).getByRole('button', { name: 'Cursando' }))
+    expect(onChange).toHaveBeenCalledTimes(2)
   })
 
-  it('names every option for a screen reader in the compact variant, where only icons show', () => {
-    renderControl('pending', undefined, 'compact')
+  it('supports arrow navigation, Home/End, Escape and outside click without writing', async () => {
+    const user = userEvent.setup()
+    const onChange = vi.fn(() => Promise.resolve())
+    renderControl('in_progress', onChange)
+    const choices = await openChoices()
+    expect(within(choices).getByRole('button', { name: 'Cursando' })).toHaveFocus()
+    await user.keyboard('{ArrowDown}')
+    expect(within(choices).getByRole('button', { name: 'Regularizada' })).toHaveFocus()
+    await user.keyboard('{End}')
+    expect(within(choices).getByRole('button', { name: 'Equivalencia' })).toHaveFocus()
+    await user.keyboard('{Home}')
+    expect(within(choices).getByRole('button', { name: 'Sin marcar' })).toHaveFocus()
+    expect(onChange).not.toHaveBeenCalled()
+    await user.keyboard('{Escape}')
+    expect(screen.queryByRole('group', { name: 'Elegir estado de Álgebra' })).toBeNull()
+    expect(screen.getByRole('button', { name: /Estado de Álgebra/ })).toHaveFocus()
+    await openChoices()
+    await user.click(document.body)
+    expect(screen.queryByRole('group', { name: 'Elegir estado de Álgebra' })).toBeNull()
+    expect(onChange).not.toHaveBeenCalled()
+  })
+
+  it('works in compact rows with full accessible labels', async () => {
+    renderControl('regularized', undefined, 'compact')
+    expect(
+      screen.getByRole('button', { name: /Estado de Álgebra: Regularizada/ }),
+    ).toBeInTheDocument()
+    const choices = await openChoices()
     for (const label of [
       'Sin marcar',
       'Cursando',
@@ -132,18 +140,17 @@ describe('StatusControl', () => {
       'Aprobada',
       'Equivalencia',
     ]) {
-      expect(screen.getByRole('button', { name: label })).toBeInTheDocument()
+      expect(within(choices).getByRole('button', { name: label })).toBeInTheDocument()
     }
-    expect(group()).toBeInTheDocument()
   })
 
-  it('forgets the "Guardado" note after a moment', async () => {
+  it('removes transient save feedback after the grace period', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true })
     try {
-      renderControl('pending')
-      await userEvent
-        .setup({ advanceTimers: vi.advanceTimersByTime })
-        .click(screen.getByRole('button', { name: /Cursando/ }))
+      renderControl()
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+      await user.click(screen.getByRole('button', { name: /Estado de Álgebra/ }))
+      await user.click(screen.getByRole('button', { name: 'Cursando' }))
       expect(await screen.findByText('Guardado')).toBeInTheDocument()
       await act(async () => {
         await vi.advanceTimersByTimeAsync(2500)

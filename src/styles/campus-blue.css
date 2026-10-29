@@ -462,11 +462,51 @@
 }
 .campus-blue .blue-year-chevron {
   display: inline-block;
-  font-size: 1.3rem;
+  width: 1.15rem;
+  height: 1.15rem;
   transition: transform 0.2s ease;
 }
 .campus-blue .blue-year-group[open] .blue-year-chevron {
   transform: rotate(180deg);
+}
+
+/* Portaled to body so its options never clip inside academic rows. */
+.campus-status-menu {
+  position: fixed;
+  z-index: 1200;
+  overflow-y: auto;
+  max-height: min(310px, calc(100dvh - 16px));
+  padding: 5px;
+  border: 1px solid #cbdcf3;
+  border-radius: 12px;
+  background: #fff;
+  color: #14264b;
+  box-shadow: 0 16px 42px rgb(23 54 104 / 0.2);
+  font-family: 'Prompt', system-ui, sans-serif;
+}
+.campus-status-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 44px;
+  padding: 9px 10px;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.campus-status-option:hover,
+.campus-status-option:focus-visible {
+  background: #e9f2ff;
+}
+.campus-status-option[aria-pressed='true'] {
+  background: #eff5ff;
+  color: #1358c7;
+}
+.campus-status-option:focus-visible {
+  outline: 2px solid #155dd6;
+  outline-offset: -2px;
 }
 @media (prefers-reduced-motion: reduce) {
   .campus-blue .blue-year-chevron {

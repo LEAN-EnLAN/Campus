@@ -14,6 +14,7 @@ const VIEWPORTS = [
   { name: '390x844', width: 390, height: 844 },
   { name: '768x1024', width: 768, height: 1024 },
   { name: '1440x900', width: 1440, height: 900 },
+  { name: '1627x928', width: 1627, height: 928 },
 ]
 const ROUTES = [
   { path: '/today', label: 'hoy', heading: 'Hoy' },
@@ -166,6 +167,19 @@ for (const size of VIEWPORTS) {
         page.getByRole('heading', { name: /Elegí cómo querés usar Campus/ }),
       ).toBeVisible()
       await snapshot(page, size.name, '00-startup')
+      const startupSurface = await page.evaluate(() => {
+        const main = document.querySelector('main.blue-startup')
+        const rect = main?.getBoundingClientRect()
+        return {
+          left: rect?.left,
+          right: rect?.right,
+          width: document.documentElement.getBoundingClientRect().width,
+          bodyBackground: getComputedStyle(document.body).backgroundColor,
+        }
+      })
+      expect(startupSurface.left).toBe(0)
+      expect(startupSurface.right).toBeGreaterThanOrEqual(startupSurface.width - 1)
+      expect(startupSurface.bodyBackground).toBe('rgb(248, 251, 255)')
       await noViewportOverflow(page, size.name, 'startup')
       await accessible(page, 'startup', size.name)
 
@@ -179,6 +193,42 @@ for (const size of VIEWPORTS) {
       await noViewportOverflow(page, size.name, 'onboarding')
       await accessible(page, 'onboarding', size.name)
       await onboardThroughRealCatalog(page)
+
+      // Persist a real subject status through the existing Vault backend,
+      // including a reload, then restore the test fixture to its initial state.
+      const progressYear = page.locator('details.blue-year-group').first()
+      await progressYear.locator('summary').click()
+      const firstState = progressYear
+        .locator('[role="group"][aria-label^="Estado de "]')
+        .first()
+      const subjectName = (await firstState.getAttribute('aria-label'))?.replace(
+        /^Estado de /,
+        '',
+      )
+      expect(subjectName).toBeTruthy()
+      await firstState.getByRole('button').click()
+      await page
+        .getByRole('group', { name: `Elegir estado de ${subjectName}` })
+        .getByRole('button', { name: 'Cursando' })
+        .click()
+      await expect(
+        page.getByRole('button', {
+          name: `Estado de ${subjectName}: Cursando. Cambiar estado`,
+        }),
+      ).toBeVisible()
+      await page.reload()
+      await expect(progressYear).toHaveAttribute('open')
+      const savedState = page.getByRole('button', {
+        name: `Estado de ${subjectName}: Cursando. Cambiar estado`,
+      })
+      await expect(savedState).toBeVisible()
+      await savedState.click()
+      await page
+        .getByRole('group', { name: `Elegir estado de ${subjectName}` })
+        .getByRole('button', { name: 'Sin marcar' })
+        .click()
+      await page.reload()
+      await expect(progressYear).not.toHaveAttribute('open')
 
       for (const route of ROUTES) {
         await test.step(`real route ${route.path}`, async () => {
@@ -238,12 +288,13 @@ for (const size of VIEWPORTS) {
 
       expect(await years.count()).toBeGreaterThanOrEqual(1)
       const firstYear = years.first()
-      await expect(firstYear).toHaveAttribute('open')
+      // No in-progress subjects in this isolated Vault: initially closed.
+      await expect(firstYear).not.toHaveAttribute('open')
       await firstYear.locator('summary').focus()
       await page.keyboard.press('Enter')
-      await expect(firstYear).not.toHaveAttribute('open')
-      await page.keyboard.press('Enter')
       await expect(firstYear).toHaveAttribute('open')
+      await page.keyboard.press('Enter')
+      await expect(firstYear).not.toHaveAttribute('open')
 
       // A real local resource mutation, not a synthetic fixture or hidden app API.
       await page.goto('/library')

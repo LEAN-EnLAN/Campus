@@ -16,6 +16,18 @@ import { Route as PlanRoute } from './plan'
 const Plan = PlanRoute.options.component!
 const Courses = CoursesRoute.options.component!
 
+async function pickStatus(subjectName: string, choice: string) {
+  const user = userEvent.setup()
+  const control = await screen.findByRole('group', { name: `Estado de ${subjectName}` })
+  await user.click(within(control).getByRole('button', { name: /Cambiar estado/ }))
+  await user.click(
+    within(screen.getByRole('group', { name: `Elegir estado de ${subjectName}` })).getByRole(
+      'button',
+      { name: choice },
+    ),
+  )
+}
+
 const unmapped = (over: Partial<FakeStore> = {}) =>
   emptyStore({
     context: {
@@ -42,7 +54,9 @@ describe('Plan for a carrera that is not in the catalog', () => {
     await user.selectOptions(screen.getByLabelText('Año'), '2')
     await user.click(screen.getByRole('button', { name: 'Agregar materia' }))
 
-    expect(await screen.findByRole('heading', { name: '2° año' })).toBeInTheDocument()
+    const summary = await screen.findByText('2° año')
+    expect(summary.closest('details')).not.toHaveAttribute('open')
+    await user.click(summary.closest('summary')!)
     expect(screen.getByRole('link', { name: /Cálculo 1/ })).toBeInTheDocument()
     expect(store.manual).toHaveLength(1)
   }, 20_000)
@@ -56,8 +70,8 @@ describe('Plan for a carrera that is not in the catalog', () => {
     })
     await renderScreen(<Plan />, fakeCampusBackend(store))
     const user = userEvent.setup()
-    const control = await screen.findByRole('group', { name: 'Estado de Cálculo' })
-    await user.click(within(control).getByRole('button', { name: 'Aprobada' }))
+    await user.click((await screen.findByText('1° año')).closest('summary')!)
+    await pickStatus('Cálculo', 'Aprobada')
 
     await waitFor(() => expect(store.manual[0]!.status).toBe('passed'))
     expect(await screen.findByText('materias que cargaste')).toBeInTheDocument()
@@ -120,13 +134,12 @@ describe('Materias', () => {
       ],
     })
     await renderScreen(<Courses />, fakeCampusBackend(store))
-    const user = userEvent.setup()
 
     // Opens on "Cursando": only Álgebra is there.
-    const control = await screen.findByRole('group', { name: 'Estado de Álgebra' })
+    await screen.findByRole('group', { name: 'Estado de Álgebra' })
     expect(screen.queryByRole('group', { name: 'Estado de Física' })).toBeNull()
 
-    await user.click(within(control).getByRole('button', { name: 'Aprobada' }))
+    await pickStatus('Álgebra', 'Aprobada')
     await waitFor(() => expect(store.states[0]!.status).toBe('passed'))
 
     // Still listed (and still on the same filter), with its confirmation visible.

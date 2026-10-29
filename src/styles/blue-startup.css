@@ -1,3 +1,9 @@
+/* The document's scrollbar gutter must match Startup, not the legacy beige body. */
+html:has(.blue-startup),
+body:has(.blue-startup) {
+  background: #f8fbff;
+}
+
 .blue-startup {
   --color-on-tint: #fff;
   --color-ink: #14264b;
@@ -9,10 +15,10 @@
   color: #14264b;
   background: radial-gradient(circle at 65% 5%, #eaf3ff, transparent 37%), #f8fbff;
 }
-.blue-startup > header {
+.blue-startup-content > header {
   text-align: center;
 }
-.blue-startup > header h1 {
+.blue-startup-content > header h1 {
   font-family: 'Prompt', system-ui, serif;
   font-size: clamp(2rem, 4vw, 2.65rem);
   line-height: 1.14;
@@ -53,7 +59,7 @@
   outline-offset: 3px;
 }
 @media (max-width: 639px) {
-  .blue-startup {
+  .blue-startup-content {
     align-content: start;
     gap: 1.3rem;
     padding-top: 2rem;

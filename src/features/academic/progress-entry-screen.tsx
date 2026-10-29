@@ -3,6 +3,7 @@ import { Check } from 'lucide-react'
 import { useRef, useState } from 'react'
 
 import { EmptyState, ErrorState, LoadingRows } from '@/components/empty-state'
+import { AcademicYearDisclosure } from '@/components/academic-year-disclosure'
 import { PageHeader, SectionHeading } from '@/components/page-header'
 import { StatusControl } from '@/components/status-control'
 import { Button } from '@/components/ui/button'
@@ -159,19 +160,17 @@ export function ProgressEntryScreen() {
           (s) => s.status === 'passed' || s.status === 'equivalent',
         ).length
         return (
-          <section
+          <AcademicYearDisclosure
             key={group.yearLevel}
-            aria-labelledby={`anio-${group.yearLevel}`}
-            className="flex flex-col gap-2"
+            year={group.yearLevel}
+            summary={`${approved} de ${group.subjects.length} aprobadas`}
+            initiallyOpen={
+              plan.byYear.find((year) =>
+                year.subjects.some((subject) => subject.status === 'in_progress'),
+              )?.yearLevel === group.yearLevel
+            }
           >
-            <SectionHeading
-              id={`anio-${group.yearLevel}`}
-              aside={`${approved} de ${group.subjects.length} aprobadas`}
-            >
-              {group.yearLevel}° año
-            </SectionHeading>
-
-            <div className="flex min-h-11 flex-wrap items-center gap-3">
+            <div className="mt-3 flex min-h-11 flex-wrap items-center gap-3">
               {approvable > 0 ? (
                 <Button variant="secondary" onClick={() => approve(group.yearLevel)}>
                   Aprobé todo {group.yearLevel}° año
@@ -203,7 +202,7 @@ export function ProgressEntryScreen() {
               ) : null}
             </div>
 
-            <ul>
+            <ul className="mt-2">
               {group.subjects.map((subject) => (
                 <li
                   key={subject.id}
@@ -228,7 +227,7 @@ export function ProgressEntryScreen() {
                 </li>
               ))}
             </ul>
-          </section>
+          </AcademicYearDisclosure>
         )
       })}
 

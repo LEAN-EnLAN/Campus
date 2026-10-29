@@ -6,11 +6,14 @@ Fuente de verdad para el hilo de T3 Code. Actualizar casillas **únicamente** co
 
 - [x] Adoptar Prompt como fuente local (OFL, cuatro pesos) y sustituir la serifa en el sistema azul. Verificar carga en localhost.
 - [x] Hacer colapsables los grupos por año en Plan académico (teclado, contadores, conservar rutas reales).
+- [x] Corregir Startup Local/Cloud con fondo azul claro de ancho completo, incluyendo el espacio de scrollbar, sin columnas beige exteriores ni estirar tarjetas. Commit `b4e6e20`.
+- [x] Sustituir la fila de cinco símbolos de estado académico por un selector bajo demanda con SVG Lucide, teclado, foco, `failed`, limpiar, feedback y persistencia Local/Cloud. Commit `b4e6e20`.
+- [x] Unificar los colapsables de Plan manual/catálogo y «Cargar mi avance»: cerrados inicialmente salvo el primer año con materias realmente en curso, sin reapertura arbitraria de primero. Commit `b4e6e20`.
 - [x] Rehacer Ajustes, mantener funcionalidad y persistencia de personalización: paleta **azul** y tema **claro** coherentes en toda la app, incluidos diálogos y modales. Sin controles falsos.
 - [ ] Refinar estructura, bordes, radios, paddings y densidad de layouts/modals en móvil/tablet/escritorio.
 - [ ] Unificar iconos SVG: preferir Lucide ya instalado; evaluar Solar Broken de SVGRepo respetando la licencia de cada icono sin copiar librerías sin comprobar.
 - [x] Añadir ambiente visual dinámico que cambie suavemente según hora local, sin pedir ubicación ni acceso a Internet y respetando reduced-motion y contraste.
-- [ ] Revisar capturas y accesibilidad a 390×844, 768×1024, 1440×900 y controles keyboard.
+- [x] Verificar Startup, onboarding, ocho rutas, Axe WCAG 2.1 A/AA, sin overflow y controles keyboard a 390×844, 768×1024, 1440×900 y 1627×928 (captura reportada). E2E Local 4/4 y screenshots 29/10/2026; no equivale a QA Cloud.
 
 ## P1 — Automatización programática (vertical slice Local verificada)
 
@@ -43,3 +46,5 @@ Un único hilo con este documento como mensaje de arranque, y posteriores respue
 - Fondo horario: data-campus-period por hora local, update cada minuto y sin animación invasiva.
 - CLI/MCP Local: 7/7 pruebas E2E reales sobre LocalBackend/VaultRepository, sin datastore paralelo, MCP stdio read-only por defecto y `--allow-write` explícito. Tunnel Cloud y desktop Rust no implementados.
 - T3 Code: hilo creado en proyecto campus-poc, agente bloqueado por proveedor Claude no autenticado; requiere claude auth login en entorno ZAFIRUS-B-032. No marcar ejecución automática como realizada.
+- Corrección visual de Startup y estados, y relevancia de los años: `b4e6e20`; E2E Local aislado 4/4 con Vault temporal real, selección académica y persistencia tras reload, screenshots y axe en `%LOCALAPPDATA%\Temp\campus-blue-qa\2026-10-29T18-08-20-184Z-36560` (móvil) y `%LOCALAPPDATA%\Temp\campus-blue-qa\2026-10-29T18-09-23-012Z-28876` (tablet/desktop/1627). Unitarios: `StatusControl` 9/9, Progreso 9/9, Plan/Carrera manual 6/6, Startup 29/29. `pnpm typecheck` y build OK; ESLint 0 errores, 16 advertencias de Fast Refresh preexistentes. No se alteraron datos del usuario, RLS, Cloud E2E ajeno ni `routeTree.gen.ts`.
+- T3 Code sigue pendiente de acceso programático autenticado al hilo **existente**, sin duplicarlo ni afirmar ejecución del agente. Continuar backlog P0 general (modales, densidad e iconografía restante) y P1/P2 tras cerrar correcciones críticas; P3 deliberadamente última.

@@ -224,17 +224,20 @@ function PlanScreen() {
           ) : null}
 
           {plan.byYear.map((group) => (
-            <section
+            <details
               key={group.yearLevel}
-              aria-labelledby={`anio-${group.yearLevel}`}
-              className="blue-panel flex flex-col gap-2"
+              className="blue-panel blue-year-group group flex flex-col gap-2"
+              open={group.yearLevel === 1 ? true : undefined}
             >
-              <SectionHeading
-                id={`anio-${group.yearLevel}`}
-                aside={`${group.subjects.length} materias`}
-              >
-                {group.yearLevel}° año
-              </SectionHeading>
+              <summary className="blue-year-toggle focus-visible:outline-accent flex cursor-pointer list-none items-center justify-between gap-3 rounded-lg px-1 py-2 font-semibold focus-visible:outline-2 focus-visible:outline-offset-2">
+                <span id={`anio-${group.yearLevel}`}>{group.yearLevel}° año</span>
+                <span className="text-ink-muted flex items-center gap-2 text-xs font-normal">
+                  {group.subjects.length} materias
+                  <span aria-hidden="true" className="blue-year-chevron">
+                    ⌄
+                  </span>
+                </span>
+              </summary>
               <ul className="blue-list">
                 {group.subjects.map((subject) => (
                   <li key={subject.id}>
@@ -242,7 +245,7 @@ function PlanScreen() {
                   </li>
                 ))}
               </ul>
-            </section>
+            </details>
           ))}
         </div>
         <aside aria-label="Resumen del plan" className="grid min-w-0 content-start gap-4">

@@ -1,0 +1,80 @@
+@font-face {
+  font-family: 'Prompt';
+  src: url('/fonts/prompt/Prompt-Regular.ttf') format('truetype');
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Prompt';
+  src: url('/fonts/prompt/Prompt-Medium.ttf') format('truetype');
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Prompt';
+  src: url('/fonts/prompt/Prompt-SemiBold.ttf') format('truetype');
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Prompt';
+  src: url('/fonts/prompt/Prompt-Bold.ttf') format('truetype');
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+}
+:root {
+  --font-sans: 'Prompt', system-ui, sans-serif;
+  --font-serif: 'Prompt', system-ui, sans-serif;
+  --font-editor: 'Prompt', system-ui, sans-serif;
+}
+body,
+.campus-blue,
+.blue-onboarding,
+.blue-startup,
+.campus-blue .font-serif,
+.campus-blue .blue-screen-title,
+.blue-startup > header h1 {
+  font-family: 'Prompt', system-ui, sans-serif;
+}
+.campus-blue .blue-screen-title {
+  font-weight: 600;
+  letter-spacing: -0.035em;
+  line-height: 1.2;
+}
+.campus-blue .blue-panel,
+.campus-blue .blue-list,
+.blue-secondary-panel {
+  border-radius: 14px;
+}
+.campus-blue .blue-panel {
+  padding: clamp(0.9rem, 1.8vw, 1.35rem);
+}
+.campus-blue {
+  --campus-hour-light: rgba(28, 97, 204, 0.024);
+  background-image: radial-gradient(
+    ellipse at 80% 5%,
+    var(--campus-hour-light),
+    transparent 55%
+  );
+}
+@media (prefers-reduced-motion: no-preference) {
+  .campus-blue {
+    transition: background-color 0.6s ease;
+  }
+}
+html[data-campus-period='morning'] .campus-blue {
+  --campus-hour-light: rgba(35, 153, 236, 0.085);
+}
+html[data-campus-period='afternoon'] .campus-blue {
+  --campus-hour-light: rgba(32, 105, 210, 0.065);
+}
+html[data-campus-period='evening'] .campus-blue {
+  --campus-hour-light: rgba(102, 91, 206, 0.07);
+}
+html[data-campus-period='night'] .campus-blue {
+  --campus-hour-light: rgba(35, 79, 164, 0.085);
+}

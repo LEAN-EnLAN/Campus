@@ -4,8 +4,6 @@ import { clampToHarmony, harmonic, toCss } from '@/lib/design/palette'
 
 import {
   ACCENT_STORAGE_KEY,
-  readAccentHue,
-  readThemePreference,
   resolveTheme,
   SYSTEM_DARK_QUERY,
   THEME_ATTRIBUTE,
@@ -64,16 +62,37 @@ const ThemeContext = createContext<ThemeValue | null>(null)
  * dark room and a desktop under a window are allowed to disagree.
  */
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [preference, setPreferenceState] = useState<ThemePreference>(() =>
-    readThemePreference(
-      typeof localStorage === 'undefined' ? null : localStorage.getItem(THEME_STORAGE_KEY),
-    ),
-  )
-  const [accentHue, setAccentHueState] = useState<number | null>(() =>
-    readAccentHue(
-      typeof localStorage === 'undefined' ? null : localStorage.getItem(ACCENT_STORAGE_KEY),
-    ),
-  )
+  // Proposal 2 has a single supported light/blue visual identity. Migrate old
+  // device preferences on first load instead of showing dark for one frame.
+  const [preference, setPreferenceState] = useState<ThemePreference>('light')
+  const [accentHue, setAccentHueState] = useState<number | null>(225)
+  useEffect(() => {
+    try {
+      localStorage.setItem(THEME_STORAGE_KEY, 'light')
+      localStorage.setItem(ACCENT_STORAGE_KEY, '225')
+    } catch {
+      // Read-only storage must not prevent using the app.
+    }
+  }, [])
+  useEffect(() => {
+    const refresh = () => {
+      const hour = new Date().getHours()
+      document.documentElement.dataset.campusPeriod =
+        hour < 6 || hour >= 22
+          ? 'night'
+          : hour < 12
+            ? 'morning'
+            : hour < 18
+              ? 'afternoon'
+              : 'evening'
+    }
+    refresh()
+    const timer = window.setInterval(refresh, 60_000)
+    return () => {
+      window.clearInterval(timer)
+      delete document.documentElement.dataset.campusPeriod
+    }
+  }, [])
   const [systemDark, setSystemDark] = useState(
     () => typeof window !== 'undefined' && window.matchMedia(SYSTEM_DARK_QUERY).matches,
   )

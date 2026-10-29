@@ -21,7 +21,7 @@
   background: #f7faff;
   color: #11274e;
   min-height: 100dvh;
-  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  font-family: Prompt, ui-sans-serif, system-ui, sans-serif;
 }
 .blue-onboarding :is(a, button, input, summary):focus-visible {
   outline: 2px solid #155dd6;
@@ -109,7 +109,7 @@
 .blue-onboarding-intro h1,
 .blue-onboarding-complete h1 {
   margin: 13px 0 10px;
-  font-family: Newsreader, Georgia, serif;
+  font-family: Prompt, system-ui, serif;
   font-size: clamp(2.4rem, 4.15vw, 3.7rem);
   line-height: 1.08;
   font-weight: 560;
@@ -156,7 +156,7 @@
   transition:
     color 150ms,
     border-color 150ms;
-  cursor: pointer;
+  cursor: poPrompt;
 }
 .blue-onboarding-progress button:disabled {
   cursor: default;
@@ -442,8 +442,8 @@
 }
 .blue-login-panel h1 {
   font:
-    560 clamp(2.5rem, 4vw, 3.4rem)/1.08 Newsreader,
-    Georgia,
+    560 clamp(2.5rem, 4vw, 3.4rem)/1.08 Prompt,
+    system-ui,
     serif;
   letter-spacing: -0.045em;
   color: #102548;
@@ -533,8 +533,8 @@
 }
 .blue-login-side h2 {
   font:
-    560 clamp(1.9rem, 2.5vw, 2.7rem)/1.15 Newsreader,
-    Georgia,
+    560 clamp(1.9rem, 2.5vw, 2.7rem)/1.15 Prompt,
+    system-ui,
     serif;
   letter-spacing: -0.035em;
 }

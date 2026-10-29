@@ -28,7 +28,7 @@
   background: var(--color-paper);
   color: var(--color-ink);
   font-family:
-    'Inter',
+    'Prompt',
     ui-sans-serif,
     system-ui,
     -apple-system,
@@ -135,7 +135,7 @@
   color: var(--color-ink);
 }
 .campus-blue .font-serif {
-  font-family: 'Newsreader', Georgia, 'Times New Roman', serif;
+  font-family: 'Prompt', Georgia, 'Times New Roman', serif;
   letter-spacing: -0.025em;
 }
 
@@ -155,7 +155,7 @@
 .campus-blue .blue-screen-title {
   margin: 0;
   font:
-    600 clamp(2rem, 3vw, 2.6rem)/1.08 'Newsreader',
+    600 clamp(2rem, 3vw, 2.6rem)/1.08 'Prompt',
     Georgia,
     serif;
   letter-spacing: -0.04em;
@@ -454,5 +454,22 @@
   .campus-blue *::after {
     transition-duration: 0.01ms !important;
     animation-duration: 0.01ms !important;
+  }
+}
+
+.campus-blue .blue-year-toggle::-webkit-details-marker {
+  display: none;
+}
+.campus-blue .blue-year-chevron {
+  display: inline-block;
+  font-size: 1.3rem;
+  transition: transform 0.2s ease;
+}
+.campus-blue .blue-year-group[open] .blue-year-chevron {
+  transform: rotate(180deg);
+}
+@media (prefers-reduced-motion: reduce) {
+  .campus-blue .blue-year-chevron {
+    transition: none;
   }
 }

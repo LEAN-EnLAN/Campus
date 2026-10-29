@@ -1,3 +1,4 @@
+@import './prompt.css';
 /* Cascade order, declared before anything can imply one.
  *
  * DayFlow ships a COMPILED Tailwind build. Dropping it in unlayered would put a

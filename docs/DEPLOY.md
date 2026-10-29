@@ -76,7 +76,20 @@ commit the result, then push again.
     link (`detectSessionInUrl: true`), signing the student in. The default Supabase
     SMTP is heavily rate limited (a few e-mails per hour): configure a custom SMTP
     under Authentication > SMTP before a public launch.
-- There is no password-reset flow yet.
+- **Recuperación de contraseña:** en la pantalla Cloud, «Iniciar sesión» →
+  «Recuperar contraseña» solicita el email de restablecimiento con
+  `resetPasswordForEmail` y redirige a `<origin>/login`. El enlace de Supabase
+  debe volver a un origen autorizado por **Redirect URLs**, y el SDK debe recibir
+  el evento `PASSWORD_RECOVERY` antes de mostrar «Elegí una contraseña nueva».
+  El formulario actualiza la credencial mediante `updateUser`. La solicitud
+  informa de manera neutral incluso si la cuenta no existe, para no facilitar
+  enumeración de emails.
+  **Verificación obligatoria antes de publicar:** enviar el correo por SMTP
+  configurado, abrir el enlace en un navegador limpio, guardar otra contraseña,
+  cerrar la sesión, ingresar con la nueva y comprobar que la anterior no entra.
+  Usar una cuenta de prueba propia, sin registrar tokens ni contraseñas.
+  Mailpit local sirve para comprobar el circuito durante desarrollo, pero
+  **no demuestra entrega externa** ni autoriza el gate de release.
 - Leave anonymous sign-ins disabled (the local config does too).
 
 ## 3. Vercel environment variables

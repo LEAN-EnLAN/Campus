@@ -1,4 +1,3 @@
-import type { Session } from '@supabase/supabase-js'
 import { useQueries, useQueryClient, type QueryClient } from '@tanstack/react-query'
 import { act, render, waitFor } from '@testing-library/react'
 import type { ReactNode } from 'react'
@@ -8,6 +7,8 @@ import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vite
 import { queryKeys } from '@/lib/query-keys'
 import { useRuntime } from '@/lib/runtime/context'
 import { useAuth } from './auth-context'
+
+type Session = NonNullable<ReturnType<typeof useAuth>['session']>
 
 const fixture = vi.hoisted(() => ({
   tree: null as ReactNode,

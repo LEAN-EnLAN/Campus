@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { ArrowLeft, ExternalLink, Trash2 } from 'lucide-react'
+import { ArrowLeft, ExternalLink, Plus, Trash2 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
 import { AcademicStatus, StatusGlyph } from '@/components/academic-status'
@@ -7,12 +7,13 @@ import { EmptyState, ErrorState, LoadingRows } from '@/components/empty-state'
 import { PageHeader, SectionHeading } from '@/components/page-header'
 import { QuickCapture, type QuickCaptureValues } from '@/components/quick-capture'
 import { Button } from '@/components/ui/button'
-import { SelectField, TextField } from '@/components/ui/field'
+import { SelectField } from '@/components/ui/field'
 import { finalBlockedSentence } from '@/domain/requirements'
 import { sortByDate } from '@/domain/item-dates'
 import type { StoredSubjectStatus } from '@/domain/types'
 import { OrderConflictNote } from '@/features/academic/order-conflict-note'
 import { useAcademicPlan, useSetSubjectStatus } from '@/features/academic/queries'
+import { AddResourceDialog } from '@/features/courses/add-resource-dialog'
 import { CorrelativasPanel, correlativasNote } from '@/features/courses/correlativas-panel'
 import { SubjectDateRow } from '@/features/courses/subject-dates'
 import { SubjectNotes } from '@/features/courses/subject-notes'
@@ -62,9 +63,7 @@ function CourseDetailScreen() {
   const deleteResource = useDeleteResource()
 
   const [captureOpen, setCaptureOpen] = useState(false)
-  const [resourceTitle, setResourceTitle] = useState('')
-  const [resourceUrl, setResourceUrl] = useState('')
-  const [resourceError, setResourceError] = useState<string | null>(null)
+  const [resourceDialogOpen, setResourceDialogOpen] = useState(false)
   const [expandedResourceId, setExpandedResourceId] = useState<string | null>(null)
 
   const subject = plan.subjectById.get(courseId)
@@ -110,32 +109,6 @@ function CourseDetailScreen() {
       setCaptureOpen(false)
     } catch {
       /* surfaced through createItem.error */
-    }
-  }
-
-  async function handleAddResource(event: React.FormEvent) {
-    event.preventDefault()
-    if (!resourceTitle.trim()) {
-      setResourceError('Poné un título para el material.')
-      return
-    }
-    if (!/^https?:\/\/\S+$/i.test(resourceUrl.trim())) {
-      setResourceError('Ingresá un link que empiece con https:// o http://.')
-      return
-    }
-    setResourceError(null)
-    try {
-      await createResource.mutateAsync({
-        title: resourceTitle.trim(),
-        kind: 'link',
-        curriculumSubjectId: courseId,
-        url: resourceUrl.trim(),
-        body: null,
-      })
-      setResourceTitle('')
-      setResourceUrl('')
-    } catch {
-      // Keep both fields for correction; mutation error appears below the form.
     }
   }
 
@@ -331,48 +304,32 @@ function CourseDetailScreen() {
               </ul>
             ) : null}
 
-            <form
-              onSubmit={handleAddResource}
-              className="flex flex-col gap-3 sm:flex-row sm:items-end"
-            >
-              {/* The layout classes go on a wrapper: `TextField` applies `className` to
-              the <input>, so a width on the field itself left the Link field's
-              wrapper to shrink to its content (22px). */}
-              <div className="sm:w-56">
-                <TextField
-                  label="Título"
-                  placeholder="Apunte de la cátedra"
-                  value={resourceTitle}
-                  onChange={(e) => setResourceTitle(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="min-w-0 sm:flex-1">
-                <TextField
-                  label="Link"
-                  type="url"
-                  placeholder="https://…"
-                  value={resourceUrl}
-                  onChange={(e) => setResourceUrl(e.target.value)}
-                  required
-                />
-              </div>
-              <Button
-                type="submit"
-                variant="secondary"
-                disabled={
-                  createResource.isPending || !resourceTitle.trim() || !resourceUrl.trim()
-                }
-              >
-                Guardar
-              </Button>
-            </form>
-            {resourceError ? (
-              <p role="alert" className="text-danger text-sm">
-                {resourceError}
+            {resources.length === 0 && !resourcesQuery.isLoading && !resourcesQuery.error ? (
+              <p className="text-ink-muted text-sm">
+                Todavía no guardaste material de esta materia.
               </p>
             ) : null}
-            <MutationAlert error={createResource.error} />
+
+            <Button
+              variant="secondary"
+              className="self-start"
+              onClick={() => {
+                createResource.reset()
+                setResourceDialogOpen(true)
+              }}
+            >
+              <Plus aria-hidden="true" />
+              Agregar material
+            </Button>
+            <AddResourceDialog
+              open={resourceDialogOpen}
+              onClose={() => setResourceDialogOpen(false)}
+              onSave={(resource) =>
+                createResource.mutateAsync({ ...resource, curriculumSubjectId: courseId })
+              }
+              saving={createResource.isPending}
+              error={createResource.error}
+            />
           </section>
         </div>
 

@@ -50,7 +50,7 @@ export function AgendaList({
         <div className="mt-2 flex flex-col gap-5">
           {days.map((day) => (
             <section key={day.date.getTime()} className="flex flex-col">
-              <h4 className="text-2xs text-ink-muted border-rule-soft border-b py-2 font-semibold tracking-[0.12em] uppercase">
+              <h4 className="text-2xs text-ink-muted border-rule-soft tracking-eyebrow border-b py-2 font-semibold uppercase">
                 {capitalize(DAY_FORMAT.format(day.date))}
               </h4>
               <ul>

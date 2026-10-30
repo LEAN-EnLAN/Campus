@@ -56,7 +56,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       {/* Above the mobile tab bar (3.5rem) and the floating add; centred on desktop. */}
       <div
         role="status"
-        className="pointer-events-none fixed inset-x-0 bottom-[calc(8.5rem+env(safe-area-inset-bottom))] z-50 flex justify-center px-4 md:bottom-6"
+        className="bottom-toast pointer-events-none fixed inset-x-0 z-50 flex justify-center px-4 md:bottom-6"
       >
         {toast ? (
           <p className="border-rule bg-paper-elevated text-ink pointer-events-auto flex items-center gap-3 rounded-lg border px-4 py-2.5 text-sm shadow-lg">

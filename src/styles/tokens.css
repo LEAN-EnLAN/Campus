@@ -345,3 +345,16 @@
   height: var(--dm-dot);
   background-color: var(--color-dot-on);
 }
+/* A bar whose width is a share of its track, from --progress (a percentage). */
+@utility progress-fill {
+  width: var(--progress);
+}
+@utility transition-width {
+  transition-property: width;
+  transition-timing-function: var(--ease-out-quiet);
+  transition-duration: var(--duration-panel);
+}
+/* Clears the mobile tab bar (3.5rem) and the floating add, plus the home indicator. */
+@utility bottom-toast {
+  bottom: calc(8.5rem + env(safe-area-inset-bottom));
+}

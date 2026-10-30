@@ -57,7 +57,7 @@ export function SectionHeading({
 }) {
   return (
     <div className={cn('flex items-baseline gap-3', className)}>
-      <h2 id={id} className="text-2xs text-ink-muted font-semibold tracking-[0.12em] uppercase">
+      <h2 id={id} className="text-2xs text-ink-muted tracking-eyebrow font-semibold uppercase">
         {children}
       </h2>
       <span aria-hidden="true" className="bg-rule-soft h-px flex-1" />

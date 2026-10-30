@@ -1,3 +1,5 @@
+import type { CSSProperties } from 'react'
+
 import { cn } from '@/lib/utils'
 
 /**
@@ -48,8 +50,8 @@ export function ProgressLine({
         className="bg-rule-soft h-1.5 w-full overflow-hidden rounded-full"
       >
         <div
-          className="bg-accent h-full rounded-full transition-[width] duration-500 ease-[var(--ease-out-quiet)]"
-          style={{ width: `${percent}%` }}
+          className="bg-accent progress-fill transition-width ease-out-quiet h-full rounded-full duration-500"
+          style={{ '--progress': `${percent}%` } as CSSProperties}
         />
       </div>
     </div>

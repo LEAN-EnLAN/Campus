@@ -65,7 +65,7 @@ export function DeadlineRow({
             // The circle stays 20px because a 44px ring would wreck the row rhythm,
             // but the HIT AREA is expanded to 44px with a pseudo-element. This is the
             // most-tapped control in the app and it is used with a thumb.
-            "before:absolute before:-inset-3 before:content-['']",
+            'before:absolute before:-inset-3',
             done
               ? 'border-success bg-success text-on-tint'
               : 'border-rule hover:border-ink-faint text-transparent',

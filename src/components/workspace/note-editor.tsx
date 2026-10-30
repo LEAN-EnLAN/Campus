@@ -273,7 +273,7 @@ export function NoteEditor({
       <div
         // Shares the text axis with the ruled lines above it. The file name is
         // NOT repeated here: the tab and the masthead already show it.
-        className="border-rule text-ink-muted flex items-center justify-end border-t px-4 py-1 text-xs md:pr-[var(--rule-gutter)] md:pl-[var(--rule-text-inset)]"
+        className="border-rule text-ink-muted md:pr-rule-gutter md:pl-rule-inset flex items-center justify-end border-t px-4 py-1 text-xs"
         aria-live="polite"
       >
         <span

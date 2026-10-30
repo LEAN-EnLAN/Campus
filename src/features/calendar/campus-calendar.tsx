@@ -365,7 +365,7 @@ function CalendarChrome({
             <Button variant="ghost" size="icon" aria-label="Período siguiente" onClick={onNext}>
               <ChevronRight aria-hidden="true" />
             </Button>
-            <Button variant="ghost" onClick={onToday} className="h-8 px-3 text-xs">
+            <Button variant="ghost" size="sm" onClick={onToday}>
               Hoy
             </Button>
           </>
@@ -529,7 +529,7 @@ function EventDetail({
   return (
     <div className="flex flex-col gap-3 p-4">
       <div>
-        <p className="text-2xs text-ink-muted tracking-[0.18em] uppercase">
+        <p className="text-2xs text-ink-muted tracking-caps uppercase">
           {itemKindLabel(item.kind)}
         </p>
         <h3 className="text-ink font-serif text-lg font-semibold">{item.title}</h3>

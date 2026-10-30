@@ -86,7 +86,7 @@ export function Modal({
   if (!open) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-start sm:pt-dialog-top">
+    <div className="sm:pt-dialog-top fixed inset-0 z-50 flex items-end justify-center sm:items-start">
       {/* Pointer-only dismiss. Escape and the dialog's own Cancel are the keyboard
           paths, so this stays out of the tab order and the accessibility tree. */}
       <div

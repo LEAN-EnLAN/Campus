@@ -95,13 +95,19 @@
   --text-3xl--line-height: 1.15;
 
   /* Geometry */
-  --radius-sm: 6px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-  --radius-xl: 16px;
+  --radius-xs: 3px; /* focus ring corners, key caps */
+  --radius-sm: 6px; /* chips, small tiles */
+  --radius-md: 8px; /* controls: buttons, inputs, menu items */
+  --radius-lg: 12px; /* containers: cards, panels, dialogs */
+  --radius-xl: 16px; /* hero cards, startup options */
+  --radius-2xl: 20px; /* illustrations' frames, the one big surface per screen */
+  --radius-pill: 999px; /* badges, progress tracks. Deliberate only. */
 
   /* Motion — controls 120–180ms, panels 180–240ms */
   --ease-out-quiet: cubic-bezier(0.22, 0.8, 0.3, 1);
+  --duration-quick: 150ms; /* hover, focus, colour changes */
+  --duration-panel: 200ms; /* things that move: popovers, disclosure */
+  --duration-ambient: 600ms; /* the time-of-day background only */
 
   /* Layout rails */
   --spacing-nav: 13.75rem; /* 220px */
@@ -199,6 +205,88 @@
      `--foreground`, which this project does not define; the one accent is the
      right answer for something that means "working". */
   --color-dot-on: var(--color-accent);
+}
+
+/* ---------------------------------------------------------------------------
+ * Campus Blue — the one palette users see (proposal 2, light).
+ *
+ * Applied by the three surfaces that own a full-page background: the app shell
+ * (.campus-blue), onboarding and Cloud account entry (.blue-onboarding), and the
+ * Local/Cloud picker (.blue-startup). They used to redeclare these tokens with
+ * values a few points apart; one list means one answer.
+ *
+ * Hex, not oklch: these are the values design approved and QA measured. The
+ * warm oklch set above remains the base layer for dark mode and for the accent
+ * derivation in lib/design/palette.ts.
+ * ------------------------------------------------------------------------- */
+:root {
+  /* Startup's page colour. Root-level on purpose: the scrollbar gutter paints the
+     <html> background, which sits outside every .blue-* scope. */
+  --color-startup: #f8fbff;
+  /* The app shell's page colour, for the same reason: the scrollbar gutter must
+     not show the legacy warm body behind a blue shell. */
+  --color-canvas: #f8fafd;
+  --color-startup-wash: #eaf3ff;
+
+  /* Ramp primitives, darkest first. Clustered from every blue the stylesheets
+     used to hardcode (OKLab distance <= 0.04, i.e. below a noticeable step).
+     Reach for a semantic token first; a ramp step is for a tint that has no role yet. */
+  --blue-01: #102a43;
+  --blue-02: #1a3c6c;
+  --blue-03: #1e4273;
+  --blue-04: #244571;
+  --blue-05: #174d9e;
+  --blue-06: #405e89;
+  --blue-07: #235faf;
+  --blue-08: #206bd4;
+  --blue-09: #4673ad;
+  --blue-10: #276fe4;
+  --blue-11: #5e789a;
+  --blue-12: #347ceb;
+  --blue-13: #7eacfd;
+  --blue-14: #91b5ed;
+  --blue-15: #a5b5cc;
+  --blue-16: #b5cce7;
+}
+
+:is(.campus-blue, .blue-onboarding, .blue-startup) {
+  --color-paper: #f8fafd;
+  --color-paper-elevated: #ffffff;
+  --color-paper-sunken: #eef4fd;
+  --color-ink: #10224a;
+  --color-ink-muted: #566d95;
+  --color-ink-faint: #798dac;
+  --color-rule: #d6e1f1;
+  --color-rule-soft: #e6edf7;
+  --color-field: #8397b7;
+  --color-accent: #155dd6;
+  --color-accent-soft: #e7f0ff;
+  --color-accent-ink: #1454bd;
+  --color-accent-hover: #0e4dbb;
+  --color-selection: #d7e7ff;
+  --color-success: #10a777;
+  --color-success-ink: #067b55;
+  --color-success-soft: #e3f7ef;
+  --color-warning: #a96808;
+  --color-warning-soft: #fff2d5;
+  --color-danger: #c63743;
+  --color-danger-soft: #fff0f2;
+  --color-focus: var(--color-accent);
+  --color-on-tint: #ffffff;
+  --shadow-tint: 24 50 94;
+
+  /* Roles that were literal hex. */
+  --color-success-border: #cce3da;
+  --color-danger-border: #ebc8cd;
+  --color-danger-ink: #a12a37;
+  --color-warning-bright: #efa918;
+  --color-warning-ink: #8f5d06;
+  --color-success-deep: #16684f;
+  --color-success-mid: #199d7b;
+  --color-shell: #133354;
+  --color-shell-raised: #285487;
+  --color-shell-ink: #e3efff;
+  --color-shell-ink-muted: #c6d7ed;
 }
 
 /* ---------------------------------------------------------------------------

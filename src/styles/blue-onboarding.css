@@ -1,30 +1,13 @@
 /* Proposal 2 · accessible, responsive onboarding and Cloud account entry.
    Scoped to routes that load this stylesheet; the startup picker owns the actual mode choice. */
 .blue-onboarding {
-  --color-paper: #f7faff;
-  --color-paper-elevated: #fff;
-  --color-paper-sunken: #e9f2ff;
-  --color-accent: #155dd6;
-  --color-accent-hover: #104db1;
-  --color-accent-soft: #e8f0ff;
-  --color-accent-ink: #1555bb;
-  --color-on-tint: #fff;
-  --color-ink: #11274e;
-  --color-ink-muted: #567095;
-  --color-ink-faint: #8ba0bd;
-  --color-rule: #d5e2f2;
-  --color-rule-soft: #e4edf9;
-  --color-field: #9eb2d2;
-  --color-focus: #276add;
-  --color-success-ink: #13745a;
-  --color-danger: #bc3241;
-  background: #f7faff;
-  color: #11274e;
+  background: var(--color-paper);
+  color: var(--color-ink);
   min-height: 100dvh;
   font-family: Prompt, ui-sans-serif, system-ui, sans-serif;
 }
 .blue-onboarding :is(a, button, input, summary):focus-visible {
-  outline: 2px solid #155dd6;
+  outline: 2px solid var(--color-accent);
   outline-offset: 3px;
 }
 .blue-onboarding-container {
@@ -38,7 +21,7 @@
   justify-content: space-between;
   min-height: 94px;
   gap: 16px;
-  border-bottom: 1px solid #e0e9f6;
+  border-bottom: 1px solid var(--color-rule-soft);
 }
 .blue-onboarding-brand {
   display: inline-flex;
@@ -47,35 +30,35 @@
   font-size: 24px;
   font-weight: 760;
   letter-spacing: -0.06em;
-  color: #112d59;
+  color: var(--color-shell);
   white-space: nowrap;
 }
 .blue-onboarding-brand-mark {
   width: 34px;
   height: 34px;
-  border-radius: 9px;
+  border-radius: var(--radius-md);
   display: inline-grid;
   place-items: center;
   font-size: 18px;
   font-weight: 800;
-  background: #155dd6;
-  color: white;
+  background: var(--color-accent);
+  color: var(--color-on-tint);
   letter-spacing: -0.04em;
 }
 .blue-onboarding-brand-dot {
-  color: #206ce5;
+  color: var(--blue-10);
 }
 .blue-onboarding-top-note {
-  font-size: 13px;
-  color: #405b81;
+  font-size: var(--text-sm);
+  color: var(--blue-06);
 }
 .blue-onboarding-text-link {
   display: inline-flex;
   align-items: center;
   gap: 7px;
   min-height: 38px;
-  color: #1555bb;
-  font-size: 13px;
+  color: var(--color-accent-ink);
+  font-size: var(--text-sm);
   font-weight: 650;
   text-decoration: none;
   background: transparent;
@@ -100,8 +83,8 @@
   align-items: center;
   gap: 9px;
   margin: 0;
-  color: #225db9;
-  font-size: 11px;
+  color: var(--blue-07);
+  font-size: var(--text-2xs);
   font-weight: 800;
   letter-spacing: 0.095em;
   text-transform: uppercase;
@@ -114,17 +97,17 @@
   line-height: 1.08;
   font-weight: 560;
   letter-spacing: -0.045em;
-  color: #102548;
+  color: var(--color-ink);
 }
 .blue-onboarding-intro > p:not(.blue-onboarding-eyebrow) {
   max-width: 600px;
-  font-size: 15px;
+  font-size: var(--text-base);
   line-height: 1.65;
-  color: #587194;
+  color: var(--color-ink-muted);
 }
 .blue-onboarding-intro .blue-onboarding-coverage {
   margin-top: 7px;
-  color: #255caa !important;
+  color: var(--blue-07) !important;
   font-size: 13px !important;
   font-weight: 650;
 }
@@ -147,15 +130,15 @@
   align-items: center;
   gap: 8px;
   padding: 12px 6px 13px 0;
-  border-bottom: 2px solid #d8e4f4;
+  border-bottom: 2px solid var(--color-rule);
   background: transparent;
-  color: #7388a8;
-  font-size: 12px;
+  color: var(--color-ink-faint);
+  font-size: var(--text-xs);
   font-weight: 650;
   text-align: left;
   transition:
-    color 150ms,
-    border-color 150ms;
+    color var(--duration-quick) var(--ease-out-quiet),
+    border-color var(--duration-quick) var(--ease-out-quiet);
   cursor: poPrompt;
 }
 .blue-onboarding-progress button:disabled {
@@ -163,11 +146,11 @@
   opacity: 0.65;
 }
 .blue-onboarding-progress button[data-active='true'] {
-  border-color: #155dd6;
-  color: #174d9e;
+  border-color: var(--color-accent);
+  color: var(--blue-05);
 }
 .blue-onboarding-progress button[data-complete='true'] {
-  color: #235ba8;
+  color: var(--blue-07);
 }
 .blue-onboarding-step-number {
   display: inline-grid;
@@ -175,39 +158,39 @@
   width: 25px;
   height: 25px;
   place-items: center;
-  border: 1px solid #cfdef0;
-  background: #e9eff8;
+  border: 1px solid var(--color-rule);
+  background: var(--color-rule-soft);
   border-radius: 50%;
-  color: #627da6;
-  font-size: 12px;
+  color: var(--blue-11);
+  font-size: var(--text-xs);
 }
 .blue-onboarding-progress button[data-active='true'] .blue-onboarding-step-number {
-  background: #155dd6;
-  border-color: #155dd6;
-  color: white;
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: var(--color-on-tint);
 }
 .blue-onboarding-progress
   button[data-complete='true']:not([data-active='true'])
   .blue-onboarding-step-number {
-  background: #e6f4ee;
-  color: #13745a;
-  border-color: #d1e8dc;
+  background: var(--color-success-soft);
+  color: var(--color-success-ink);
+  border-color: var(--color-success-border);
 }
 .blue-onboarding-form-panel {
   min-height: 325px;
   padding: 30px 32px;
-  border: 1px solid #e0e9f7;
-  border-radius: 14px;
-  background: #fff;
+  border: 1px solid var(--color-rule-soft);
+  border-radius: var(--radius-lg);
+  background: var(--color-paper-elevated);
 }
 .blue-onboarding-section-heading {
   margin-bottom: 25px;
 }
 .blue-onboarding-section-heading > span {
-  font-size: 11px;
+  font-size: var(--text-2xs);
   letter-spacing: 0.095em;
   text-transform: uppercase;
-  color: #2867c6;
+  color: var(--blue-08);
   font-weight: 800;
 }
 .blue-onboarding-section-heading h2 {
@@ -219,12 +202,12 @@
 }
 .blue-onboarding-section-heading p {
   margin-top: 7px;
-  color: #5c7192;
+  color: var(--color-ink-muted);
   font-size: 14px;
 }
 .blue-onboarding-options legend {
   margin-bottom: 12px;
-  color: #5e7697;
+  color: var(--blue-11);
 }
 .blue-onboarding-options > div + div {
   margin-top: 9px;
@@ -232,20 +215,20 @@
 .blue-onboarding-options > div > label {
   padding: 15px 17px;
   min-height: 64px;
-  background: white;
-  border: 1px solid #d7e3f2;
-  border-radius: 9px;
+  background: var(--color-paper-elevated);
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-md);
 }
 .blue-onboarding-options > div > label:hover {
-  border-color: #80a8e9;
-  background: #f8fbff;
+  border-color: var(--blue-13);
+  background: var(--color-paper);
 }
 .blue-onboarding-options > div > label:has(input:checked) {
-  border-color: #155dd6;
-  background: #edf4ff;
+  border-color: var(--color-accent);
+  background: var(--color-paper-sunken);
 }
 .blue-onboarding-options input {
-  accent-color: #155dd6;
+  accent-color: var(--color-accent);
 }
 .blue-onboarding-options > div > details {
   margin: 3px 0 8px;
@@ -255,12 +238,12 @@
   gap: 8px;
   align-items: flex-start;
   margin-top: 18px;
-  color: #13745a;
-  font-size: 13px;
+  color: var(--color-success-ink);
+  font-size: var(--text-sm);
 }
 .blue-onboarding-error {
-  color: #bc3241;
-  font-size: 13px;
+  color: var(--color-danger);
+  font-size: var(--text-sm);
   margin-top: 18px;
 }
 .blue-onboarding-actions {
@@ -270,34 +253,34 @@
   margin-top: 27px;
 }
 .blue-onboarding-actions button {
-  border-radius: 8px;
+  border-radius: var(--radius-md);
 }
 .blue-onboarding-manual-toggle {
   display: inline-block;
   margin-top: 20px;
   background: transparent;
-  color: #225eb1;
-  font-size: 13px;
+  color: var(--blue-07);
+  font-size: var(--text-sm);
   font-weight: 650;
   text-align: left;
   min-height: 32px;
 }
 .blue-onboarding-aside {
   padding: 24px;
-  border: 1px solid #dfeaf9;
-  background: #edf4ff;
-  border-radius: 14px;
+  border: 1px solid var(--color-rule-soft);
+  background: var(--color-paper-sunken);
+  border-radius: var(--radius-lg);
 }
 .blue-onboarding-aside-heading h2 {
   margin: 9px 0 6px;
-  color: #17345f;
+  color: var(--color-shell);
   font-weight: 760;
   font-size: 18px;
   letter-spacing: -0.03em;
 }
 .blue-onboarding-aside-heading p {
-  color: #405b81;
-  font-size: 13px;
+  color: var(--blue-06);
+  font-size: var(--text-sm);
   line-height: 1.5;
 }
 .blue-onboarding-workspaces {
@@ -310,14 +293,14 @@
   display: flex;
   flex-direction: column;
   padding: 10px 9px 12px;
-  border-radius: 9px;
-  border: 1px solid #d9e4f3;
-  background: #f9fbff;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-rule);
+  background: var(--color-paper);
   min-width: 0;
 }
 .blue-onboarding-workspace-card[data-active='true'] {
-  border: 2px solid #3574dc;
-  background: #fff;
+  border: 2px solid var(--blue-10);
+  background: var(--color-paper-elevated);
   padding: 9px 8px 11px;
 }
 .blue-onboarding-workspace-card img {
@@ -330,10 +313,10 @@
   display: flex;
   align-items: flex-start;
   gap: 5px;
-  font-size: 11px;
+  font-size: var(--text-2xs);
   font-weight: 750;
   line-height: 1.4;
-  color: #254979;
+  color: var(--blue-04);
 }
 .blue-onboarding-workspace-card span svg {
   flex: none;
@@ -341,7 +324,7 @@
 }
 .blue-onboarding-workspace-card small {
   font-size: 10px;
-  color: #405b81;
+  color: var(--blue-06);
   line-height: 1.3;
   margin-top: 5px;
 }
@@ -350,25 +333,25 @@
   gap: 6px;
   align-items: flex-start;
   margin-top: 15px;
-  font-size: 12px;
-  color: #36618d;
+  font-size: var(--text-xs);
+  color: var(--blue-06);
   line-height: 1.45;
   overflow-wrap: anywhere;
 }
 .blue-onboarding-workspace-current svg {
   flex: none;
-  color: #13745a;
+  color: var(--color-success-ink);
 }
 .blue-onboarding-aside > .blue-onboarding-text-link {
   margin-top: 4px;
 }
 .blue-onboarding-summary {
   margin-top: 20px;
-  border-top: 1px solid #d4e3f7;
+  border-top: 1px solid var(--color-rule);
   padding-top: 20px;
 }
 .blue-onboarding-summary h3 {
-  font-size: 13px;
+  font-size: var(--text-sm);
   font-weight: 760;
   margin-bottom: 13px;
 }
@@ -380,25 +363,25 @@
   min-width: 0;
 }
 .blue-onboarding-summary li span {
-  color: #405b81;
-  font-size: 11px;
+  color: var(--blue-06);
+  font-size: var(--text-2xs);
 }
 .blue-onboarding-summary li strong {
-  color: #244d81;
-  font-size: 12px;
+  color: var(--color-shell-raised);
+  font-size: var(--text-xs);
   line-height: 1.45;
   font-weight: 650;
   overflow-wrap: anywhere;
 }
 .blue-onboarding-summary > p {
-  font-size: 13px;
+  font-size: var(--text-sm);
   line-height: 1.6;
 }
 .blue-onboarding-next {
-  border-top: 1px solid #d4e3f7;
+  border-top: 1px solid var(--color-rule);
   padding-top: 17px;
-  color: #53719d;
-  font-size: 12px;
+  color: var(--color-ink-muted);
+  font-size: var(--text-xs);
   line-height: 1.6;
 }
 .blue-onboarding-complete {
@@ -406,9 +389,9 @@
   margin: clamp(24px, 9vh, 100px) auto;
   padding: 32px 24px;
   text-align: center;
-  background: #fff;
-  border: 1px solid #dfe9f7;
-  border-radius: 14px;
+  background: var(--color-paper-elevated);
+  border: 1px solid var(--color-rule-soft);
+  border-radius: var(--radius-lg);
 }
 .blue-onboarding-complete img {
   width: min(100%, 275px);
@@ -421,8 +404,8 @@
 .blue-onboarding-complete p {
   max-width: 455px;
   margin: 12px auto 24px;
-  color: #5b7294;
-  font-size: 15px;
+  color: var(--color-ink-muted);
+  font-size: var(--text-base);
   line-height: 1.65;
 }
 
@@ -446,33 +429,33 @@
     system-ui,
     serif;
   letter-spacing: -0.045em;
-  color: #102548;
+  color: var(--color-ink);
 }
 .blue-login-panel .blue-login-lead {
   margin: 13px 0 27px;
-  color: #607597;
+  color: var(--blue-11);
   font-size: 14px;
   line-height: 1.6;
 }
 .blue-login-mode {
   display: flex;
-  background: #eaf1fc;
-  border: 1px solid #d8e4f4;
-  border-radius: 9px;
+  background: var(--color-accent-soft);
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-md);
   padding: 4px;
   margin-bottom: 23px;
 }
 .blue-login-mode button {
   flex: 1;
-  font-size: 13px;
+  font-size: var(--text-sm);
   font-weight: 700;
   min-height: 40px;
-  border-radius: 6px;
-  color: #607799;
+  border-radius: var(--radius-sm);
+  color: var(--blue-11);
 }
 .blue-login-mode button[aria-pressed='true'] {
-  background: white;
-  color: #1b5bbc;
+  background: var(--color-paper-elevated);
+  color: var(--color-accent-ink);
 }
 .blue-login-fields {
   display: flex;
@@ -481,35 +464,35 @@
 }
 .blue-login-fields input {
   height: 44px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
 }
 .blue-login-fields label {
-  color: #203c68;
-  font-size: 13px;
+  color: var(--blue-02);
+  font-size: var(--text-sm);
   font-weight: 700;
 }
 .blue-login-fields button[type='submit'] {
   height: 47px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   margin-top: 6px;
 }
 .blue-login-message {
   padding: 12px 14px;
-  border-radius: 8px;
-  border: 1px solid #cce3da;
-  color: #16684f;
-  background: #edf8f3;
-  font-size: 13px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-success-border);
+  color: var(--color-success-deep);
+  background: var(--color-success-soft);
+  font-size: var(--text-sm);
   line-height: 1.6;
 }
 .blue-login-message[data-error='true'] {
-  border-color: #ebc8cd;
-  color: #a12a37;
-  background: #fff2f4;
+  border-color: var(--color-danger-border);
+  color: var(--color-danger-ink);
+  background: var(--color-danger-soft);
 }
 .blue-login-legal {
-  color: #7286a3;
-  font-size: 12px;
+  color: var(--color-ink-faint);
+  font-size: var(--text-xs);
   line-height: 1.6;
   margin-top: 27px;
 }
@@ -521,9 +504,9 @@
   gap: 8px;
   padding: clamp(24px, 4vw, 60px);
   margin: 24px 0 24px 24px;
-  background: #e6effe;
-  border: 1px solid #d9e6f9;
-  border-radius: 20px;
+  background: var(--color-accent-soft);
+  border: 1px solid var(--color-selection);
+  border-radius: var(--radius-2xl);
 }
 .blue-login-side img {
   width: 100%;
@@ -539,7 +522,7 @@
   letter-spacing: -0.035em;
 }
 .blue-login-side p {
-  color: #567298;
+  color: var(--color-ink-muted);
   font-size: 14px;
   line-height: 1.65;
 }
@@ -552,13 +535,13 @@
   display: flex;
   gap: 9px;
   align-items: center;
-  color: #244d84;
-  font-size: 13px;
+  color: var(--color-shell-raised);
+  font-size: var(--text-sm);
   font-weight: 650;
 }
 .blue-login-side li svg {
   flex: none;
-  color: #155dd6;
+  color: var(--color-accent);
 }
 @media (max-width: 980px) {
   .blue-onboarding-layout {
@@ -605,7 +588,7 @@
     margin: 9px 0 7px;
   }
   .blue-onboarding-intro > p:not(.blue-onboarding-eyebrow) {
-    font-size: 13px;
+    font-size: var(--text-sm);
     line-height: 1.5;
   }
   .blue-onboarding-progress {
@@ -648,7 +631,7 @@
     height: 63px;
   }
   .blue-onboarding-summary {
-    border-top: 1px solid #d4e3f7;
+    border-top: 1px solid var(--color-rule);
     padding-top: 19px;
     margin-top: 19px;
   }

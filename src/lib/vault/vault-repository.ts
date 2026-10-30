@@ -47,9 +47,25 @@ export class VaultRepository implements VaultAccess {
   private readonly fs: FileSystemPort
   private readonly root: string
 
+  /** `root` must be the physical path admitted by the session/CLI opener. */
   constructor(fs: FileSystemPort, root: string) {
     this.fs = fs
     this.root = root
+  }
+
+  private async checkedRoot(): Promise<ResolveResult> {
+    let real: string
+    try {
+      real = await this.fs.realpath(this.root)
+    } catch {
+      return { ok: false, reason: 'vault root is not readable', code: 'root_unreadable' }
+    }
+    // Re-resolving checks the admitted boundary; it must never redefine it.
+    // This detects a retarget before an operation, not arbitrary filesystem TOCTOU.
+    if (real !== this.root) {
+      return { ok: false, reason: 'path resolves outside the vault', code: 'outside_vault' }
+    }
+    return { ok: true, absolute: this.root }
   }
 
   /**
@@ -73,12 +89,9 @@ export class VaultRepository implements VaultAccess {
     const verdict = validateVaultPath(relative)
     if (!verdict.ok) return verdict
 
-    let realRoot: string
-    try {
-      realRoot = await this.fs.realpath(this.root)
-    } catch {
-      return { ok: false, reason: 'vault root is not readable', code: 'root_unreadable' }
-    }
+    const root = await this.checkedRoot()
+    if (!root.ok) return root
+    const realRoot = root.absolute
 
     const inside = (p: string) =>
       p === realRoot || p.startsWith(realRoot + '/') || p.startsWith(realRoot + '\\')
@@ -252,8 +265,9 @@ export class VaultRepository implements VaultAccess {
   async listDir(relative: string): Promise<VaultEntry[]> {
     // '' means the vault root, which validateVaultPath refuses as empty — the
     // root is the one path that needs no per-segment judgement.
-    const absolute =
-      relative === '' ? await this.fs.realpath(this.root) : await this.require(relative)
+    const resolved = relative === '' ? await this.checkedRoot() : await this.resolve(relative)
+    if (!resolved.ok) throw new VaultError(resolved.code, resolved.reason)
+    const absolute = resolved.absolute
     if ((await this.fs.lstat(absolute)) === null) throw new VaultError('not_found', 'not found')
     const raw = await this.fs.readdir(absolute)
 

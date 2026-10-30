@@ -88,12 +88,29 @@ export function campusVaultPlugin(): Plugin {
             },
             sessions,
             { allowedOrigins, token },
-          ).then((response) => {
-            res.statusCode = response.status
-            for (const [key, value] of Object.entries(response.headers))
-              res.setHeader(key, value)
-            res.end(response.body)
-          })
+          ).then(
+            (response) => {
+              res.statusCode = response.status
+              for (const [key, value] of Object.entries(response.headers))
+                res.setHeader(key, value)
+              res.end(response.body)
+            },
+            () => {
+              // Unexpected handler failures must finish the request without
+              // forwarding system errors that may contain private host paths.
+              res.statusCode = 500
+              res.setHeader('content-type', 'application/json; charset=utf-8')
+              res.setHeader('cache-control', 'no-store')
+              const origin = req.headers.origin
+              if (typeof origin === 'string' && allowedOrigins.includes(origin)) {
+                res.setHeader('access-control-allow-origin', origin)
+                res.setHeader('vary', 'Origin')
+              }
+              res.end(
+                JSON.stringify({ ok: false, code: 'io_error', error: 'vault request failed' }),
+              )
+            },
+          )
         })
       })
     },

@@ -69,8 +69,8 @@ export class NoteAutosave {
   private readonly onSaved?: (path: string, contents: string) => void
   private readonly debounceMs: number
 
-  /** Exactly the text the disk held after the last load or successful write. */
-  private baseline = ''
+  /** Last loaded/written text; null when that disk copy is known to be gone. */
+  private baseline: string | null = ''
   /** The mtime our next write must present. */
   private mtime = 0
   private timer: ReturnType<typeof setTimeout> | null = null
@@ -166,8 +166,12 @@ export class NoteAutosave {
     if (this.disposed || this.inFlight || this.blocked()) return
     try {
       const fresh = await this.files.stat(this.path)
-      if (this.disposed || !fresh || fresh.mtimeMs === this.mtime) return
-      if (this.inFlight) return
+      if (this.disposed || this.inFlight) return
+      if (!fresh) {
+        this.fail(new VaultError('not_found'))
+        return
+      }
+      if (fresh.mtimeMs === this.mtime) return
 
       if (this.unsaved()) {
         this.set({ kind: 'conflict' })
@@ -182,8 +186,13 @@ export class NoteAutosave {
         return
       }
       this.adopt(note.contents, note.mtimeMs)
-    } catch {
-      // A transient failure must not spam the student; the next poll retries.
+    } catch (error) {
+      // Deletion can race the reload after a successful stat. Preserve the
+      // buffer and require explicit recovery, just as for a missing stat.
+      if (!this.inFlight && error instanceof VaultError && error.code === 'not_found') {
+        this.fail(error)
+      }
+      // Other transient failures are retried by the next poll.
     }
   }
 
@@ -290,6 +299,7 @@ export class NoteAutosave {
     const code = error instanceof VaultError ? error.code : null
     if (code === 'conflict_missing' || code === 'not_found') {
       this.clearTimer()
+      this.baseline = null
       this.set({ kind: 'missing' })
     } else if (code === 'conflict_changed' || code === 'already_exists') {
       // Not an error to retry: the student has two versions of their own work,

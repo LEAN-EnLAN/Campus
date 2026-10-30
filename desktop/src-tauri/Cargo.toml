@@ -1,0 +1,23 @@
+[package]
+name = "campus-desktop"
+description = "Campus for Windows: the existing React build in WebView2, served with its Vault API by the Rust core through the campus:// protocol."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+rust-version.workspace = true
+
+[[bin]]
+name = "campus"
+path = "src/main.rs"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+campus-core.workspace = true
+campus-server.workspace = true
+tauri = { version = "2", features = [] }
+
+[lints]
+workspace = true

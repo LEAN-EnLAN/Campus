@@ -19,7 +19,6 @@ import { useWorkspace } from '@/lib/runtime/workspace'
 import { useAuth } from '@/features/auth/auth-context'
 import { cn } from '@/lib/utils'
 
-import '@/styles/blue-onboarding.css'
 
 export const Route = createFileRoute('/onboarding')({
   component: OnboardingScreen,

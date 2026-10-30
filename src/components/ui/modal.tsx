@@ -1,9 +1,14 @@
-import { useEffect, useRef, type ReactNode, type RefObject } from 'react'
+import {
+  useEffect,
+  useRef,
+  type ComponentPropsWithoutRef,
+  type ReactNode,
+  type RefObject,
+} from 'react'
 
 import { cn } from '@/lib/utils'
 
-const FOCUSABLE =
-  'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+import { tabbables } from './tabbable'
 
 /**
  * The one modal.
@@ -40,7 +45,7 @@ export function Modal({
     restoreFocusTo.current = document.activeElement as HTMLElement | null
     const timer = window.setTimeout(() => {
       const target =
-        initialFocus?.current ?? panelRef.current?.querySelector<HTMLElement>(FOCUSABLE)
+        initialFocus?.current ?? (panelRef.current ? tabbables(panelRef.current)[0] : undefined)
       target?.focus()
     }, 20)
 
@@ -52,7 +57,7 @@ export function Modal({
       }
       if (event.key !== 'Tab' || !panelRef.current) return
 
-      const focusable = [...panelRef.current.querySelectorAll<HTMLElement>(FOCUSABLE)]
+      const focusable = tabbables(panelRef.current)
       if (focusable.length === 0) return
       const first = focusable[0]!
       const last = focusable[focusable.length - 1]!
@@ -81,10 +86,11 @@ export function Modal({
   if (!open) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-start sm:pt-[12vh]">
-      <button
-        type="button"
-        aria-label="Cerrar"
+    <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-start sm:pt-dialog-top">
+      {/* Pointer-only dismiss. Escape and the dialog's own Cancel are the keyboard
+          paths, so this stays out of the tab order and the accessibility tree. */}
+      <div
+        aria-hidden="true"
         onClick={onClose}
         className="bg-ink/25 absolute inset-0 motion-safe:animate-[fade-in_160ms_ease-out]"
       />
@@ -97,12 +103,29 @@ export function Modal({
         className={cn(
           'border-rule bg-paper-elevated relative w-full max-w-lg border shadow-lg',
           'rounded-t-xl sm:rounded-xl',
-          'max-h-[88dvh] overflow-y-auto',
+          'max-h-sheet sm:max-h-dialog overflow-y-auto overscroll-contain',
           className,
         )}
       >
         {children}
       </div>
     </div>
+  )
+}
+
+/**
+ * The action row of a dialog. Sticks to the bottom of the scrolling panel so
+ * Save / Cancel stay reachable on a short viewport or with the keyboard open.
+ */
+export function ModalFooter({ className, ...props }: ComponentPropsWithoutRef<'div'>) {
+  return (
+    <div
+      className={cn(
+        'bg-paper-elevated border-rule sticky bottom-0 -mx-5 mt-1 flex justify-end gap-2 border-t px-5 py-3',
+        'pb-safe',
+        className,
+      )}
+      {...props}
+    />
   )
 }

@@ -1,0 +1,221 @@
+/* Campus design tokens. Rule behind every value: docs/design/DESIGN_SYSTEM.md */
+/* ---------------------------------------------------------------------------
+ * Campus design tokens — see .claude/skills/campus-design-system/SKILL.md
+ *
+ * Warm editorial light theme. One accent. Paper, never pure white.
+ * Never hardcode a hex value in a component; always go through a token.
+ * ------------------------------------------------------------------------- */
+
+@theme {
+  /* Surfaces & ink — Linen and Shadow Grey, with the steps between them.
+     Written in oklch because the whole system is: see lib/design/palette.ts. */
+  --color-paper: oklch(93% 0.016 68); /* Linen #efe6dd */
+  --color-paper-elevated: oklch(96.5% 0.012 68);
+  --color-paper-sunken: oklch(89% 0.018 68);
+  --color-ink: oklch(24% 0.006 20); /* Shadow Grey #231f20 */
+  --color-ink-muted: oklch(48% 0.008 40);
+  /* NOT for text. No third text tier fits this palette at AA: anything readable on
+     --paper collapses into --ink-muted. Use this for decorative glyphs, chevrons and
+     placeholders only; body and metadata text uses --color-ink-muted. */
+  --color-ink-faint: oklch(62% 0.01 50);
+  --color-rule: oklch(85% 0.014 66);
+  --color-rule-soft: oklch(90% 0.012 66);
+  /* The edge of a form control. NOT --color-rule: that is a divider, and a
+     divider is allowed to be quiet (1.3:1). A control's boundary is
+     information the student needs to find it, and WCAG 1.4.11 asks 3:1 against
+     both the page and the field's own surface. Measured, not guessed — see
+     lib/design/tokens-contrast.test.ts. */
+  --color-field: oklch(56% 0.012 66);
+
+  /* Accent — exactly one, and deliberately NOT Tomato Jam.
+     The accent is on every selected nav item, every primary button and the
+     today marker: it is the colour the app speaks in. Tomato sits at twice the
+     chroma of the rest of the set, and an app that loud everywhere reads as a
+     permanent alarm. Tropical Teal carries identity; Tomato is spent on danger,
+     where being loud is the point and being rare is what keeps it loud. */
+  --color-accent: oklch(72% 0.075 202); /* Tropical Teal #7ebdc2 */
+  --color-accent-soft: oklch(93% 0.03 202);
+  --color-accent-ink: oklch(42% 0.07 202);
+  /* The primary button's hover fill: a step off --color-accent that the dark
+     on-tint label still reads on (accent-ink would be ~2:1). */
+  --color-accent-hover: oklch(64% 0.08 202);
+  /* The keyboard focus ring. --color-accent is a FILL colour (72% lightness) and
+     was 1.95:1 on the page; the ring needs 3:1 on page, field and soft surfaces. */
+  --color-focus: oklch(42% 0.07 202);
+  /* The ink for anything painted with a FILLED palette colour — accent,
+     success, a subject's own hue. One token rather than a habit: every filled
+     colour in this system sits in the same lightness band, so they all take the
+     same ink, and the day the band moves there is exactly one place to fix it.
+     A literal white was the old habit, and it stopped reading the moment the
+     accent went from a dark blue to a light teal. */
+  --color-on-tint: oklch(24% 0.006 20);
+
+  /* Academic status. Hues 32 / 92 / 160 / 202 — every pair at least 42° apart,
+     so no two states are ever a shade of each other. */
+  --color-success: oklch(70% 0.075 160);
+  /* Success as TEXT (a ✓, "Aprobada"). --color-success is a fill, and as 12px
+     text on paper it was 2.1:1; this is the same hue at 4.5:1 or better. */
+  --color-success-ink: oklch(45% 0.08 160);
+  --color-success-soft: oklch(93% 0.03 160);
+  --color-warning: oklch(50% 0.085 92); /* Vanilla Custard's hue, ink-dark to read as text */
+  --color-warning-soft: oklch(91% 0.06 92); /* Vanilla Custard #f3dfa2 */
+  --color-danger: oklch(50% 0.155 32); /* Tomato Jam #bb4430 — the one loud voice */
+  --color-danger-soft: oklch(93% 0.04 32);
+
+  /* Text selection, and the editor's search highlight. */
+  --color-selection: oklch(88% 0.04 202);
+
+  /* Shadows are a COLOUR decision, not a constant.
+     Ink-tinted and near-zero on paper; deeper and blacker on a dark surface,
+     where a faint warm shadow reads as smudge rather than as lift. */
+  --shadow-tint: 24 24 22;
+  --shadow-raised: 0 1px 2px rgb(var(--shadow-tint) / 0.06);
+  --shadow-floating: 0 10px 28px rgb(var(--shadow-tint) / 0.18);
+  --shadow-overlay: 0 12px 32px rgb(var(--shadow-tint) / 0.16);
+
+  /* Typography */
+  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-serif: 'Newsreader', ui-serif, Georgia, 'Times New Roman', serif;
+
+  --text-2xs: 0.6875rem;
+  --text-2xs--line-height: 1.4;
+  --text-xs: 0.75rem;
+  --text-xs--line-height: 1.45;
+  --text-sm: 0.8125rem;
+  --text-sm--line-height: 1.5;
+  --text-base: 0.9375rem;
+  --text-base--line-height: 1.55;
+  --text-lg: 1.0625rem;
+  --text-lg--line-height: 1.5;
+  --text-xl: 1.375rem;
+  --text-xl--line-height: 1.3;
+  --text-2xl: 1.75rem;
+  --text-2xl--line-height: 1.2;
+  --text-3xl: 2.25rem;
+  --text-3xl--line-height: 1.15;
+
+  /* Geometry */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+
+  /* Motion — controls 120–180ms, panels 180–240ms */
+  --ease-out-quiet: cubic-bezier(0.22, 0.8, 0.3, 1);
+
+  /* Layout rails */
+  --spacing-nav: 13.75rem; /* 220px */
+  --spacing-rail: 16.25rem; /* 260px */
+  --spacing-measure: 52rem; /* ~832px main notebook surface */
+  /* Where a centred dialog starts below the top edge, so it never rides the status bar. */
+  --spacing-dialog-top: min(12vh, 6rem);
+}
+
+/* ---------------------------------------------------------------------------
+ * Dark mode.
+ *
+ * Not a second design system — the SAME eighteen tokens with night values, so
+ * every screen, the CodeMirror theme and the vendored calendar follow without
+ * knowing a theme exists. `dark:` appears nowhere in this codebase and should
+ * stay that way: a component that names a mode has stopped going through the
+ * palette.
+ *
+ * Dark here is WARM. Campus is paper and ink, and a cold blue-grey night theme
+ * would be a different product wearing the same fonts. Surfaces keep their
+ * relationship: `elevated` is LIGHTER than `paper` in the dark, `sunken` is
+ * darker, which is why nothing had to be special-cased — a chip painted
+ * `--color-accent` with `--color-paper-elevated` text is light-on-dark in day
+ * and dark-on-light at night, for free.
+ *
+ * Written unlayered so it beats the `@theme` block, which Tailwind emits into
+ * `:root`. `[data-theme]` is set by the theme module; the media query only
+ * applies when no explicit choice has been made.
+ * ------------------------------------------------------------------------- */
+:root[data-theme='dark'] {
+  /* Shadow Grey is the floor rather than the ink, and Linen becomes the ink.
+     Same two seeds, swapped ends — which is why the night theme still looks
+     like the same palette rather than a different product. */
+  --color-paper: oklch(20% 0.007 30);
+  --color-paper-elevated: oklch(25% 0.008 35);
+  --color-paper-sunken: oklch(16% 0.006 30);
+  --color-ink: oklch(92% 0.014 68); /* Linen */
+  --color-ink-muted: oklch(70% 0.012 55);
+  --color-ink-faint: oklch(52% 0.01 45);
+  --color-rule: oklch(34% 0.01 40);
+  --color-rule-soft: oklch(28% 0.009 38);
+  --color-field: oklch(58% 0.012 55);
+
+  /* Teal lifts off a dark floor instead of sinking into it; the pairing token
+     flips with it, so nothing that paints `bg-accent` has to know. */
+  --color-accent: oklch(76% 0.08 202);
+  --color-accent-soft: oklch(28% 0.035 202);
+  --color-accent-ink: oklch(84% 0.06 202);
+  --color-accent-hover: oklch(82% 0.085 202);
+  --color-focus: oklch(84% 0.06 202);
+  --color-on-tint: oklch(18% 0.006 30);
+
+  --color-success: oklch(74% 0.08 160);
+  --color-success-ink: oklch(74% 0.08 160);
+  --color-success-soft: oklch(27% 0.035 160);
+  /* Warning inverts: dark-on-light by day, the custard itself by night. */
+  --color-warning: oklch(84% 0.085 92);
+  --color-warning-soft: oklch(28% 0.04 92);
+  --color-danger: oklch(68% 0.13 32); /* Tomato, lifted just enough to read */
+  --color-danger-soft: oklch(28% 0.05 32);
+
+  --color-selection: oklch(34% 0.05 202);
+
+  --shadow-tint: 0 0 0;
+  --shadow-raised: 0 1px 2px rgb(var(--shadow-tint) / 0.5);
+  --shadow-floating: 0 12px 32px rgb(var(--shadow-tint) / 0.55);
+  --shadow-overlay: 0 14px 36px rgb(var(--shadow-tint) / 0.5);
+
+  color-scheme: dark;
+}
+
+/* ---------------------------------------------------------------------------
+ * The notebook grid.
+ *
+ * Three numbers that MUST agree or the ruling stops being paper and becomes
+ * noise behind the text: the distance between rules, where the margin line
+ * falls, and how far past it the first character sits. They live here, once,
+ * because the editor theme, the page header and the status bar all read them
+ * — and a baseline grid maintained in three places is a baseline grid that
+ * drifts.
+ *
+ * --rule-height is used as a LENGTH line-height, never a ratio. A ratio is
+ * multiplied by the font size, so the moment a heading grows, the text walks
+ * off the ruling. A length is inherited as a computed length and stays put.
+ * ------------------------------------------------------------------------- */
+:root {
+  --rule-height: 1.75rem;
+  --rule-margin: 4rem;
+  --rule-gutter: 1.5rem;
+  /* Where text begins: past the margin line, never on it. */
+  --rule-text-inset: calc(var(--rule-margin) + var(--rule-gutter));
+  --font-editor: var(--font-serif);
+
+  /* The dot-matrix indicator's lit colour. Upstream points this at shadcn's
+     `--foreground`, which this project does not define; the one accent is the
+     right answer for something that means "working". */
+  --color-dot-on: var(--color-accent);
+}
+
+/* ---------------------------------------------------------------------------
+ * Viewport-relative utilities Tailwind's scale cannot express.
+ *
+ * `dvh`, not `vh`: on a phone the address bar makes 100vh taller than what is
+ * visible, which pushed a dialog's footer under the fold.
+ * ------------------------------------------------------------------------- */
+/* A bottom sheet on a phone leaves a sliver of the page visible above it. */
+@utility max-h-sheet {
+  max-height: calc(100dvh - 2rem);
+}
+/* A centred dialog from `sm` up: the top offset plus 1.5rem of bottom air. */
+@utility max-h-dialog {
+  max-height: calc(100dvh - var(--spacing-dialog-top) - 1.5rem);
+}
+/* Bottom padding that clears the iOS home indicator. */
+@utility pb-safe {
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+}

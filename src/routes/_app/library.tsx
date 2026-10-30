@@ -8,7 +8,6 @@ import { Button } from '@/components/ui/button'
 import { SelectField, TextField, TextareaField } from '@/components/ui/field'
 import { useAcademicPlan } from '@/features/academic/queries'
 import { useCreateResource, useDeleteResource, useResources } from '@/features/items/queries'
-import '@/styles/blue-secondary.css'
 
 export const Route = createFileRoute('/_app/library')({
   component: LibraryScreen,

@@ -444,12 +444,12 @@
   font-size: 0.78rem;
   line-height: 1.7;
 }
-@media (max-width: 950px) {
+@media (max-width: 1023px) {
   .campus-blue .blue-settings-grid {
     grid-template-columns: minmax(0, 1fr);
   }
 }
-@media (max-width: 550px) {
+@media (max-width: 639px) {
   .campus-blue .blue-settings-heading h1 {
     font-size: 2.1rem;
   }
@@ -613,7 +613,7 @@
   outline: 2px solid var(--color-focus);
   outline-offset: 2px;
 }
-@media (max-width: 700px) {
+@media (max-width: 767px) {
   .campus-blue .blue-secondary-toolbar {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }

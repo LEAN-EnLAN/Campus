@@ -92,7 +92,7 @@ export function Modal({
       <div
         aria-hidden="true"
         onClick={onClose}
-        className="bg-ink/25 absolute inset-0 motion-safe:animate-[fade-in_160ms_ease-out]"
+        className="bg-ink/25 motion-safe:animate-fade-in absolute inset-0"
       />
 
       <div

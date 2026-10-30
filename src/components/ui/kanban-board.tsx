@@ -6,6 +6,7 @@ import {
   useMemo,
   useRef,
   useState,
+  type CSSProperties,
   type PointerEvent as ReactPointerEvent,
   type ReactNode,
 } from 'react'
@@ -489,14 +490,11 @@ export function KanbanBoard<T extends KanbanCard>({
         className={cn(
           'flex gap-3 overflow-x-auto overflow-y-visible pb-1',
           // The native scrollbar is hidden because the rail below replaces it.
-          '[scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
+          'mask-fade-x scrollbar-none',
         )}
-        style={{
-          // Fade only on a side that still has content past it, so the mask is
-          // information rather than decoration.
-          maskImage: maskFor(fade),
-          WebkitMaskImage: maskFor(fade),
-        }}
+        // Fade only on a side that still has content past it, so the mask is
+        // information rather than decoration.
+        style={{ '--fade-mask': maskFor(fade) } as CSSProperties}
       >
         {columns.map((column) => {
           const droppable = column.droppable !== false
@@ -582,7 +580,7 @@ export function KanbanBoard<T extends KanbanCard>({
                         }
                         className={cn(
                           'bg-paper-elevated border-rule text-ink cursor-grab touch-none rounded-md border p-3 text-left select-none',
-                          'transition-colors duration-150 ease-[var(--ease-out-quiet)]',
+                          'ease-out-quiet transition-colors duration-150',
                           'hover:border-ink-faint',
                           'focus-visible:outline-accent focus-visible:outline-2 focus-visible:outline-offset-2',
                           keyboard?.cardId === slot.card.id &&
@@ -615,11 +613,13 @@ export function KanbanBoard<T extends KanbanCard>({
             onPointerMove={onRailPointerMove}
             onPointerUp={endRailDrag}
             onPointerCancel={endRailDrag}
-            className="bg-rule hover:bg-ink-faint absolute inset-y-0 cursor-grab rounded-md transition-colors duration-150"
-            style={{
-              width: `${Math.max(rail.ratio * 100, 8)}%`,
-              left: `${rail.offset * 100}%`,
-            }}
+            className="bg-rule hover:bg-ink-faint rail-thumb absolute inset-y-0 cursor-grab rounded-md transition-colors duration-150"
+            style={
+              {
+                '--rail-width': `${Math.max(rail.ratio * 100, 8)}%`,
+                '--rail-offset': `${rail.offset * 100}%`,
+              } as CSSProperties
+            }
           />
         </div>
       ) : null}
@@ -635,7 +635,7 @@ export function KanbanBoard<T extends KanbanCard>({
             transition={{ duration }}
             aria-hidden="true"
             style={{ x, y, width: drag.width }}
-            className="bg-paper-elevated border-rule text-ink pointer-events-none fixed top-0 left-0 z-50 cursor-grabbing rounded-md border p-3 shadow-[var(--shadow-overlay)]"
+            className="bg-paper-elevated border-rule text-ink shadow-overlay pointer-events-none fixed top-0 left-0 z-50 cursor-grabbing rounded-md border p-3"
           >
             {renderCard(draggedCard)}
           </motion.div>

@@ -15,7 +15,6 @@ import { useAuth } from '@/features/auth/auth-context'
 import { useDocumentTitle } from '@/lib/hooks/use-document-title'
 import { useWorkspace } from '@/lib/runtime/workspace'
 
-
 export const Route = createFileRoute('/login')({
   component: LoginScreen,
 })

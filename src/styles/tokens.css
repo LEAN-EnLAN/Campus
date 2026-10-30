@@ -108,6 +108,11 @@
   --duration-quick: 150ms; /* hover, focus, colour changes */
   --duration-panel: 200ms; /* things that move: popovers, disclosure */
   --duration-ambient: 600ms; /* the time-of-day background only */
+  --animate-fade-in: fade-in 160ms var(--ease-out-quiet); /* overlays appearing */
+
+  /* Letter-spacing for small-caps labels, the only tracked text in the system. */
+  --tracking-eyebrow: 0.12em;
+  --tracking-caps: 0.18em;
 
   /* Layout rails */
   --spacing-nav: 13.75rem; /* 220px */
@@ -115,6 +120,9 @@
   --spacing-measure: 52rem; /* ~832px main notebook surface */
   /* Where a centred dialog starts below the top edge, so it never rides the status bar. */
   --spacing-dialog-top: min(12vh, 6rem);
+  /* The notebook ruling's margin line and gutter, as spacing: `pl-rule-inset`. */
+  --spacing-rule-gutter: var(--rule-gutter);
+  --spacing-rule-inset: var(--rule-text-inset);
 }
 
 /* ---------------------------------------------------------------------------
@@ -258,7 +266,7 @@
   --color-ink-faint: #798dac;
   --color-rule: #d6e1f1;
   --color-rule-soft: #e6edf7;
-  --color-field: #8397b7;
+  --color-field: #7a8fb1;
   --color-accent: #155dd6;
   --color-accent-soft: #e7f0ff;
   --color-accent-ink: #1454bd;
@@ -267,7 +275,7 @@
   --color-success: #10a777;
   --color-success-ink: #067b55;
   --color-success-soft: #e3f7ef;
-  --color-warning: #a96808;
+  --color-warning: #9a5f07;
   --color-warning-soft: #fff2d5;
   --color-danger: #c63743;
   --color-danger-soft: #fff0f2;
@@ -306,4 +314,34 @@
 /* Bottom padding that clears the iOS home indicator. */
 @utility pb-safe {
   padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+}
+/* Hide a scroller's native bar when a custom control replaces it. */
+@utility scrollbar-none {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+/* Edge fade for a horizontal scroller; the gradient comes from --fade-mask. */
+@utility mask-fade-x {
+  mask-image: var(--fade-mask, none);
+  -webkit-mask-image: var(--fade-mask, none);
+}
+/* The kanban rail thumb, sized from --rail-width / --rail-offset. */
+@utility rail-thumb {
+  width: var(--rail-width);
+  left: var(--rail-offset);
+}
+/* Dot-matrix geometry from --dm-size / --dm-dot / --dm-gap / --dm-grid. */
+@utility dot-matrix-grid {
+  width: var(--dm-size);
+  height: var(--dm-size);
+  grid-template-columns: repeat(var(--dm-grid), var(--dm-dot));
+  grid-auto-rows: var(--dm-dot);
+  gap: var(--dm-gap);
+}
+@utility dot-matrix-dot {
+  width: var(--dm-dot);
+  height: var(--dm-dot);
+  background-color: var(--color-dot-on);
 }

@@ -1,3 +1,4 @@
+import { ChevronDown } from 'lucide-react'
 import { useId } from 'react'
 import type {
   InputHTMLAttributes,
@@ -114,21 +115,21 @@ export function SelectField({
   return (
     <Field label={label} hint={hint} error={error} required={props.required}>
       {({ id, describedBy, invalid }) => (
-        <select
-          id={id}
-          aria-describedby={describedBy}
-          aria-invalid={invalid}
-          className={cn(controlClass, 'h-10 appearance-none pr-8', className)}
-          style={{
-            backgroundImage:
-              "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none' stroke='%236a6862' stroke-width='1.5' stroke-linecap='round'%3E%3Cpath d='M3 4.5 6 7.5 9 4.5'/%3E%3C/svg%3E\")",
-            backgroundRepeat: 'no-repeat',
-            backgroundPosition: 'right 0.75rem center',
-          }}
-          {...props}
-        >
-          {children}
-        </select>
+        <div className="relative">
+          <select
+            id={id}
+            aria-describedby={describedBy}
+            aria-invalid={invalid}
+            className={cn(controlClass, 'h-10 appearance-none pr-8', className)}
+            {...props}
+          >
+            {children}
+          </select>
+          <ChevronDown
+            aria-hidden="true"
+            className="text-ink-muted pointer-events-none absolute top-1/2 right-3 size-3 -translate-y-1/2"
+          />
+        </div>
       )}
     </Field>
   )

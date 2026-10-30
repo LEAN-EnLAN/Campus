@@ -274,9 +274,19 @@ body:has(.campus-blue) {
 .campus-blue .blue-status-dot[data-status='equivalent'] {
   background: var(--color-success);
 }
+.campus-blue .blue-status-dot[data-status='in_progress'] {
+  background: var(--color-accent);
+}
+.campus-blue .blue-status-dot[data-status='failed'] {
+  background: var(--color-danger);
+}
+/* Not yet decided / not yet reachable: a hollow ring, so it never reads as "done". */
 .campus-blue .blue-status-dot[data-status='available'],
-.campus-blue .blue-status-dot[data-status='pending'] {
-  background: var(--blue-15);
+.campus-blue .blue-status-dot[data-status='pending'],
+.campus-blue .blue-status-dot[data-status='unmarked'],
+.campus-blue .blue-status-dot[data-status='blocked'] {
+  background: transparent;
+  box-shadow: inset 0 0 0 2px var(--blue-15);
 }
 .campus-blue .blue-stat-row {
   display: flex;
@@ -351,13 +361,27 @@ body:has(.campus-blue) {
   color: var(--color-warning-ink);
   background: var(--color-warning-soft);
 }
-.campus-blue .blue-chip[data-status='passed'] {
+.campus-blue .blue-chip[data-status='passed'],
+.campus-blue .blue-chip[data-status='equivalent'] {
   color: var(--color-success-ink);
   background: var(--color-success-soft);
 }
-.campus-blue .blue-chip[data-status='available'] {
-  color: var(--blue-11);
+.campus-blue .blue-chip[data-status='failed'] {
+  color: var(--color-danger);
+  background: var(--color-danger-soft);
+}
+.campus-blue .blue-chip[data-status='available'],
+.campus-blue .blue-chip[data-status='pending'],
+.campus-blue .blue-chip[data-status='unmarked'] {
+  color: var(--color-ink-muted);
   background: var(--color-paper-sunken);
+}
+/* Blocked is not a result, it is a condition: dashed edge, quiet ink. */
+.campus-blue .blue-chip[data-status='blocked'] {
+  color: var(--color-ink-muted);
+  background: transparent;
+  outline: 1px dashed var(--color-field);
+  outline-offset: -1px;
 }
 .campus-blue .blue-compact-table > li {
   display: grid;

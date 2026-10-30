@@ -162,27 +162,23 @@ export function DotMatrixBase({
       {...(label ? { role: 'img', 'aria-label': label } : { 'aria-hidden': true })}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
-      className={cn('grid shrink-0', className)}
-      style={{
-        width: size,
-        height: size,
-        gridTemplateColumns: `repeat(${GRID}, ${dotSize}px)`,
-        gridAutoRows: `${dotSize}px`,
-        gap: `${Math.max(gap, 0)}px`,
-      }}
+      className={cn('dot-matrix-grid grid shrink-0', className)}
+      style={
+        {
+          '--dm-size': `${size}px`,
+          '--dm-dot': `${dotSize}px`,
+          '--dm-gap': `${Math.max(gap, 0)}px`,
+          '--dm-grid': GRID,
+        } as CSSProperties
+      }
     >
       {cells.map(({ row, col }) => {
         const { className: dotClass, style } = animationResolver({ row, col, phase })
         return (
           <span
             key={`${row}-${col}`}
-            className={cn('rounded-full', dotClass)}
-            style={{
-              width: dotSize,
-              height: dotSize,
-              backgroundColor: 'var(--color-dot-on)',
-              ...style,
-            }}
+            className={cn('dot-matrix-dot rounded-full', dotClass)}
+            style={style}
           />
         )
       })}

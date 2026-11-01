@@ -1,0 +1,21 @@
+[package]
+name = "campus-core"
+description = "The Campus vault: path safety, repository and vault sessions (port of src/lib/vault + src/server/vault-roots)."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+serde_json.workspace = true
+getrandom.workspace = true
+base64.workspace = true
+dunce.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true
+junction.workspace = true
+
+[lints]
+workspace = true

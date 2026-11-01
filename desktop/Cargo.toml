@@ -1,0 +1,31 @@
+[workspace]
+resolver = "3"
+members = ["crates/campus-core", "crates/campus-server", "src-tauri"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+license = "UNLICENSED"
+publish = false
+rust-version = "1.88"
+
+[workspace.dependencies]
+campus-core = { path = "crates/campus-core" }
+campus-server = { path = "crates/campus-server" }
+serde_json = { version = "1", features = ["preserve_order", "float_roundtrip"] }
+getrandom = "0.3"
+base64 = "0.22"
+dunce = "1"
+tiny_http = "0.12"
+tempfile = "3"
+junction = "1"
+
+[workspace.lints.clippy]
+all = { level = "warn", priority = -1 }
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true

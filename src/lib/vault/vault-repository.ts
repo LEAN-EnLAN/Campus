@@ -20,6 +20,37 @@ import type {
 /** Linux caps symlink expansion at 40 per lookup (ELOOP); the walk uses the same bound. */
 const MAX_LINK_HOPS = 40
 
+// Shared by repository AND adapter instances. Only cooperating writeNote calls
+// in this JS module instance participate; this is not an OS compare-and-swap.
+const pendingWrites = new Map<string, Promise<void>>()
+
+function writeKey(absolute: string): string {
+  // Windows aliases must not acquire different locks for the same file. On a
+  // case-sensitive Windows directory this conservatively serializes case peers.
+  return /^[a-zA-Z]:[\\/]/.test(absolute) || absolute.startsWith('\\\\')
+    ? absolute.replace(/\\/g, '/').toLowerCase()
+    : absolute
+}
+
+async function withWriteLock(absolute: string, write: () => Promise<void>): Promise<void> {
+  const key = writeKey(absolute)
+  const previous = pendingWrites.get(key)
+  let release!: () => void
+  const finished = new Promise<void>((resolve) => {
+    release = resolve
+  })
+  pendingWrites.set(key, finished)
+  try {
+    await previous
+    await write()
+  } finally {
+    // The queue never rejects, even when a write does. Drop idle keys, but do
+    // not remove a successor's entry and let a third caller bypass that waiter.
+    release()
+    if (pendingWrites.get(key) === finished) pendingWrites.delete(key)
+  }
+}
+
 export type ResolveResult =
   { ok: true; absolute: string } | { ok: false; reason: string; code: VaultErrorCode }
 
@@ -47,9 +78,25 @@ export class VaultRepository implements VaultAccess {
   private readonly fs: FileSystemPort
   private readonly root: string
 
+  /** `root` must be the physical path admitted by the session/CLI opener. */
   constructor(fs: FileSystemPort, root: string) {
     this.fs = fs
     this.root = root
+  }
+
+  private async checkedRoot(): Promise<ResolveResult> {
+    let real: string
+    try {
+      real = await this.fs.realpath(this.root)
+    } catch {
+      return { ok: false, reason: 'vault root is not readable', code: 'root_unreadable' }
+    }
+    // Re-resolving checks the admitted boundary; it must never redefine it.
+    // This detects a retarget before an operation, not arbitrary filesystem TOCTOU.
+    if (real !== this.root) {
+      return { ok: false, reason: 'path resolves outside the vault', code: 'outside_vault' }
+    }
+    return { ok: true, absolute: this.root }
   }
 
   /**
@@ -73,12 +120,9 @@ export class VaultRepository implements VaultAccess {
     const verdict = validateVaultPath(relative)
     if (!verdict.ok) return verdict
 
-    let realRoot: string
-    try {
-      realRoot = await this.fs.realpath(this.root)
-    } catch {
-      return { ok: false, reason: 'vault root is not readable', code: 'root_unreadable' }
-    }
+    const root = await this.checkedRoot()
+    if (!root.ok) return root
+    const realRoot = root.absolute
 
     const inside = (p: string) =>
       p === realRoot || p.startsWith(realRoot + '/') || p.startsWith(realRoot + '\\')
@@ -192,35 +236,48 @@ export class VaultRepository implements VaultAccess {
     expectedMtimeMs: number | null,
   ): Promise<void> {
     const absolute = await this.require(relative)
-    const current = await this.fs.lstat(absolute)
-
-    if (expectedMtimeMs === null) {
-      if (current !== null) {
+    await withWriteLock(absolute, async () => {
+      // Waiting can outlive a root/link retarget. Revalidate containment and
+      // identity before checking mtime; never write a newly resolved target
+      // while holding the old target's lock.
+      const checked = await this.require(relative)
+      if (checked !== absolute) {
         throw new VaultConflictError(
           relative,
-          'expected a new file, but one already exists on disk',
-          'already_exists',
-        )
-      }
-    } else {
-      if (current === null) {
-        throw new VaultConflictError(
-          relative,
-          'the file was deleted or moved after it was loaded',
-          'conflict_missing',
-        )
-      }
-      if (current.mtimeMs !== expectedMtimeMs) {
-        throw new VaultConflictError(
-          relative,
-          'the file changed on disk after it was loaded',
+          'the file path changed while waiting to write',
           'conflict_changed',
         )
       }
-    }
+      const current = await this.fs.lstat(checked)
 
-    await this.fs.mkdirp(this.fs.dirname(absolute))
-    await this.fs.writeFileAtomic(absolute, contents)
+      if (expectedMtimeMs === null) {
+        if (current !== null) {
+          throw new VaultConflictError(
+            relative,
+            'expected a new file, but one already exists on disk',
+            'already_exists',
+          )
+        }
+      } else {
+        if (current === null) {
+          throw new VaultConflictError(
+            relative,
+            'the file was deleted or moved after it was loaded',
+            'conflict_missing',
+          )
+        }
+        if (current.mtimeMs !== expectedMtimeMs) {
+          throw new VaultConflictError(
+            relative,
+            'the file changed on disk after it was loaded',
+            'conflict_changed',
+          )
+        }
+      }
+
+      await this.fs.mkdirp(this.fs.dirname(checked))
+      await this.fs.writeFileAtomic(checked, contents)
+    })
   }
 
   async rename(from: string, to: string): Promise<void> {
@@ -252,8 +309,9 @@ export class VaultRepository implements VaultAccess {
   async listDir(relative: string): Promise<VaultEntry[]> {
     // '' means the vault root, which validateVaultPath refuses as empty — the
     // root is the one path that needs no per-segment judgement.
-    const absolute =
-      relative === '' ? await this.fs.realpath(this.root) : await this.require(relative)
+    const resolved = relative === '' ? await this.checkedRoot() : await this.resolve(relative)
+    if (!resolved.ok) throw new VaultError(resolved.code, resolved.reason)
+    const absolute = resolved.absolute
     if ((await this.fs.lstat(absolute)) === null) throw new VaultError('not_found', 'not found')
     const raw = await this.fs.readdir(absolute)
 

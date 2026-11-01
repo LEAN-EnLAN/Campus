@@ -21,8 +21,9 @@ function setup(initial = 'AAA', path = 'n.md') {
   const states: SaveState[] = []
   const saved: string[] = []
   const hooks: { onState?: () => void } = {}
+  const files = disk.access()
   const autosave = new NoteAutosave({
-    files: disk.access(),
+    files,
     path,
     host: {
       readText: () => host.text,
@@ -42,7 +43,7 @@ function setup(initial = 'AAA', path = 'n.md') {
     host.text += suffix
     autosave.edited()
   }
-  return { disk, host, states, saved, autosave, type, path, hooks }
+  return { disk, files, host, states, saved, autosave, type, path, hooks }
 }
 
 const last = (states: SaveState[]) => states[states.length - 1]?.kind
@@ -203,6 +204,97 @@ describe('an external change to a note you did not edit (DEV-06)', () => {
     disk.externalWrite('n.md', 'theirs')
     await autosave.checkExternal()
     expect(autosave.state.kind).toBe('conflict')
+  })
+})
+
+describe('external deletion polling (F05)', () => {
+  it.each([false, true])(
+    'preserves a deleted note and blocks implicit writes (dirty=%s)',
+    async (dirty) => {
+      const { disk, host, autosave, type } = setup()
+      await autosave.load()
+      if (dirty) type('mine')
+      const buffer = host.text
+      disk.externalDelete('n.md')
+
+      await autosave.checkExternal()
+      expect(autosave.state.kind).toBe('missing')
+      expect(host.text).toBe(buffer)
+      expect(autosave.unsaved()).toBe(true)
+      type('more')
+      await vi.advanceTimersByTimeAsync(2000)
+      await autosave.flush()
+      expect(autosave.state.kind).toBe('missing')
+      expect(disk.contents('n.md')).toBeUndefined()
+      expect(disk.writes).toEqual([])
+
+      await autosave.saveAsNew()
+      expect(disk.contents('n.md')).toBe(buffer + 'more')
+      expect(autosave.state.kind).toBe('saved')
+      expect(autosave.unsaved()).toBe(false)
+    },
+  )
+
+  it('keeps the only clean copy guarded when closing without recovery', async () => {
+    const { disk, host, autosave } = setup()
+    await autosave.load()
+    disk.externalDelete('n.md')
+    await autosave.checkExternal()
+    await autosave.flush()
+    expect(autosave.unsaved()).toBe(true)
+    autosave.disposeAndFlush()
+    await vi.advanceTimersByTimeAsync(2000)
+    expect(host.text).toBe('AAA')
+    expect(disk.writes).toEqual([])
+    expect(disk.contents('n.md')).toBeUndefined()
+  })
+
+  it('reports deletion between stat and reload without discarding the buffer', async () => {
+    const { disk, files, host, autosave } = setup()
+    await autosave.load()
+    disk.externalWrite('n.md', 'theirs')
+    const read = files.readNote
+    vi.spyOn(files, 'readNote').mockImplementationOnce((path) => {
+      disk.externalDelete(path)
+      return read(path)
+    })
+    await autosave.checkExternal()
+    expect(autosave.state.kind).toBe('missing')
+    expect(host.text).toBe('AAA')
+    expect(autosave.unsaved()).toBe(true)
+  })
+
+  it('does not replace a missing buffer when a different file reappears', async () => {
+    const { disk, host, autosave } = setup()
+    await autosave.load()
+    disk.externalDelete('n.md')
+    await autosave.checkExternal()
+    disk.externalWrite('n.md', 'replacement')
+    await autosave.checkExternal()
+    expect(host.text).toBe('AAA')
+    expect(autosave.state.kind).toBe('missing')
+    await autosave.reload()
+    expect(host.text).toBe('replacement')
+    expect(autosave.state.kind).toBe('saved')
+    expect(disk.writes).toEqual([])
+  })
+
+  it('keeps a clean deleted buffer guarded if recreation finds a replacement', async () => {
+    const { disk, host, autosave } = setup()
+    await autosave.load()
+    disk.externalDelete('n.md')
+    await autosave.checkExternal()
+    disk.externalWrite('n.md', 'replacement')
+    await autosave.saveAsNew()
+    expect(autosave.state.kind).toBe('conflict')
+    expect(autosave.unsaved()).toBe(true)
+    expect(host.text).toBe('AAA')
+    expect(disk.contents('n.md')).toBe('replacement')
+    expect(disk.writes).toEqual([])
+    await autosave.keepMine()
+    expect(disk.contents('n.md')).toBe('AAA')
+    expect(autosave.state.kind).toBe('saved')
+    expect(autosave.unsaved()).toBe(false)
   })
 })
 

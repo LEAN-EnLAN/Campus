@@ -338,7 +338,11 @@ export async function handleVaultRequest(
 
   let payload: Record<string, unknown>
   try {
-    payload = JSON.parse(req.body || '{}') as Record<string, unknown>
+    const parsed: unknown = JSON.parse(req.body || '{}')
+    if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      return reply(400, { ok: false, code: 'bad_request', error: 'object required' })
+    }
+    payload = parsed as Record<string, unknown>
   } catch {
     return reply(400, { ok: false, code: 'bad_request', error: 'invalid JSON' })
   }

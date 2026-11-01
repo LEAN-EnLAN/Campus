@@ -1,4 +1,5 @@
 import { backendError } from '@/lib/backends/types'
+import { VaultError } from '@/lib/vault/errors'
 import type { VaultAccess } from '@/lib/vault/vault-access'
 
 /**
@@ -24,10 +25,9 @@ export type AcademicFile =
   'context' | 'subject-state' | 'items' | 'resources' | 'manual-subjects'
 
 /** Every file is an envelope, so the payload can change shape without ambiguity. */
-interface Envelope<T> {
+interface Envelope {
   schemaVersion: number
   [key: string]: unknown
-  payload?: T
 }
 
 const pathFor = (file: AcademicFile) => `${DIR}/${file}.json`
@@ -49,14 +49,17 @@ async function readFile<T>(
   let raw: { contents: string; mtimeMs: number }
   try {
     raw = await vault.readNote(pathFor(file))
-  } catch {
+  } catch (error) {
     // Absent is the ordinary state of a fresh vault, not a failure.
-    return { value: empty, mtimeMs: null }
+    if (error instanceof VaultError && error.code === 'not_found') {
+      return { value: empty, mtimeMs: null }
+    }
+    throw error
   }
 
-  let parsed: Envelope<unknown>
+  let parsed: unknown
   try {
-    parsed = JSON.parse(raw.contents) as Envelope<unknown>
+    parsed = JSON.parse(raw.contents)
   } catch (error) {
     backendError(
       `No pudimos leer ${file}.json de tu vault`,
@@ -64,8 +67,12 @@ async function readFile<T>(
     )
   }
 
-  const version = parsed.schemaVersion
-  if (typeof version !== 'number') {
+  if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    backendError(`No pudimos leer ${file}.json de tu vault`, 'invalid envelope')
+  }
+  const envelope = parsed as Envelope
+  const version = envelope.schemaVersion
+  if (typeof version !== 'number' || !Number.isInteger(version) || version < 1) {
     backendError(
       `El archivo ${file}.json de tu vault no declara su versión`,
       'missing schemaVersion',
@@ -78,8 +85,13 @@ async function readFile<T>(
     )
   }
 
-  const value = parsed[key]
-  return { value: (value === undefined ? empty : value) as T, mtimeMs: raw.mtimeMs }
+  const value = envelope[key]
+  // Validate only the envelope's collection/context shape, not domain rows.
+  const valid = Array.isArray(empty)
+    ? Array.isArray(value)
+    : value === null || (typeof value === 'object' && !Array.isArray(value))
+  if (!valid) backendError(`No pudimos leer ${file}.json de tu vault`, `invalid ${key} payload`)
+  return { value: value as T, mtimeMs: raw.mtimeMs }
 }
 
 /**

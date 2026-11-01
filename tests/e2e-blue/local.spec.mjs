@@ -11,8 +11,10 @@ if (!ROOT || !OUTPUT || !process.env.CAMPUS_BLUE_BASE_URL) {
 }
 
 const VIEWPORTS = [
+  { name: '360x800', width: 360, height: 800 },
   { name: '390x844', width: 390, height: 844 },
   { name: '768x1024', width: 768, height: 1024 },
+  { name: '1280x800', width: 1280, height: 800 },
   { name: '1440x900', width: 1440, height: 900 },
   { name: '1627x928', width: 1627, height: 928 },
 ]
@@ -44,13 +46,24 @@ async function accessible(page, route, size) {
   const blocking = result.violations.filter((issue) =>
     ['critical', 'serious'].includes(issue.impact),
   )
-  if (result.violations.length) {
-    const folder = join(OUTPUT, 'axe', size)
-    mkdirSync(folder, { recursive: true })
-    writeFileSync(
-      join(folder, route.replaceAll('/', '_') + '.json'),
-      JSON.stringify(
-        result.violations.map((v) => ({
+  const folder = join(OUTPUT, 'axe', size)
+  mkdirSync(folder, { recursive: true })
+  const impacts = ['critical', 'serious', 'moderate', 'minor']
+  writeFileSync(
+    join(folder, route.replaceAll('/', '_') + '.json'),
+    JSON.stringify(
+      {
+        route,
+        viewport: size,
+        violationCount: result.violations.length,
+        blockingCount: blocking.length,
+        counts: Object.fromEntries(
+          impacts.map((impact) => [
+            impact,
+            result.violations.filter((violation) => violation.impact === impact).length,
+          ]),
+        ),
+        violations: result.violations.map((v) => ({
           rule: v.id,
           impact: v.impact,
           nodes: v.nodes.map((n) => ({
@@ -59,11 +72,11 @@ async function accessible(page, route, size) {
             contrast: n.any.find((check) => check.id === 'color-contrast')?.data ?? null,
           })),
         })),
-        null,
-        2,
-      ),
-    )
-  }
+      },
+      null,
+      2,
+    ),
+  )
   expect
     .soft(
       blocking.map(
@@ -198,15 +211,18 @@ for (const size of VIEWPORTS) {
       // including a reload, then restore the test fixture to its initial state.
       const progressYear = page.locator('details.blue-year-group').first()
       await progressYear.locator('summary').click()
-      const firstState = progressYear
+      const firstStateGroup = progressYear
         .locator('[role="group"][aria-label^="Estado de "]')
         .first()
-      const subjectName = (await firstState.getAttribute('aria-label'))?.replace(
+      // The Guardado status is a sibling of the labeled group, in the same
+      // status-control wrapper, so wait on that wrapper before reloading.
+      const firstState = firstStateGroup.locator('xpath=..')
+      const subjectName = (await firstStateGroup.getAttribute('aria-label'))?.replace(
         /^Estado de /,
         '',
       )
       expect(subjectName).toBeTruthy()
-      await firstState.getByRole('button').click()
+      await firstStateGroup.getByRole('button').click()
       await page
         .getByRole('group', { name: `Elegir estado de ${subjectName}` })
         .getByRole('button', { name: 'Cursando' })
@@ -216,6 +232,7 @@ for (const size of VIEWPORTS) {
           name: `Estado de ${subjectName}: Cursando. Cambiar estado`,
         }),
       ).toBeVisible()
+      await expect(firstState.getByText('Guardado', { exact: true })).toBeVisible()
       await page.reload()
       await expect(progressYear).toHaveAttribute('open')
       const savedState = page.getByRole('button', {
@@ -227,6 +244,7 @@ for (const size of VIEWPORTS) {
         .getByRole('group', { name: `Elegir estado de ${subjectName}` })
         .getByRole('button', { name: 'Sin marcar' })
         .click()
+      await expect(firstState.getByText('Guardado', { exact: true })).toBeVisible()
       await page.reload()
       await expect(progressYear).not.toHaveAttribute('open')
 

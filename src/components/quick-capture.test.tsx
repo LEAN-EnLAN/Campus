@@ -58,6 +58,21 @@ describe('the add dialog', () => {
 })
 
 describe('saving', () => {
+  it('keeps the draft open and rejects dismissal and submit while saving', async () => {
+    const onOpenChange = vi.fn()
+    const { user, onSubmit } = mount({ isPending: true, onOpenChange })
+
+    await user.type(screen.getByRole('textbox', { name: '¿Qué es?' }), 'TP pendiente')
+    expect(screen.getByRole('button', { name: 'Cancelar' })).toBeDisabled()
+    await user.keyboard('{Escape}')
+    await user.click(screen.getByRole('button', { name: 'Cerrar' }))
+    await user.type(screen.getByRole('textbox', { name: '¿Qué es?' }), '{Enter}')
+
+    expect(onOpenChange).not.toHaveBeenCalled()
+    expect(onSubmit).not.toHaveBeenCalled()
+    expect(screen.getByRole('textbox', { name: '¿Qué es?' })).toHaveValue('TP pendiente')
+  })
+
   it('stores a date with no time as date-only, not as 23:59', async () => {
     const { user, onSubmit } = mount()
 

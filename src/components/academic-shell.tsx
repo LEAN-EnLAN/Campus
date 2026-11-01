@@ -42,11 +42,13 @@ export function AcademicShell({
   rail,
   onQuickCapture,
   onSearch,
+  academicLabel,
 }: {
   children: ReactNode
   rail?: ReactNode
   onQuickCapture: () => void
   onSearch: () => void
+  academicLabel?: string | null
 }) {
   const pathname = useRouterState({ select: (state) => state.location.pathname })
 
@@ -91,9 +93,10 @@ export function AcademicShell({
 
           <div className="campus-blue-nav-footer mt-auto flex flex-col gap-2 pt-4">
             <p className="campus-blue-institution px-2 text-xs leading-relaxed">
-              UTN Facultad Regional Rosario
-              <span className="block">Ingeniería en Sistemas</span>
-              <span className="block">Plan académico</span>
+              {academicLabel || 'Tu espacio de estudio'}
+              <Link to="/plan" className="block py-1 underline-offset-4 hover:underline">
+                Ver mi plan académico
+              </Link>
             </p>
             <Button
               variant="ghost"

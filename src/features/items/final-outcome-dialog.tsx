@@ -1,4 +1,4 @@
-import { useId, useState } from 'react'
+import { useId, useRef, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { TextField } from '@/components/ui/field'
@@ -56,6 +56,9 @@ export function FinalOutcomeDialog({
   onClose: () => void
 }) {
   const titleId = useId()
+  const outcomeErrorId = useId()
+  const firstOutcome = useRef<HTMLInputElement>(null)
+  const gradeInput = useRef<HTMLInputElement>(null)
   const [outcome, setOutcome] = useState<FinalOutcome | null>(null)
   const [update, setUpdate] = useState(true)
   const [gradeText, setGradeText] = useState('')
@@ -72,8 +75,14 @@ export function FinalOutcomeDialog({
   function handleSubmit(event: React.FormEvent) {
     event.preventDefault()
     setSubmitted(true)
-    if (outcome === null) return
-    if (offersState && update && grade === 'invalid') return
+    if (outcome === null) {
+      firstOutcome.current?.focus()
+      return
+    }
+    if (offersState && update && grade === 'invalid') {
+      gradeInput.current?.focus()
+      return
+    }
     const updateSubject = offersState && update
     onConfirm({
       outcome,
@@ -84,12 +93,15 @@ export function FinalOutcomeDialog({
 
   return (
     <Modal open={open} onClose={onClose} labelledBy={titleId}>
-      <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4 p-5 pb-6">
+      <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4 p-4 sm:p-6">
         <h2 id={titleId} className="text-ink font-serif text-lg">
           ¿Cómo te fue en {title}?
         </h2>
 
-        <fieldset className="flex flex-col gap-1.5">
+        <fieldset
+          aria-describedby={outcomeError ? outcomeErrorId : undefined}
+          className="flex flex-col gap-2"
+        >
           <legend className="sr-only">Resultado</legend>
           {OUTCOMES.map(({ value, label }) => (
             <label
@@ -98,6 +110,9 @@ export function FinalOutcomeDialog({
             >
               <input
                 type="radio"
+                ref={value === 'passed' ? firstOutcome : undefined}
+                aria-invalid={Boolean(outcomeError)}
+                aria-describedby={outcomeError ? outcomeErrorId : undefined}
                 name="resultado"
                 value={value}
                 checked={outcome === value}
@@ -108,25 +123,31 @@ export function FinalOutcomeDialog({
             </label>
           ))}
           {outcomeError ? (
-            <p role="alert" className="text-danger text-xs font-medium">
+            <p id={outcomeErrorId} role="alert" className="text-danger text-xs font-medium">
               {outcomeError}
             </p>
           ) : null}
         </fieldset>
+        {outcome === 'absent' ? (
+          <p role="status" className="text-ink-muted text-sm">
+            El final queda registrado como completado. El estado de la materia no cambia.
+          </p>
+        ) : null}
 
         {offersState ? (
           <div className="flex flex-col gap-3">
-            <label className="flex min-h-8 items-center gap-2 text-sm">
+            <label className="border-rule-soft flex min-h-11 items-start gap-3 border-t pt-3 text-sm">
               <input
                 type="checkbox"
                 checked={update}
                 onChange={(e) => setUpdate(e.target.checked)}
-                className="size-4 accent-[var(--color-accent)]"
+                className="mt-0.5 size-4 shrink-0 accent-[var(--color-accent)]"
               />
               {`Marcar ${subjectName} como ${STATE_LABEL[outcome as 'passed' | 'failed']}`}
             </label>
             {update ? (
               <TextField
+                ref={gradeInput}
                 label="Nota (opcional)"
                 inputMode="decimal"
                 autoComplete="off"
@@ -139,7 +160,7 @@ export function FinalOutcomeDialog({
           </div>
         ) : null}
 
-        <div className="mt-1 flex justify-end gap-2">
+        <div className="border-rule-soft mt-1 flex justify-end gap-2 border-t pt-4">
           <Button variant="ghost" onClick={onClose}>
             Cancelar
           </Button>

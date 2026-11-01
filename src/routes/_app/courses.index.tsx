@@ -302,7 +302,7 @@ function CoursesScreen() {
               </Link>
             </div>
             <div className="flex items-center gap-4">
-              <div className="flex size-24 shrink-0 items-center justify-center rounded-full border-[10px] border-blue-100 text-xl font-bold text-blue-800">
+              <div className="border-accent-soft text-accent-ink flex size-24 shrink-0 items-center justify-center rounded-full border-8 text-xl font-semibold">
                 {plan.progress.total
                   ? Math.round(
                       ((plan.progress.passed + plan.progress.equivalent) /

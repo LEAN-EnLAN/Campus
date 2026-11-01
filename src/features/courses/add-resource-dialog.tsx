@@ -79,6 +79,12 @@ function AddResourceForm({
   const [clipboardUrl, setClipboardUrl] = useState<string | null>(null)
   const [focusRequest, setFocusRequest] = useState(0)
   const titleRef = useRef<HTMLInputElement>(null)
+  const urlRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (errors.title) titleRef.current?.focus()
+    else if (errors.url) urlRef.current?.focus()
+  }, [errors])
 
   useEffect(() => {
     let active = true
@@ -178,6 +184,7 @@ function AddResourceForm({
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault()
+    if (saving) return
     if (!draft) return
     const result = validateDraft(draft)
     if (!result.ok) {
@@ -194,8 +201,14 @@ function AddResourceForm({
   }
 
   async function pasteFromClipboard() {
-    const text = await pasteClipboard()
-    accept(classifyIncoming({ text: text ?? '' }))
+    try {
+      const text = await pasteClipboard()
+      accept(classifyIncoming({ text: text ?? '' }))
+    } catch {
+      setAnnouncement(
+        'No pudimos leer el portapapeles. Pegá con Ctrl+V o escribí el material a mano.',
+      )
+    }
   }
 
   const showClipboardChip = clipboardUrl !== null && draft?.url !== clipboardUrl
@@ -205,13 +218,14 @@ function AddResourceForm({
   return (
     <form
       noValidate
+      aria-busy={saving}
       onSubmit={handleSubmit}
       onPaste={handlePaste}
       onDragEnter={handleDragOver}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
-      className="flex flex-col gap-4 p-5 pb-6 sm:p-6"
+      className="flex flex-col gap-4 p-4 sm:p-6"
     >
       <div className="flex flex-col gap-1">
         <h2 id={titleId} className="text-ink font-serif text-lg">
@@ -225,7 +239,7 @@ function AddResourceForm({
         className={cn(
           'flex flex-col items-center gap-2 rounded-lg border border-dashed px-4 text-center',
           'motion-safe:transition-colors motion-safe:duration-150',
-          draft ? 'py-4' : 'py-7 sm:py-9',
+          draft ? 'py-3' : 'py-5 sm:py-7',
           dragging ? 'border-accent bg-accent-soft' : 'border-rule bg-paper-sunken',
         )}
       >
@@ -280,7 +294,10 @@ function AddResourceForm({
         </p>
       ) : null}
 
-      <p aria-live="polite" className="sr-only">
+      <p
+        aria-live="polite"
+        className={announcement.startsWith('No pudimos') ? 'text-ink-muted text-sm' : 'sr-only'}
+      >
         {fileNotice ? '' : announcement}
       </p>
 
@@ -333,6 +350,7 @@ function AddResourceForm({
 
           {draft.kind === 'link' ? (
             <TextField
+              ref={urlRef}
               label="Link"
               type="url"
               inputMode="url"
@@ -387,7 +405,7 @@ function AddResourceForm({
         </p>
       ) : null}
 
-      <div className="mt-1 flex justify-end gap-2">
+      <div className="border-rule-soft mt-1 flex justify-end gap-2 border-t pt-4">
         <Button variant="ghost" onClick={onClose}>
           Cancelar
         </Button>

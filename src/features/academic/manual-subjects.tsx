@@ -38,7 +38,10 @@ export function AddManualSubjectForm({ defaultYear = 1 }: { defaultYear?: number
     event.preventDefault()
     const found = manualProblem({ name, yearLevel, term })
     setProblem(found)
-    if (found) return
+    if (found) {
+      nameInput.current?.focus()
+      return
+    }
     try {
       await add.mutateAsync({ name, yearLevel, term })
       // Year and term stay put: a student usually adds a whole year in a row.
@@ -54,8 +57,10 @@ export function AddManualSubjectForm({ defaultYear = 1 }: { defaultYear?: number
   return (
     <form
       onSubmit={submit}
+      noValidate
       aria-label="Agregar una materia"
-      className="grid items-start gap-3 sm:grid-cols-[minmax(0,1fr)_7rem_11rem_auto]"
+      aria-busy={add.isPending}
+      className="border-rule bg-paper-elevated grid min-w-0 items-start gap-3 rounded-lg border p-4 sm:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_5rem_10rem_auto]"
     >
       <TextField
         ref={nameInput}
@@ -68,6 +73,8 @@ export function AddManualSubjectForm({ defaultYear = 1 }: { defaultYear?: number
         }}
         maxLength={200}
         autoComplete="off"
+        required
+        error={problem}
       />
       <SelectField
         label="Año"
@@ -91,16 +98,11 @@ export function AddManualSubjectForm({ defaultYear = 1 }: { defaultYear?: number
           </option>
         ))}
       </SelectField>
-      <Button
-        type="submit"
-        variant="primary"
-        className="sm:mt-[1.625rem]"
-        disabled={add.isPending}
-      >
+      <Button type="submit" variant="primary" className="self-end" disabled={add.isPending}>
         Agregar materia
       </Button>
-      {error ? (
-        <p role="alert" className="text-danger text-sm font-medium sm:col-span-4">
+      {error && !problem ? (
+        <p role="alert" className="text-danger text-sm font-medium sm:col-span-2 xl:col-span-4">
           {error}
         </p>
       ) : null}

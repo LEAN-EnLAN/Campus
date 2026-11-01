@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { CircularDotMatrix } from '@/components/ui/dot-matrix'
@@ -34,6 +34,11 @@ export function Startup() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [cloudError, setCloudError] = useState<string | null>(null)
+  const pathInput = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (typing) pathInput.current?.focus()
+  }, [typing])
 
   // The suggestion needs a look at the top folder; a failure only means there is
   // no one-click folder, and the picker (which reports its own failure) remains.
@@ -312,6 +317,7 @@ export function Startup() {
               <form
                 id="vault-path-form"
                 className="flex gap-2"
+                aria-busy={busy}
                 onSubmit={(event) => {
                   event.preventDefault()
                   if (!busy && path.trim().length > 0) void open(path.trim())
@@ -322,6 +328,9 @@ export function Startup() {
                 </label>
                 <input
                   id="vault-path"
+                  ref={pathInput}
+                  autoComplete="off"
+                  spellCheck={false}
                   value={path}
                   onChange={(e) => {
                     setPath(e.target.value)
@@ -332,12 +341,12 @@ export function Startup() {
                   placeholder={placeholder}
                   aria-invalid={error ? true : undefined}
                   aria-describedby={error ? 'vault-path-error' : undefined}
-                  className="min-w-0 flex-1 rounded-md border px-3 py-1.5 text-sm"
+                  className="border-rule bg-paper-elevated min-h-11 min-w-0 flex-1 rounded-md border px-3 py-2 text-sm"
                 />
                 <button
                   type="submit"
                   disabled={busy || path.trim().length === 0}
-                  className="rounded-md border px-3 py-1.5 text-sm disabled:opacity-50"
+                  className="border-rule min-h-11 rounded-md border px-3 py-2 text-sm disabled:opacity-50"
                 >
                   Abrir
                 </button>

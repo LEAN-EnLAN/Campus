@@ -65,7 +65,8 @@ describe('saving', () => {
     await user.type(screen.getByRole('textbox', { name: '¿Qué es?' }), 'TP pendiente')
     expect(screen.getByRole('button', { name: 'Cancelar' })).toBeDisabled()
     await user.keyboard('{Escape}')
-    await user.click(screen.getByRole('button', { name: 'Cerrar' }))
+    // The backdrop is pointer-only and hidden from the accessibility tree.
+    await user.click(screen.getByRole('dialog').previousElementSibling!)
     await user.type(screen.getByRole('textbox', { name: '¿Qué es?' }), '{Enter}')
 
     expect(onOpenChange).not.toHaveBeenCalled()

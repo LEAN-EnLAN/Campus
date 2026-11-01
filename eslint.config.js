@@ -14,6 +14,7 @@ export default tseslint.config(
       'evidence',
       'src/routeTree.gen.ts',
       'src/lib/db/database.types.ts',
+      'desktop/target',
     ],
   },
   {

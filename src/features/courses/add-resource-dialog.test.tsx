@@ -218,6 +218,7 @@ describe('AddResourceDialog', () => {
       'alert',
     )
     expect(title).toHaveAttribute('aria-invalid', 'true')
+    expect(title).toHaveFocus()
 
     await user.type(title, 'Apunte')
     const link = screen.getByRole('textbox', { name: /Link/ })
@@ -226,6 +227,7 @@ describe('AddResourceDialog', () => {
 
     const urlError = screen.getByText('Ingresá un link que empiece con https:// o http://.')
     expect(link).toHaveAttribute('aria-invalid', 'true')
+    expect(link).toHaveFocus()
     expect(link.getAttribute('aria-describedby')).toContain(urlError.id)
     expect(onSave).not.toHaveBeenCalled()
 
@@ -255,6 +257,27 @@ describe('AddResourceDialog', () => {
       url: null,
       body: 'Martes 18 h',
     })
+  })
+
+  it('offers a usable manual fallback when the clipboard rejects access', async () => {
+    const user = userEvent.setup()
+    const onSave = vi.fn().mockResolvedValue(undefined)
+    render(
+      <Harness
+        onSave={onSave}
+        readClipboard={() => Promise.resolve(null)}
+        pasteClipboard={() => Promise.reject(new Error('Permission denied'))}
+      />,
+    )
+    await user.click(screen.getByRole('button', { name: 'Agregar material' }))
+    await user.click(screen.getByRole('button', { name: 'Pegar lo que copiaste' }))
+    expect(await screen.findByText(/No pudimos leer el portapapeles/)).toBeVisible()
+    await user.click(screen.getByRole('button', { name: 'Escribir una nota' }))
+    await user.type(screen.getByRole('textbox', { name: /Título/ }), 'Consulta')
+    await user.click(screen.getByRole('button', { name: 'Guardar' }))
+    expect(onSave).toHaveBeenCalledWith(
+      expect.objectContaining({ kind: 'note', title: 'Consulta' }),
+    )
   })
 
   it('keeps the dialog and the draft when saving fails, and shows the error', async () => {

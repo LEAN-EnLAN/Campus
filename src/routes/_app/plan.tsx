@@ -30,7 +30,7 @@ function PlanScreen() {
 
   if (plan.isLoading) {
     return (
-      <div className="flex flex-col gap-8">
+      <div className="blue-screen">
         <PageHeader title="Tu plan" />
         <LoadingRows rows={8} />
       </div>
@@ -72,7 +72,7 @@ function PlanScreen() {
   if (plan.isUnmapped) {
     const manualEarned = plan.progress.passed + plan.progress.equivalent
     return (
-      <div className="flex flex-col gap-8">
+      <div className="blue-screen">
         <PageHeader
           eyebrow={plan.context?.unmappedLabel ?? undefined}
           title="Tu plan"
@@ -199,8 +199,15 @@ function PlanScreen() {
           </div>
 
           {plan.progress.flagged > 0 ? (
-            <p className="text-ink-muted -mt-6 text-xs">
+            <p className="text-ink-muted text-xs">
               {plan.progress.flagged} con correlativas pendientes
+              {' · '}
+              <Link
+                to="/plan/progress"
+                className="text-accent-ink underline underline-offset-4"
+              >
+                Revisar mi avance
+              </Link>
             </p>
           ) : null}
 
@@ -227,7 +234,7 @@ function PlanScreen() {
             <AcademicYearDisclosure
               key={group.yearLevel}
               year={group.yearLevel}
-              summary={`${group.subjects.length} materias`}
+              summary={`${group.subjects.length} ${group.subjects.length === 1 ? 'materia' : 'materias'}`}
               initiallyOpen={
                 plan.byYear.find((year) =>
                   year.subjects.some((subject) => subject.status === 'in_progress'),
@@ -250,9 +257,9 @@ function PlanScreen() {
               <h2>Tu avance</h2>
             </div>
             <div className="flex items-center justify-center py-4">
-              <div className="flex size-32 items-center justify-center rounded-full border-[12px] border-blue-100 text-center">
+              <div className="border-accent-soft flex size-28 items-center justify-center rounded-full border-8 text-center">
                 <div>
-                  <strong className="block text-3xl text-blue-800">
+                  <strong className="text-accent-ink block text-2xl">
                     {plan.progress.total ? Math.round((earned / plan.progress.total) * 100) : 0}
                     %
                   </strong>
@@ -293,7 +300,7 @@ function PlanScreen() {
             </p>
           </section>
           <Link to="/plan/progress" className="blue-button justify-center">
-            Actualizar avance
+            Cargar mi avance
           </Link>
         </aside>
       </div>

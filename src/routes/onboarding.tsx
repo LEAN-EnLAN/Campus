@@ -48,6 +48,20 @@ function OnboardingScreen() {
   const [manualLabel, setManualLabel] = useState('')
   const [activeStep, setActiveStep] = useState(0)
   const [confirmed, setConfirmed] = useState(false)
+  const stepHeading = useRef<HTMLHeadingElement>(null)
+  const previousStep = useRef({ activeStep, manual, confirmed })
+
+  useEffect(() => {
+    const previous = previousStep.current
+    if (
+      previous.activeStep !== activeStep ||
+      previous.manual !== manual ||
+      previous.confirmed !== confirmed
+    ) {
+      stepHeading.current?.focus()
+    }
+    previousStep.current = { activeStep, manual, confirmed }
+  }, [activeStep, manual, confirmed])
 
   const institutions = useInstitutions()
   const units = useAcademicUnits(institutionId)
@@ -161,7 +175,9 @@ function OnboardingScreen() {
               height={400}
             />
             <span className="blue-onboarding-eyebrow">Configuración guardada</span>
-            <h1>Tu plan ya está en Campus.</h1>
+            <h1 ref={stepHeading} tabIndex={-1}>
+              Tu plan ya está en Campus.
+            </h1>
             <p>
               {manual
                 ? 'Podés agregar tus materias manualmente desde el plan. No se cargaron materias que no están en el catálogo.'
@@ -216,7 +232,7 @@ function OnboardingScreen() {
                               index + 1
                             )}
                           </span>
-                          <span>{label}</span>
+                          <span className="text-ink">{label}</span>
                         </button>
                       </li>
                     ))}
@@ -224,13 +240,28 @@ function OnboardingScreen() {
                 </nav>
               ) : null}
 
-              <div className="blue-onboarding-form-panel">
+              <form
+                className="blue-onboarding-form-panel"
+                aria-busy={save.isPending}
+                onSubmit={(event) => {
+                  event.preventDefault()
+                  if (
+                    !save.isPending &&
+                    (manual
+                      ? Boolean(manualLabel.trim())
+                      : activeStep === 3 && Boolean(curriculumId))
+                  )
+                    void confirm()
+                }}
+              >
                 {!manual ? (
                   <div className="blue-onboarding-section-heading">
                     <span>
                       Paso {activeStep + 1} de {STEPS.length}
                     </span>
-                    <h2>{STEPS[activeStep]}</h2>
+                    <h2 ref={stepHeading} tabIndex={-1}>
+                      {STEPS[activeStep]}
+                    </h2>
                     <p>
                       {
                         [
@@ -245,7 +276,9 @@ function OnboardingScreen() {
                 ) : (
                   <div className="blue-onboarding-section-heading">
                     <span>Carga manual</span>
-                    <h2>Tu carrera</h2>
+                    <h2 ref={stepHeading} tabIndex={-1}>
+                      Tu carrera
+                    </h2>
                     <p>
                       Guardaremos el nombre que indiques para empezar a organizar tus materias.
                     </p>
@@ -392,6 +425,7 @@ function OnboardingScreen() {
                     <Button
                       variant="secondary"
                       size="lg"
+                      type="button"
                       onClick={() => setActiveStep((step) => Math.max(0, step - 1))}
                     >
                       <ArrowLeft size={16} aria-hidden="true" /> Anterior
@@ -401,10 +435,10 @@ function OnboardingScreen() {
                     <Button
                       variant="primary"
                       size="lg"
+                      type="submit"
                       disabled={
                         save.isPending || (manual ? !manualLabel.trim() : !curriculumId)
                       }
-                      onClick={() => void confirm()}
                     >
                       {save.isPending ? 'Guardando…' : 'Guardar y continuar'}
                       {!save.isPending && <ArrowRight size={17} aria-hidden="true" />}
@@ -418,7 +452,7 @@ function OnboardingScreen() {
                 >
                   {manual ? 'Volver a elegir del catálogo' : 'No encuentro mi carrera'}
                 </button>
-              </div>
+              </form>
             </section>
 
             <aside className="blue-onboarding-aside" aria-label="Espacio y resumen">
@@ -539,13 +573,15 @@ function Choice({
   loading?: boolean
 }) {
   return (
-    <fieldset className="blue-onboarding-options flex flex-col gap-1">
+    <fieldset aria-busy={loading} className="blue-onboarding-options flex flex-col gap-2">
       <legend className="text-2xs text-ink-muted mb-1.5 font-semibold tracking-[0.12em] uppercase">
         {legend}
       </legend>
 
       {loading ? (
-        <p className="text-ink-muted py-2 text-sm">Cargando…</p>
+        <p role="status" className="text-ink-muted py-3 text-sm">
+          Cargando opciones…
+        </p>
       ) : options.length === 0 ? (
         <p className="text-ink-muted py-2 text-sm">
           Todavía no tenemos opciones acá. Podés seguir con “No encuentro mi carrera”.
@@ -555,7 +591,7 @@ function Choice({
           <div key={option.id}>
             <label
               className={cn(
-                'flex cursor-pointer items-center gap-3 rounded-md border px-3 py-2.5 transition-colors',
+                'focus-within:outline-accent flex min-h-12 cursor-pointer items-center gap-3 rounded-md border px-3 py-3 transition-colors focus-within:outline-2 focus-within:outline-offset-2',
                 value === option.id
                   ? 'border-accent bg-accent-soft'
                   : 'border-rule hover:border-ink-faint hover:bg-paper-elevated',

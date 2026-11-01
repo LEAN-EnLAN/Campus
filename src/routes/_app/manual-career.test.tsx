@@ -50,8 +50,8 @@ describe('Plan for a carrera that is not in the catalog', () => {
     expect(screen.getByText(/No calculamos correlatividades/)).toBeInTheDocument()
 
     const user = userEvent.setup()
-    await user.type(screen.getByLabelText('Nombre'), 'Cálculo 1')
-    await user.selectOptions(screen.getByLabelText('Año'), '2')
+    await user.type(screen.getByRole('textbox', { name: 'Nombre' }), 'Cálculo 1')
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Año' }), '2')
     await user.click(screen.getByRole('button', { name: 'Agregar materia' }))
 
     const summary = await screen.findByText('2° año')
@@ -116,7 +116,7 @@ describe('Materias', () => {
     })
     await renderScreen(<Courses />, fakeCampusBackend(store))
     expect(await screen.findByRole('group', { name: 'Estado de Cálculo' })).toBeInTheDocument()
-    expect(screen.getByLabelText('Nombre')).toBeInTheDocument()
+    expect(screen.getByRole('textbox', { name: 'Nombre' })).toBeInTheDocument()
   })
 
   it('changes a status from the list row, and keeps the row where it is', async () => {

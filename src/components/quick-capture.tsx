@@ -129,6 +129,7 @@ export function QuickCapture({
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault()
+    if (isPending) return
     setTouched(true)
     setSubmitted(true)
     // First problem wins the focus, in the order the fields appear.
@@ -159,14 +160,24 @@ export function QuickCapture({
   return (
     <Modal
       open={open}
-      onClose={() => onOpenChange(false)}
+      onClose={() => {
+        if (!isPending) onOpenChange(false)
+      }}
       labelledBy={titleId}
       initialFocus={firstFieldRef}
     >
-      <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4 p-5 pb-6">
+      <form
+        onSubmit={handleSubmit}
+        noValidate
+        aria-busy={isPending}
+        className="flex flex-col gap-4 p-4 sm:p-6"
+      >
         <h2 id={titleId} className="text-ink font-serif text-lg">
           {TITLE_BY_KIND[kind]}
         </h2>
+        <p className="text-ink-muted -mt-2 text-sm">
+          Anotá lo importante. La materia y la fecha son opcionales.
+        </p>
 
         <TextField
           ref={firstFieldRef}
@@ -180,7 +191,7 @@ export function QuickCapture({
           required
         />
 
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid min-w-0 gap-3 sm:grid-cols-2">
           <SelectField
             label="Tipo"
             value={kind}
@@ -208,7 +219,7 @@ export function QuickCapture({
           </SelectField>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid min-w-0 grid-cols-2 gap-3">
           <TextField
             ref={dateRef}
             label="Fecha"
@@ -246,8 +257,8 @@ export function QuickCapture({
           </p>
         ) : null}
 
-        <div className="mt-1 flex justify-end gap-2">
-          <Button variant="ghost" onClick={() => onOpenChange(false)}>
+        <div className="border-rule-soft mt-1 flex justify-end gap-2 border-t pt-4">
+          <Button variant="ghost" disabled={isPending} onClick={() => onOpenChange(false)}>
             Cancelar
           </Button>
           <Button type="submit" variant="primary" disabled={isPending}>

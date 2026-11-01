@@ -37,6 +37,11 @@ describe('FinalOutcomeDialog', () => {
     await user.click(screen.getByRole('button', { name: 'Guardar' }))
 
     expect(screen.getByText('Elegí cómo te fue.')).toBeInTheDocument()
+    expect(screen.getByRole('radio', { name: 'Aprobé' })).toHaveFocus()
+    expect(screen.getByRole('radio', { name: 'Aprobé' })).toHaveAttribute(
+      'aria-invalid',
+      'true',
+    )
     expect(onConfirm).not.toHaveBeenCalled()
   })
 
@@ -116,6 +121,7 @@ describe('FinalOutcomeDialog', () => {
     await user.click(screen.getByRole('button', { name: 'Guardar' }))
 
     expect(screen.getByText('La nota va de 1 a 10.')).toBeInTheDocument()
+    expect(screen.getByLabelText('Nota (opcional)')).toHaveFocus()
     expect(onConfirm).not.toHaveBeenCalled()
   })
 

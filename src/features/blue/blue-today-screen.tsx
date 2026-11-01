@@ -1,15 +1,17 @@
 import { Link } from '@tanstack/react-router'
-import { CalendarDays, Check, ChevronLeft, ChevronRight, Plus } from 'lucide-react'
-import { useMemo } from 'react'
+import { CalendarDays, Check, Plus } from 'lucide-react'
+import { useMemo, useState } from 'react'
 
 import { DeadlineRow } from '@/components/deadline-row'
 import { EmptyState, ErrorState, LoadingRows } from '@/components/empty-state'
 import { ProgressLine } from '@/components/progress-line'
 import { StatusGlyph } from '@/components/academic-status'
+import { QuickCapture, type QuickCaptureValues } from '@/components/quick-capture'
+import { Button } from '@/components/ui/button'
 import type { AgendaEntry } from '@/domain/agenda'
 import type { SubjectView } from '@/domain/types'
 import { useAcademicPlan } from '@/features/academic/queries'
-import { useAcademicItems } from '@/features/items/queries'
+import { useAcademicItems, useCreateAcademicItem } from '@/features/items/queries'
 import { useCompleteItem } from '@/features/items/use-complete-item'
 import { buildToday, daysLeftLabel } from '@/features/items/today-model'
 import { dueTimeLabel } from '@/features/items/due'
@@ -83,7 +85,7 @@ function SubjectsPanel({
             <Link
               to="/courses/$courseId"
               params={{ courseId: subject.id }}
-              className="flex-1 truncate"
+              className="min-w-0 flex-1 py-2 text-sm break-words"
             >
               {subject.name}
             </Link>
@@ -98,6 +100,8 @@ function SubjectsPanel({
 export function BlueTodayScreen() {
   const plan = useAcademicPlan()
   const itemsQuery = useAcademicItems()
+  const createItem = useCreateAcademicItem()
+  const [captureOpen, setCaptureOpen] = useState(false)
   const now = useMemo(() => new Date(), [])
   const today = useMemo(() => buildToday(itemsQuery.data ?? [], now), [itemsQuery.data, now])
   const subjectName = (id: string | null) =>
@@ -107,6 +111,19 @@ export function BlueTodayScreen() {
   const finales = plan.views.filter((subject) => subject.status === 'regularized')
   const dueCount = today.today.length + today.overdue.length
   const isLoading = itemsQuery.isLoading || plan.isLoading
+  async function handleCapture(values: QuickCaptureValues) {
+    try {
+      await createItem.mutateAsync(values)
+      setCaptureOpen(false)
+    } catch {
+      // Keep the student's draft open; the mutation error appears in the form.
+    }
+  }
+  function openCapture() {
+    if (createItem.isPending) return
+    createItem.reset()
+    setCaptureOpen(true)
+  }
   const renderSection = (
     id: string,
     title: string,
@@ -135,13 +152,12 @@ export function BlueTodayScreen() {
         </div>
         <div className="flex items-center gap-2">
           <Link to="/calendar" className="blue-button-outline" aria-label="Abrir calendario">
-            <ChevronLeft aria-hidden="true" className="size-4" />
+            <CalendarDays aria-hidden="true" className="size-4" />
             <span>Calendario</span>
-            <ChevronRight aria-hidden="true" className="size-4" />
           </Link>
-          <Link to="/calendar" className="blue-button">
-            <Plus aria-hidden="true" className="size-4" /> Ver fechas
-          </Link>
+          <Button variant="primary" onClick={openCapture}>
+            <Plus aria-hidden="true" className="size-4" /> Agregar entrega
+          </Button>
         </div>
       </header>
 
@@ -153,17 +169,21 @@ export function BlueTodayScreen() {
       ) : null}
       {isLoading ? (
         <LoadingRows rows={5} />
-      ) : (
+      ) : itemsQuery.error ? null : (
         <div className="blue-layout blue-layout-wide">
           <div className="grid min-w-0 gap-6">
             <div className="blue-panel-soft blue-dashboard-hero">
-              <span className="flex size-13 shrink-0 items-center justify-center rounded-full bg-blue-200/70 text-blue-800">
-                <Check aria-hidden="true" className="size-6" />
+              <span className="bg-accent-soft text-accent-ink flex size-11 shrink-0 items-center justify-center rounded-lg">
+                {dueCount > 0 ? (
+                  <CalendarDays aria-hidden="true" className="size-5" />
+                ) : (
+                  <Check aria-hidden="true" className="size-5" />
+                )}
               </span>
               <div>
                 <strong>
                   {dueCount > 0
-                    ? `Tenés ${dueCount} ${dueCount === 1 ? 'cosa' : 'cosas'} para hoy`
+                    ? `Tenés ${dueCount} ${dueCount === 1 ? 'pendiente' : 'pendientes'} para revisar`
                     : 'No tenés entregas para hoy'}
                 </strong>
                 <p>
@@ -181,6 +201,11 @@ export function BlueTodayScreen() {
                 quiet
                 title="No hay tareas pendientes"
                 description="Cuando agregues una fecha o tarea, va a aparecer acá."
+                action={
+                  <Button variant="secondary" onClick={openCapture}>
+                    Agregar mi primera entrega
+                  </Button>
+                }
               />
             ) : null}
             {plan.hasContext && !plan.isUnmapped && plan.progress.total > 0 ? (
@@ -216,7 +241,7 @@ export function BlueTodayScreen() {
             ) : null}
           </div>
 
-          <aside aria-label="Resumen de Hoy" className="grid min-w-0 gap-4">
+          <aside aria-label="Resumen de Hoy" className="grid min-w-0 content-start gap-4">
             <section className="blue-panel">
               <div className="blue-panel-head">
                 <h2>Calendario de hoy</h2>
@@ -230,7 +255,7 @@ export function BlueTodayScreen() {
                     <li key={entry.item.id} className="blue-stat-row">
                       <CalendarDays
                         aria-hidden="true"
-                        className="size-4 shrink-0 text-blue-600"
+                        className="text-accent-ink size-4 shrink-0"
                       />
                       <span className="min-w-0 flex-1">
                         <span className="block truncate font-medium">{entry.item.title}</span>
@@ -253,6 +278,15 @@ export function BlueTodayScreen() {
           </aside>
         </div>
       )}
+      <QuickCapture
+        open={captureOpen}
+        onOpenChange={setCaptureOpen}
+        subjects={plan.views}
+        items={itemsQuery.data ?? []}
+        onSubmit={handleCapture}
+        isPending={createItem.isPending}
+        error={createItem.error instanceof Error ? createItem.error.message : null}
+      />
     </div>
   )
 }

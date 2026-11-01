@@ -141,6 +141,7 @@ function AppFrame() {
   return (
     <>
       <AcademicShell
+        academicLabel={plan.programName ?? plan.context?.unmappedLabel}
         onQuickCapture={() => setCaptureOpen(true)}
         onSearch={() => setSearchOpen(true)}
       >

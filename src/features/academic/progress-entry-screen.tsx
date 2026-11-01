@@ -141,6 +141,15 @@ export function ProgressEntryScreen() {
         eyebrow={plan.isUnmapped ? plan.context?.unmappedLabel : plan.programName}
         title="Contanos hasta dónde llegaste"
         description="Marcá lo que ya tenés. Después lo podés cambiar materia por materia."
+        actions={
+          <Button
+            variant="secondary"
+            onClick={finish}
+            disabled={setMany.isPending || setStatus.isPending}
+          >
+            Revisar mi avance
+          </Button>
+        }
       />
 
       {plan.isUnmapped ? (
@@ -172,7 +181,11 @@ export function ProgressEntryScreen() {
           >
             <div className="mt-3 flex min-h-11 flex-wrap items-center gap-3">
               {approvable > 0 ? (
-                <Button variant="secondary" onClick={() => approve(group.yearLevel)}>
+                <Button
+                  variant="secondary"
+                  onClick={() => approve(group.yearLevel)}
+                  disabled={setMany.isPending || setStatus.isPending}
+                >
                   Aprobé todo {group.yearLevel}° año
                 </Button>
               ) : (
@@ -194,6 +207,7 @@ export function ProgressEntryScreen() {
                   <button
                     type="button"
                     onClick={revert}
+                    disabled={setMany.isPending || setStatus.isPending}
                     className="text-accent-ink text-sm font-medium underline underline-offset-4"
                   >
                     Deshacer
@@ -238,7 +252,12 @@ export function ProgressEntryScreen() {
       ) : null}
 
       <div className="flex flex-col items-start gap-3">
-        <Button variant="primary" size="lg" onClick={finish}>
+        <Button
+          variant="primary"
+          size="lg"
+          onClick={finish}
+          disabled={setMany.isPending || setStatus.isPending}
+        >
           Listo
         </Button>
       </div>

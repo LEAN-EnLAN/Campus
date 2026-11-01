@@ -1,11 +1,13 @@
-import { screen, within } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import type { ReactNode } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { ToastProvider } from '@/components/toast'
+import type { QuickCaptureValues } from '@/components/quick-capture'
 import type { AcademicItem } from '@/domain/types'
 import { dateOnlyDueAt } from '@/features/items/due'
+import { BlueTodayScreen } from '@/features/blue/blue-today-screen'
 import { Route } from '@/routes/_app/today'
 
 import { renderRoute } from '../helpers/render-route'
@@ -15,6 +17,8 @@ const state = vi.hoisted(() => ({
   views: [] as { id: string; name: string; status: string; yearLevel: number }[],
   toggle: vi.fn(),
   setStatus: vi.fn(),
+  createAsync: vi.fn<(values: QuickCaptureValues) => Promise<void>>(),
+  resetCreate: vi.fn(),
 }))
 
 vi.mock('@/features/items/queries', () => ({
@@ -25,6 +29,12 @@ vi.mock('@/features/items/queries', () => ({
     refetch: vi.fn(),
   }),
   useToggleAcademicItem: () => ({ mutate: state.toggle }),
+  useCreateAcademicItem: () => ({
+    mutateAsync: state.createAsync,
+    reset: state.resetCreate,
+    isPending: false,
+    error: null,
+  }),
 }))
 vi.mock('@/features/academic/queries', () => ({
   useSetSubjectStatus: () => ({ mutate: state.setStatus }),
@@ -69,6 +79,8 @@ beforeEach(() => {
   state.views = []
   state.toggle = vi.fn()
   state.setStatus = vi.fn()
+  state.createAsync = vi.fn().mockResolvedValue(undefined)
+  state.resetCreate = vi.fn()
 })
 
 describe('Hoy', () => {
@@ -105,7 +117,7 @@ describe('Hoy', () => {
       'section',
     )!
     expect(within(section).getByText('Informe viejo')).toBeInTheDocument()
-    expect(screen.getByText('Tenés 1 cosa para hoy')).toBeInTheDocument()
+    expect(screen.getByText('Tenés 1 pendiente para revisar')).toBeInTheDocument()
     expect(screen.queryByText('No hay tareas pendientes')).toBeNull()
     expect(screen.queryByRole('heading', { level: 2, name: /^Hoy/ })).toBeNull()
     expect(section.querySelector('.border-dashed')).toBeNull()
@@ -164,6 +176,56 @@ describe('Hoy', () => {
       .getByRole('heading', { name: 'Regularizadas (final pendiente)' })
       .closest('section')!
     expect(within(pendiente).getByText('Física I')).toBeInTheDocument()
+  })
+})
+
+describe('Hoy: direct capture', () => {
+  const mountBlueToday = () =>
+    renderRoute(() => (
+      <ToastProvider>
+        <BlueTodayScreen />
+      </ToastProvider>
+    ))
+
+  it('creates an item from Today and resets the previous mutation state when opened', async () => {
+    const user = userEvent.setup()
+    mountBlueToday()
+
+    await user.click(await screen.findByRole('button', { name: 'Agregar entrega' }))
+    expect(state.resetCreate).toHaveBeenCalledTimes(1)
+    await user.type(screen.getByRole('textbox', { name: '¿Qué es?' }), 'TP 3 de Álgebra')
+    await user.click(screen.getByRole('button', { name: 'Guardar' }))
+
+    expect(state.createAsync).toHaveBeenCalledWith({
+      title: 'TP 3 de Álgebra',
+      kind: 'assignment',
+      curriculumSubjectId: null,
+      dueAt: null,
+    })
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog', { name: 'Agregar entrega' })).toBeNull(),
+    )
+  })
+
+  it('keeps a failed capture open with the typed draft intact', async () => {
+    const user = userEvent.setup()
+    state.createAsync.mockRejectedValue(new Error('No pudimos guardar la entrega'))
+    mountBlueToday()
+
+    await user.click(await screen.findByRole('button', { name: 'Agregar entrega' }))
+    expect(state.resetCreate).toHaveBeenCalledTimes(1)
+    const title = screen.getByRole('textbox', { name: '¿Qué es?' })
+    await user.type(title, 'TP 4 de Análisis')
+    await user.click(screen.getByRole('button', { name: 'Guardar' }))
+
+    expect(state.createAsync).toHaveBeenCalledWith({
+      title: 'TP 4 de Análisis',
+      kind: 'assignment',
+      curriculumSubjectId: null,
+      dueAt: null,
+    })
+    expect(await screen.findByRole('dialog', { name: 'Agregar entrega' })).toBeInTheDocument()
+    expect(title).toHaveValue('TP 4 de Análisis')
   })
 })
 

@@ -48,3 +48,27 @@ Un único hilo con este documento como mensaje de arranque, y posteriores respue
 - T3 Code: hilo creado en proyecto campus-poc, agente bloqueado por proveedor Claude no autenticado; requiere claude auth login en entorno ZAFIRUS-B-032. No marcar ejecución automática como realizada.
 - Corrección visual de Startup y estados, y relevancia de los años: `b4e6e20`; E2E Local aislado 4/4 con Vault temporal real, selección académica y persistencia tras reload, screenshots y axe en `%LOCALAPPDATA%\Temp\campus-blue-qa\2026-10-29T18-08-20-184Z-36560` (móvil) y `%LOCALAPPDATA%\Temp\campus-blue-qa\2026-10-29T18-09-23-012Z-28876` (tablet/desktop/1627). Unitarios: `StatusControl` 9/9, Progreso 9/9, Plan/Carrera manual 6/6, Startup 29/29. `pnpm typecheck` y build OK; ESLint 0 errores, 16 advertencias de Fast Refresh preexistentes. No se alteraron datos del usuario, RLS, Cloud E2E ajeno ni `routeTree.gen.ts`.
 - T3 Code sigue pendiente de acceso programático autenticado al hilo **existente**, sin duplicarlo ni afirmar ejecución del agente. Continuar backlog P0 general (modales, densidad e iconografía restante) y P1/P2 tras cerrar correcciones críticas; P3 deliberadamente última.
+
+## T1 usage heatmap follow-ups (30 October 2026)
+
+Source: `docs/ux-research/USAGE_HEATMAP.md`. These are additional scoped follow-ups, not closure of the existing P0/P1/P2 work.
+
+- [ ] Warm — Calendar header hierarchy, empty-state CTA and month/week/agenda density: needs a dedicated Dayflow layout pass beyond the Hot journey.
+- [ ] Warm — Calendar event detail/creation keyboard and mobile focus audit: third-party editor has a separate interaction contract.
+- [ ] Warm — Unify Library inline creation with the course Add material dialog: two current entry points should converge after preserving filter/association behavior.
+- [ ] Warm — Resource deletion confirmation or undo in Library/course detail: changes destructive-action behavior and needs its own persistence tests.
+- [ ] Warm — Global search empty-result creation action: requires deciding which resource type/context the query should create.
+- [ ] Warm — Notes workspace editor/external-change and conflict QA: file autosave and external edits need dedicated real-Vault fixtures.
+- [ ] Warm — Notes quick switcher empty/loading and responsive results: not on the core presentation route.
+- [ ] Warm — Notes content-search dialog result context and error recovery: requires populated note/index fixtures.
+- [ ] Warm — Explorer rename/create/delete confirmation focus audit: requires file-operation and focus-restore tests beyond this polish.
+- [ ] Warm — Settings notification-labelled shortcut and single-choice appearance controls: current destination/available controls need product-level reconciliation.
+- [ ] Warm — Cloud login/signup/reset and email round-trip: Local-mode QA cannot establish Cloud behavior; retain the existing Cloud E2E backlog.
+- [ ] Cold — Manual-subject inline removal wrapping/focus: rare action; keep its existing two-step confirmation until dedicated review.
+- [ ] Cold — Missing/unavailable folder and recent-entry removal browser fixtures: permission/recovery paths need controlled filesystem fault injection.
+- [ ] Cold — Dev scenario UI polish: tester-only surface is outside the student presentation.
+- [ ] Cold — Remove the inactive LegacyTodayScreen export: separate cleanup avoids mixing code deletion with visible Hot improvements.
+- [ ] Hot follow-up — Course-detail final completion bypasses the shared outcome dialog: preserve current completion/data behavior in this layout pass; reconcile final/item/subject updates and manual-subject handling with regression tests before changing the mutation path.
+- [ ] Hot follow-up — Recover unfinished onboarding after refresh/workspace change: requires an explicit per-workspace draft storage/expiry decision; current persisted academic context remains unchanged.
+- [ ] Integration gate — Re-run responsive/axe QA after combining T1 with T3 primitives/tokens/assets: evidence on either branch alone does not prove the integrated presentation candidate.
+- [ ] Hot follow-up — Decide whether the status chooser should expose Desaprobada from every stored state: the current regression test intentionally offers it only when already failed; course-detail select/final outcome remain the supported entry points.

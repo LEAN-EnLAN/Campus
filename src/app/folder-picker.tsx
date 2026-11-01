@@ -168,7 +168,7 @@ export function FolderPicker({
         event.preventDefault()
         onClose()
       }}
-      className="border-rule bg-paper-elevated text-ink m-auto w-[min(32rem,calc(100vw-2rem))] rounded-xl border p-0 shadow-lg backdrop:bg-black/30"
+      className="border-rule bg-paper-elevated text-ink backdrop:bg-ink/30 m-auto max-h-[90dvh] w-[min(32rem,calc(100vw-2rem))] overflow-y-auto rounded-xl border p-0"
     >
       <div className="flex flex-col">
         <div className="border-rule-soft flex items-center gap-2 border-b px-4 py-3">
@@ -192,7 +192,7 @@ export function FolderPicker({
               {crumbs.map((crumb, index) => {
                 const last = index === crumbs.length - 1
                 return (
-                  <li key={crumb.path} className="flex items-center gap-1">
+                  <li key={crumb.path} className="flex min-w-0 items-center gap-1 break-all">
                     {index > 0 ? (
                       <ChevronRight aria-hidden="true" className="text-ink-faint size-3.5" />
                     ) : null}
@@ -300,20 +300,19 @@ export function FolderPicker({
           ) : null}
         </div>
 
-        <div className="border-rule-soft flex flex-wrap items-center justify-between gap-3 border-t px-4 py-3">
+        <div className="border-rule-soft bg-paper-elevated sticky bottom-0 flex flex-wrap items-center justify-between gap-3 border-t px-4 py-3">
           <p className="text-ink-muted min-w-0 truncate text-sm">
             {current
               ? `Vas a usar: ${current.path === root ? 'Inicio' : baseName(current.path)}`
               : ''}
           </p>
           <div className="flex gap-2">
-            <Button type="button" variant="secondary" size="sm" onClick={onClose}>
+            <Button type="button" variant="secondary" onClick={onClose}>
               Cancelar
             </Button>
             <Button
               type="button"
               variant="primary"
-              size="sm"
               disabled={!current || loading}
               onClick={choose}
             >

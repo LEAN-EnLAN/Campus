@@ -112,6 +112,12 @@ function CourseDetailScreen() {
     }
   }
 
+  function openCapture() {
+    if (createItem.isPending) return
+    createItem.reset()
+    setCaptureOpen(true)
+  }
+
   return (
     <div className="blue-screen">
       <BackLink />
@@ -120,7 +126,7 @@ function CourseDetailScreen() {
         eyebrow={`${subject.yearLevel}° año · ${TERM_LABEL[subject.term]}`}
         title={subject.name}
         actions={
-          <Button variant="primary" onClick={() => setCaptureOpen(true)}>
+          <Button variant="primary" onClick={openCapture}>
             Agregar entrega
           </Button>
         }
@@ -134,7 +140,7 @@ function CourseDetailScreen() {
             <div className="flex flex-wrap items-end gap-4">
               <SelectField
                 label="¿Cómo vas?"
-                className="w-56"
+                className="w-full sm:w-56"
                 // Derived statuses (available/blocked/pending) have no stored value,
                 // so the select falls back to "Sin marcar".
                 value={STORED_STATUSES.has(subject.status) ? subject.status : ''}
@@ -182,8 +188,18 @@ function CourseDetailScreen() {
                 error={itemsQuery.error as Error}
                 onRetry={() => void itemsQuery.refetch()}
               />
+            ) : itemsQuery.isLoading ? (
+              <LoadingRows rows={2} />
             ) : items.length === 0 ? (
-              <EmptyState quiet title="No tenés nada anotado para esta materia." />
+              <EmptyState
+                quiet
+                title="No tenés nada anotado para esta materia."
+                action={
+                  <Button variant="secondary" onClick={openCapture}>
+                    Anotar la primera fecha
+                  </Button>
+                }
+              />
             ) : (
               <div>
                 {items.map((item) => (
@@ -198,7 +214,7 @@ function CourseDetailScreen() {
           </section>
 
           {/* Local folder only: the component renders nothing without one. */}
-          <div className="blue-panel">
+          <div className="blue-panel empty:hidden">
             <SubjectNotes subject={subject} />
           </div>
 
@@ -241,7 +257,9 @@ function CourseDetailScreen() {
           <section aria-labelledby="material" className="blue-panel flex flex-col gap-3">
             <SectionHeading id="material">Material</SectionHeading>
 
-            {resourcesQuery.error ? (
+            {resourcesQuery.isLoading ? (
+              <LoadingRows rows={2} />
+            ) : resourcesQuery.error ? (
               <ErrorState
                 title="No pudimos cargar tu material"
                 error={resourcesQuery.error as Error}
@@ -286,14 +304,15 @@ function CourseDetailScreen() {
                         </button>
                       )}
                       {resource.kind === 'note' && expandedResourceId === resource.id ? (
-                        <p className="text-ink-muted mt-2 text-sm whitespace-pre-wrap">
+                        <p className="text-ink-muted mt-2 text-sm break-words whitespace-pre-wrap">
                           {resource.body || 'Nota vacía.'}
                         </p>
                       ) : null}
                     </div>
                     <Button
                       variant="ghost"
-                      size="icon"
+                      size="icon-touch"
+                      disabled={deleteResource.isPending}
                       aria-label={`Borrar ${resource.title}`}
                       onClick={() => deleteResource.mutate(resource.id)}
                     >
@@ -339,16 +358,7 @@ function CourseDetailScreen() {
               <h2>Estado académico</h2>
             </div>
             <div className="mb-3">
-              <span
-                className="blue-chip"
-                data-status={
-                  subject.status === 'regularized'
-                    ? 'regularized'
-                    : subject.status === 'passed'
-                      ? 'passed'
-                      : 'in_progress'
-                }
-              >
+              <span className="blue-chip" data-status={subject.status}>
                 <AcademicStatus status={subject.status} />
               </span>
             </div>
@@ -377,7 +387,7 @@ function CourseDetailScreen() {
               {items.length} {items.length === 1 ? 'fecha registrada' : 'fechas registradas'}{' '}
               para esta materia.
             </p>
-            <Button variant="primary" onClick={() => setCaptureOpen(true)} className="w-full">
+            <Button variant="primary" onClick={openCapture} className="w-full">
               Agregar entrega
             </Button>
             <Link to="/calendar" className="blue-text-link mt-3 inline-flex">
@@ -403,6 +413,7 @@ function CourseDetailScreen() {
         open={captureOpen}
         onOpenChange={setCaptureOpen}
         subjects={plan.views}
+        items={itemsQuery.data ?? []}
         defaultSubjectId={courseId}
         onSubmit={handleCapture}
         isPending={createItem.isPending}

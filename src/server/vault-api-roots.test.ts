@@ -1,3 +1,4 @@
+import { execFileSync } from 'node:child_process'
 import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
 import { homedir, tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -101,20 +102,40 @@ describe('open', () => {
   })
 
   it.skipIf(process.platform === 'win32')('reports no permission as its own code', async () => {
-    // chmod(000) does not modify Windows ACLs; keep the POSIX permission
-    // integration test real rather than asserting a denial Windows cannot give.
-    // Windows API/junction confinement and errno mapping have separate coverage.
+    // chmod(000) does not modify Windows ACLs, and an icacls deny did not surface
+    // as permission_denied through this API on Windows. Windows junction
+    // confinement and errno mapping have separate coverage.
     // A path whose parent cannot be traversed. Skipped where the OS lets us through (root).
     if (process.getuid?.() === 0) return
     const locked = join(home, 'locked')
-    mkdirSync(join(locked, 'inner'), { recursive: true })
+    const inner = join(locked, 'inner')
+    mkdirSync(inner, { recursive: true })
     const { chmodSync } = await import('node:fs')
-    chmodSync(locked, 0o000)
+    const windows = process.platform === 'win32'
+    const identity = windows ? execFileSync('whoami', { encoding: 'utf8' }).trim() : ''
+    let deniedParent = false
+    let deniedChild = false
     try {
-      const res = await open(join(locked, 'inner'))
+      if (windows) {
+        // chmod(000) changes DOS attributes, not Windows directory ACLs.
+        // Deny access to both directories: a process with traverse privilege
+        // could otherwise resolve the child while the parent is unreadable.
+        execFileSync('icacls', [locked, '/deny', `${identity}:(F)`])
+        deniedParent = true
+        execFileSync('icacls', [inner, '/deny', `${identity}:(F)`])
+        deniedChild = true
+      } else {
+        chmodSync(locked, 0o000)
+      }
+      const res = await open(inner)
       expect(parse(res.body).code).toBe('permission_denied')
     } finally {
-      chmodSync(locked, 0o755)
+      if (windows) {
+        if (deniedParent) execFileSync('icacls', [locked, '/remove:d', identity])
+        if (deniedChild) execFileSync('icacls', [inner, '/remove:d', identity])
+      } else {
+        chmodSync(locked, 0o755)
+      }
     }
   })
 

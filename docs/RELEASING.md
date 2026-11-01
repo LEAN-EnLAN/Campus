@@ -1,0 +1,35 @@
+# Campus · Protocolo de versiones y GitHub Releases
+
+**Estado:** procedimiento preparado, **ninguna versión publicada**. La primera candidata prevista es `v0.1.0` (prerelease). Una rama en draft no es un lanzamiento.
+
+## Condiciones previas obligatorias
+
+1. Aprobar e integrar la estabilización en `main` tras revisar el PR técnico. Confirmar que CI `quality` y `database` terminan correctamente **en el commit a publicar**. No extrapolar un resultado de un commit anterior.
+2. Elegir y añadir una licencia de distribución real (`LICENSE`); la elección corresponde al propietario. Comprobar la compatibilidad de cualquier material de terceros.
+3. Escribir `CHANGELOG.md` con una sección `## [0.1.0]` y distinguir funciones verificadas, limitaciones y cambios incompatibles. Ajustar la versión en `package.json` antes del lanzamiento.
+4. Completar el ensayo con email real de restablecimiento de contraseña (SMTP/redirects configurados), comprobar rutas profundas, registros y políticas RLS. Los tests simulados **no** verifican la entrega de correo.
+5. Ensayar backup y restauración **LOCAL** siguiendo [`BACKUPS.md`](BACKUPS.md) y comparar la copia restaurada con los datos del vault. Para **Cloud** hace falta un procedimiento separado de backup PostgreSQL y un restore aislado con credenciales del entorno; el backup local **no** demuestra que Cloud esté protegido. Si falta alguna capacidad, marcar el bloqueo y no prometer protección de datos que no existe.
+6. Ejecutar la batería determinista del proyecto en un entorno compatible: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm test:db`, `pnpm build`, `pnpm deploy:check`; para interfaces, la matriz de `docs/TESTING.md`. Registrar los resultados reales y las excepciones. La falta de privilegios de symlinks en Windows no equivale a un pase local completo.
+7. Obtener aprobación explícita para publicar. **No** ejecutar este procedimiento automáticamente desde un push de PR ni generar tags desde un draft.
+
+## Preflight local (no publica nada)
+
+Partiendo de un `main` limpio y sincronizado con `origin/main`:
+
+```bash
+pnpm release:check --tag v0.1.0 --evidence <ruta-privada-al-json>
+```
+
+El comando es de solo lectura. Bloquea etiquetas que no coinciden con `package.json`, ausencia de licencia/changelog, rama distinta de `main`, cambios locales y referencias remotas divergentes o ya etiquetadas. **Además requiere un archivo de evidencias operativas**, externo al repositorio, para **SMTP real + contraseña cambiada e inicio de sesión** y para **dump y restauración Cloud/Postgres aislada con comprobación de RLS**. El esquema está en [`RELEASE-EVIDENCE.example.json`](RELEASE-EVIDENCE.example.json), y los pasos se documentan en [`BACKUPS.md`](BACKUPS.md). La evidencia debe referir al SHA exacto de `main`, contener dos `result=pass` con verificador, entorno, URL HTTPS a evidencia inspeccionable y pruebas realizadas durante los últimos 30 días. No usar direcciones de email, passwords ni secretos reales en el archivo.
+
+**Límite del gate:** valida la **estructura y vigencia de declaraciones humanas**, no se conecta a SMTP ni a una base de producción. Una declaración falsa o un enlace sin respaldo puede pasar el chequeo sintáctico; el propietario debe inspeccionar resultados y CI en el commit exacto antes de autorizar release. Ningún test simulado reemplaza un ensayo real. La falta de credenciales o de evidencia implica `BLOCK`, no un pase implícito.
+
+## Publicación manual, **solo después de aprobar todas las condiciones**
+
+Una persona mantenedora crea el tag anotado apuntando al commit exacto de `main` revisado y publica una **pre-release** de GitHub con las notas del changelog. Puede usar la interfaz de GitHub (Releases → Draft a new release). Debe verificar que el `target` es el commit revisado y activar `Set as a pre-release`.
+
+Después de publicar, comprobar públicamente nombre, commit, notas, marca de prerelease y URL; verificar que el checkout del tag sigue compilando. Anotar limitaciones conocidas y procedimiento de reporte de bugs. Publicar un release **no** despliega Campus ni migra una base de datos; deployment y migraciones tienen procesos y aprobación separados.
+
+## Volver atrás
+
+Si se detecta un defecto, suspender nuevos deployments, documentar el incidente y preparar un fix sobre una rama nueva. No reescribir un tag ya distribuido para aparentar una versión distinta. Publicar una versión correctiva y, si corresponde, señalar claramente la versión afectada. Para un problema de datos, ensayar la restauración en un entorno aislado antes de aplicarla a producción.

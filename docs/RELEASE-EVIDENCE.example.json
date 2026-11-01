@@ -1,0 +1,21 @@
+{
+  "schema": 1,
+  "releaseTag": "v0.1.0",
+  "commit": "REEMPLAZAR_POR_SHA_DE_MAIN_REVISADO",
+  "checks": {
+    "smtpPasswordReset": {
+      "result": "pending",
+      "testedAt": "REEMPLAZAR_POR_UTC_REAL_2026-10-28T00:00:00.000Z",
+      "verifiedBy": "REEMPLAZAR_POR_RESPONSABLE_REAL",
+      "environment": "REEMPLAZAR_POR_ENTORNO_SMTP_PROBADO",
+      "evidenceRef": "https://REEMPLAZAR_POR_LINK_AL_REGISTRO_DEL_ENSAYO"
+    },
+    "cloudRestore": {
+      "result": "pending",
+      "testedAt": "REEMPLAZAR_POR_UTC_REAL_2026-10-28T00:00:00.000Z",
+      "verifiedBy": "REEMPLAZAR_POR_RESPONSABLE_REAL",
+      "environment": "REEMPLAZAR_POR_RESTAURACION_AISLADA",
+      "evidenceRef": "https://REEMPLAZAR_POR_LINK_AL_REGISTRO_DEL_ENSAYO"
+    }
+  }
+}

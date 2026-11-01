@@ -14,9 +14,9 @@ const OK = join(ANCHOR, 'ok')
 
 describe('parseAllowedRoots', () => {
   it('defaults to the home directory when nothing is set', () => {
-    expect(parseAllowedRoots(undefined, HOME).roots).toEqual([HOME])
-    expect(parseAllowedRoots('', HOME).roots).toEqual([HOME])
-    expect(parseAllowedRoots('   ', HOME).roots).toEqual([HOME])
+    expect(parseAllowedRoots(undefined, HOME).roots).toEqual([resolve(HOME)])
+    expect(parseAllowedRoots('', HOME).roots).toEqual([resolve(HOME)])
+    expect(parseAllowedRoots('   ', HOME).roots).toEqual([resolve(HOME)])
   })
 
   it('an explicit list REPLACES the default, it does not extend it', () => {

@@ -108,7 +108,7 @@ export function SearchPalette({
   const hasQuery = query.trim().length >= 2
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center pt-[10vh]">
+    <div className="pt-dialog-top fixed inset-0 z-50 flex items-start justify-center">
       <button
         type="button"
         aria-label="Cerrar búsqueda"

@@ -33,7 +33,7 @@ export function SubjectDateRow({
         aria-pressed={done}
         className={cn(
           'relative mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full border transition-colors duration-150',
-          "before:absolute before:-inset-3 before:content-['']",
+          'before:absolute before:-inset-3',
           done
             ? 'border-success bg-success text-on-tint'
             : 'border-rule hover:border-ink-faint text-transparent',

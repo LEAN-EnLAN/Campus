@@ -10,7 +10,6 @@ import { vaultErrorMessage } from '@/lib/vault/error-messages'
 
 import { suggestFolder, type FolderSuggestion } from './default-folder'
 import { FolderPicker } from './folder-picker'
-import '../styles/blue-startup.css'
 
 /**
  * The startup surface — the ONE place allowed to talk about local and cloud as

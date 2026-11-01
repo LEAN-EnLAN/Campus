@@ -14,7 +14,6 @@ import {
   type NavItem,
 } from './nav-model'
 import { Button } from './ui/button'
-import '../styles/campus-blue.css'
 
 /**
  * Routes whose surface is a WORKSPACE, not a document.

@@ -328,7 +328,7 @@ function Entry({
         >
           <p className="text-ink text-xs">
             ¿Eliminar <strong>{entry.name}</strong>? Va a la papelera de tu carpeta (
-            <code className="text-[10px]">.campus/trash/</code>), recuperable a mano.
+            <code className="text-2xs">.campus/trash/</code>), recuperable a mano.
           </p>
           <div className="mt-1 flex gap-1">
             <button

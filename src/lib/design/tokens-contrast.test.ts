@@ -16,7 +16,7 @@ import { eventPaint } from '@/features/calendar/event-paint'
  */
 
 // Vitest runs from the repository root.
-const css = readFileSync('src/styles/globals.css', 'utf8')
+const css = readFileSync('src/styles/tokens.css', 'utf8')
 
 function tokensIn(block: string): Map<string, Oklch> {
   const tokens = new Map<string, Oklch>()

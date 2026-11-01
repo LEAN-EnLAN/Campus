@@ -120,7 +120,6 @@ export function SettingsScreen() {
             icon={Palette}
             title="Apariencia"
             description="El diseño azul de Campus, en modo claro."
-            className="blue-settings-appearance"
           >
             <div className="blue-settings-choice-grid">
               <div className="blue-settings-choice-group">
@@ -242,7 +241,7 @@ export function SettingsScreen() {
           </SettingsCard>
         </div>
 
-        <div className="blue-settings-column blue-settings-side">
+        <div className="blue-settings-column">
           {requiresAccount ? (
             <SettingsCard
               id="settings-account"

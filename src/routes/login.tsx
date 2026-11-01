@@ -15,8 +15,6 @@ import { useAuth } from '@/features/auth/auth-context'
 import { useDocumentTitle } from '@/lib/hooks/use-document-title'
 import { useWorkspace } from '@/lib/runtime/workspace'
 
-import '@/styles/blue-onboarding.css'
-
 export const Route = createFileRoute('/login')({
   component: LoginScreen,
 })

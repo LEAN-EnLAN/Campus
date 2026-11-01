@@ -435,11 +435,9 @@ function WorkspaceShellInner({
                     {/* The masthead aligns to the text inset, not to an
                         arbitrary px-4: the label, the first character of every
                         ruled line and the filename below share one axis. */}
-                    <div className="border-rule-soft flex items-center justify-between gap-3 border-b px-4 py-2 md:pr-[var(--rule-gutter)] md:pl-[var(--rule-text-inset)]">
+                    <div className="border-rule-soft md:pr-rule-gutter md:pl-rule-inset flex items-center justify-between gap-3 border-b px-4 py-2">
                       <div className="min-w-0" title={pane.activeTab}>
-                        <p className="text-2xs text-ink-muted tracking-[0.18em] uppercase">
-                          Notas
-                        </p>
+                        <p className="text-2xs text-ink-muted tracking-caps uppercase">Notas</p>
                         <h2 className="text-ink truncate font-serif text-lg font-semibold">
                           {(pane.activeTab.split('/').pop() ?? pane.activeTab).replace(
                             /\.md$/,

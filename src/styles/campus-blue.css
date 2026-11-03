@@ -47,17 +47,49 @@ body:has(.campus-blue) {
   color: var(--color-on-tint);
   background: rgb(255 255 255 / 0.1);
 }
+.campus-blue-logo-mark {
+  color: var(--blue-14);
+  fill: color-mix(in srgb, currentColor 30%, transparent);
+}
 .campus-blue-institution {
   color: var(--blue-16);
   border-top: 1px solid rgb(255 255 255 / 0.15);
   padding-top: 1.25rem;
 }
-.campus-blue-nav-footer button:not(.bg-accent) {
-  color: var(--color-rule);
+.campus-blue-institution-link {
+  text-underline-offset: 4px;
 }
-.campus-blue-nav-footer button.bg-accent {
-  background: var(--blue-10);
+.campus-blue-institution-link:hover {
   color: var(--color-on-tint);
+  text-decoration: underline;
+}
+/* The key cap on the rail: an outline in the rail's ink, not the paper's rule. */
+.campus-blue-nav-kbd {
+  padding: 0 0.3rem;
+  border: 1px solid rgb(255 255 255 / 0.28);
+  border-radius: var(--radius-xs);
+  color: var(--color-shell-ink-muted);
+  font-family: inherit;
+}
+/* An icon button on the navy mobile bar. Same hover language as the rail. */
+.campus-blue-shell-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: var(--radius-md);
+  color: var(--color-shell-ink);
+  transition: background-color var(--duration-quick) var(--ease-out-quiet);
+}
+.campus-blue-shell-icon:hover {
+  background: rgb(255 255 255 / 0.1);
+  color: var(--color-on-tint);
+}
+/* The accent focus ring is ~2:1 against navy (needs 3:1). On the two dark
+   surfaces the ring takes the rail's ink instead (>10:1). */
+.campus-blue :is(.campus-blue-nav, .campus-blue-mobile-top) :is(button, a):focus-visible {
+  outline-color: var(--color-shell-ink);
 }
 .campus-blue-topbar {
   background: var(--color-paper-elevated);
@@ -113,9 +145,6 @@ body:has(.campus-blue) {
 .campus-blue-mobile-top {
   background: var(--color-shell);
   color: var(--color-on-tint);
-}
-.campus-blue-mobile-top button {
-  color: var(--color-accent-soft);
 }
 .campus-blue main {
   color: var(--color-ink);

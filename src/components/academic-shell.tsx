@@ -82,7 +82,7 @@ export function AcademicShell({
             to="/today"
             className="campus-blue-logo mb-8 flex min-h-8 items-center gap-3 px-2 font-serif text-xl"
           >
-            <BookOpen aria-hidden="true" className="size-6 fill-blue-300/30 text-blue-300" />
+            <BookOpen aria-hidden="true" className="campus-blue-logo-mark size-6" />
             Campus
           </Link>
 
@@ -90,25 +90,27 @@ export function AcademicShell({
             <NavLink key={item.to} item={item} current={isCurrent(item.to)} />
           ))}
 
-          <div className="campus-blue-nav-footer mt-auto flex flex-col gap-2 pt-4">
+          {/* Everything down here sits on the navy rail, so it takes the rail's
+              hover/focus palette (`campus-blue-nav-*`), never the paper one:
+              the ghost Button's `bg-paper-sunken` hover turned "Buscar" into a
+              pale slab with near-white text on it. */}
+          <div className="mt-auto flex flex-col gap-2 pt-4">
             <p className="campus-blue-institution px-2 text-xs leading-relaxed">
               {academicLabel || 'Tu espacio de estudio'}
-              <Link to="/plan" className="block py-1 underline-offset-4 hover:underline">
+              <Link to="/plan" className="campus-blue-institution-link block py-1">
                 Ver mi plan académico
               </Link>
             </p>
-            <Button
-              variant="ghost"
+            <button
+              type="button"
               onClick={onSearch}
-              className="text-ink-muted justify-start gap-2 px-2"
+              className="campus-blue-nav-link campus-blue-nav-idle flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm font-medium transition-colors duration-150"
             >
-              <Search aria-hidden="true" />
+              <Search aria-hidden="true" className="size-5 shrink-0" />
               Buscar
-              <kbd className="border-rule text-2xs text-ink-muted ml-auto rounded border px-1">
-                /
-              </kbd>
-            </Button>
-            <Button variant="primary" onClick={onQuickCapture} className="gap-2">
+              <kbd className="campus-blue-nav-kbd text-2xs ml-auto">/</kbd>
+            </button>
+            <Button variant="primary" onClick={onQuickCapture}>
               <Plus aria-hidden="true" />
               Agregar
             </Button>
@@ -143,7 +145,7 @@ export function AcademicShell({
                     // the calendar measured 33554432px, the browser's ceiling.
                     'flex min-h-0 flex-col overflow-hidden'
                   : cn(
-                      'campus-blue-main px-4 pt-5 sm:px-6 md:pt-7 lg:px-0 lg:pb-16',
+                      'px-4 pt-5 sm:px-6 md:pt-7 lg:px-0 lg:pb-16',
                       // Room for the tab bar, and for the floating "+" only when
                       // there is one: padding for a button that is not there is
                       // dead paper, and a button with no padding covers rows.
@@ -190,8 +192,10 @@ function NavLink({ item, current }: { item: NavItem; current: boolean }) {
       to={item.to}
       aria-current={current ? 'page' : undefined}
       className={cn(
-        'campus-blue-nav-link relative flex min-h-12 items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors duration-150',
-        current ? 'campus-blue-nav-current font-semibold' : 'campus-blue-nav-idle',
+        // One weight for both states: the filled pill already says "current",
+        // and a bolder label would make the word jump in width on navigation.
+        'campus-blue-nav-link relative flex min-h-12 items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors duration-150',
+        current ? 'campus-blue-nav-current' : 'campus-blue-nav-idle',
       )}
     >
       <Icon aria-hidden="true" className="size-5 shrink-0" />
@@ -254,14 +258,19 @@ function MobileTopBar({ onSearch }: { onSearch: () => void }) {
     <header className="campus-blue-mobile-top sticky top-0 z-30 flex items-center justify-between gap-3 px-4 py-3 md:hidden">
       <Link
         to="/today"
-        className="-my-2.5 flex items-center gap-2 py-2.5 font-serif text-xl text-white"
+        className="campus-blue-logo -my-2.5 flex items-center gap-2 py-2.5 font-serif text-xl"
       >
-        <BookOpen aria-hidden="true" className="size-5 text-blue-300" />
+        <BookOpen aria-hidden="true" className="campus-blue-logo-mark size-5" />
         Campus
       </Link>
-      <Button variant="ghost" size="icon-touch" onClick={onSearch} aria-label="Buscar">
-        <Search aria-hidden="true" />
-      </Button>
+      <button
+        type="button"
+        onClick={onSearch}
+        aria-label="Buscar"
+        className="campus-blue-shell-icon"
+      >
+        <Search aria-hidden="true" className="size-5" />
+      </button>
     </header>
   )
 }

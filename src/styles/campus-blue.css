@@ -320,6 +320,8 @@ body:has(.campus-blue) {
   margin-bottom: 0.8rem;
 }
 .campus-blue .blue-panel-head h2 {
+  /* The title is the part that may wrap; the link beside it never does. */
+  min-width: 0;
   font-size: 1rem;
   font-weight: 700;
   color: var(--color-ink);
@@ -360,11 +362,24 @@ body:has(.campus-blue) {
 .campus-blue .blue-list .group:last-child {
   border-bottom: 0;
 }
+/* A short "go there" link: one line, arrow as a Lucide icon (not a "→" glyph,
+   which broke onto its own line in narrow panel heads). */
 .campus-blue .blue-text-link {
-  color: var(--color-accent);
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 0.25rem;
+  white-space: nowrap;
+  color: var(--color-accent-ink);
   text-decoration: none;
-  font-size: 0.85rem;
+  text-underline-offset: 3px;
+  font-size: var(--text-sm);
   font-weight: 600;
+}
+.campus-blue .blue-text-link svg {
+  flex: none;
+  width: 0.875rem;
+  height: 0.875rem;
 }
 .campus-blue .blue-text-link:hover {
   text-decoration: underline;

@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router'
-import { CalendarDays, Check, Plus } from 'lucide-react'
+import { ArrowRight, CalendarDays, Check, Plus } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
 import { DeadlineRow } from '@/components/deadline-row'
@@ -75,7 +75,8 @@ function SubjectsPanel({
       <div className="blue-panel-head">
         <h2>{title}</h2>
         <Link className="blue-text-link" to="/courses">
-          Ver todas →
+          Ver todas
+          <ArrowRight aria-hidden="true" />
         </Link>
       </div>
       <ul>
@@ -213,7 +214,8 @@ export function BlueTodayScreen() {
                 <div className="blue-panel-head">
                   <h2>Tu progreso académico</h2>
                   <Link className="blue-text-link" to="/plan">
-                    Ver plan →
+                    Ver plan
+                    <ArrowRight aria-hidden="true" />
                   </Link>
                 </div>
                 <ProgressLine
@@ -246,7 +248,8 @@ export function BlueTodayScreen() {
               <div className="blue-panel-head">
                 <h2>Calendario de hoy</h2>
                 <Link className="blue-text-link" to="/calendar">
-                  Ver calendario →
+                  Ver calendario
+                  <ArrowRight aria-hidden="true" />
                 </Link>
               </div>
               {today.today.length > 0 ? (

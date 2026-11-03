@@ -45,6 +45,18 @@ describe('SubjectRow', () => {
     )
   })
 
+  it('writes the status in words when it has no control to carry it', async () => {
+    await renderRow()
+    expect(
+      screen.getByRole('link', { name: /Análisis I.*Disponible para cursar/ }),
+    ).toBeInTheDocument()
+  })
+
+  it('leaves the status word to the control when there is one', async () => {
+    await renderRow(<button type="button">Estado: Disponible para cursar</button>)
+    expect(screen.getByRole('link', { name: /Análisis I/ })).not.toHaveTextContent('Disponible')
+  })
+
   it('carries a control without nesting it inside the link', async () => {
     await renderRow(<button type="button">Aprobada</button>)
     const button = screen.getByRole('button', { name: 'Aprobada' })

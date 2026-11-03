@@ -78,3 +78,35 @@ describe('floating add button', () => {
     },
   )
 })
+
+describe('top bar', () => {
+  it('has no notifications control and no avatar link to Settings', async () => {
+    mount('/today')
+    await tabBar()
+    expect(screen.queryByRole('link', { name: /notificaciones/i })).toBeNull()
+    expect(screen.queryByRole('button', { name: /notificaciones/i })).toBeNull()
+    expect(screen.queryByRole('link', { name: /ajustes de cuenta/i })).toBeNull()
+  })
+
+  it('renders the account menu trigger only when the layout hands it an account', async () => {
+    const Screen = () => (
+      <AcademicShell
+        onQuickCapture={vi.fn()}
+        onSearch={vi.fn()}
+        account={{
+          identity: { kind: 'local', folderName: 'Facultad' },
+          onChangeWorkspace: vi.fn(),
+        }}
+      >
+        <p>contenido</p>
+      </AcademicShell>
+    )
+    renderRoute(Screen, '/today')
+    const triggers = await screen.findAllByRole('button', {
+      name: 'Espacio de trabajo: Facultad',
+    })
+    // One on the desktop bar, one on the mobile bar; CSS shows one per viewport.
+    expect(triggers).toHaveLength(2)
+    for (const trigger of triggers) expect(trigger).toHaveAttribute('aria-haspopup', 'menu')
+  })
+})

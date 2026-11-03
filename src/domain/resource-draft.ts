@@ -21,7 +21,8 @@ export interface ResourceDraft {
 
 export type ValidResource =
   | { kind: 'link'; title: string; url: string; body: null }
-  | { kind: 'note'; title: string; url: null; body: string | null }
+  /** A title-only note keeps `body: ''`: the resources table refuses a note whose body is null. */
+  | { kind: 'note'; title: string; url: null; body: string }
 
 export interface DraftErrors {
   title?: string
@@ -221,6 +222,6 @@ export function validateDraft(draft: ResourceDraft): DraftValidation {
   const body = draft.body.trim()
   return {
     ok: true,
-    value: { kind: 'note', title, url: null, body: body === '' ? null : body },
+    value: { kind: 'note', title, url: null, body },
   }
 }

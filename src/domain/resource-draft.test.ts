@@ -161,7 +161,7 @@ describe('validateDraft', () => {
     })
     expect(validateDraft({ kind: 'note', title: 'N', url: 'junk', body: '  ' })).toEqual({
       ok: true,
-      value: { kind: 'note', title: 'N', url: null, body: null },
+      value: { kind: 'note', title: 'N', url: null, body: '' },
     })
   })
 })

@@ -170,8 +170,18 @@ One illustration family: raster, transparent, blue/white, no text, no logos, no 
 per image with a faint orbit ring. Generated (company Codex image tool) and exported by
 `scripts/optimize-assets.mjs` from 1280×800 PNG masters to `<name>.webp` (640 px) and
 `<name>@2x.webp` (1280 px); backgrounds are 1920 px single files. The registry is the contract: a name
-that is not in `illustrations.ts` does not type-check. Placement table and provenance:
-`docs/ux-research/BLUE_ASSET_MANIFEST.md`.
+that is not in `illustrations.ts` does not type-check. Placement table and provenance (source,
+style family, master SHA-256, bytes): `docs/ux-research/BLUE_ASSET_MANIFEST.md`.
+
+- **Masters stay out of the repo.** Only the exported WebP ships in `public/campus-blue-assets`; the
+  manifest's SHA-256 pins the exact PNG each file came from.
+- **Raster vs provisional.** 17 slots are raster (STYLE-A, Nov 2026). The rest still ship the
+  provisional SVG and are flagged `vector: true` in the registry, so `<Illustration>` serves `.svg`
+  for them. When a master lands: run the script, drop the flag; the registry test fails if a file the
+  registry points at is missing.
+- **Mount through `<Illustration>`**, never a hand-written `<img src="/campus-blue-assets/…">`: it
+  sets intrinsic `width`/`height` (no layout shift), `srcset` 1x/2x, lazy loading (pass `eager` only
+  above the fold) and the alt policy (`decorative` when the heading already says it).
 
 Rules: one spot illustration per panel, 176–240px on 390 and 220–300px on 1440, never above the
 primary action's fold; backgrounds are decorative (`alt=""`) and sit behind opaque panels.

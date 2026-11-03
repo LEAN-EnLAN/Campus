@@ -1545,3 +1545,49 @@ git status --short --untracked-files=all
 ```
 
 El bloque JSON se extrajo del Markdown y se validó mediante `JSON.parse` y `json.loads`; XML se validó con `xml.etree.ElementTree`. QA de integración, reflow y acciones del producto queda fuera de este trabajo de assets. No se hicieron commits, stage, push, merge, deploy ni cambios de componentes.
+
+## Raster STYLE-A — 3 de noviembre de 2026
+
+**17 slots pasan de SVG provisional a WebP raster.** Los 26 restantes siguen como SVG y el registro
+(`src/components/ui/illustrations.ts`) los marca `vector: true`; `<Illustration>` sirve `.svg` para
+esos y `.webp` + `@2x.webp` para los raster. Ningún SVG se borró: tres siguen referenciados
+directamente por pantallas (`startup.tsx`, `login.tsx`, `onboarding.tsx`) que todavía no usan
+`<Illustration>`.
+
+- **Origen:** Codex Image Gen integrado (herramienta de la empresa), familia **STYLE-A**; A01
+  (`workspace-local`) es la referencia de estilo del resto. Prompts exactos y rutas de origen en el
+  `MANIFEST.md` del lote (`campus-t5-assets`, P0 A01–A17).
+- **Masters:** PNG RGBA 1280×800, fondo transparente, contenido ajustado proporcionalmente a
+  972×608 y centrado. **No se versionan**: quedan fuera de `public/` y del repo, como exige
+  `scripts/optimize-assets.mjs`; el SHA-256 de abajo identifica el master exacto.
+- **Exportación:** `node scripts/optimize-assets.mjs <carpeta-de-pngs>` → `<name>.webp` (640 px) y
+  `<name>@2x.webp` (1280 px), WebP q82 / alpha q92.
+- **Revisión:** sin texto legible, letras, números, personas ni logos; los únicos símbolos son los
+  pedidos (tilde, más, atención). Contact sheet revisado a mano.
+- **Peso:** 34 archivos, 1.303.812 bytes en total (1x 14,6–27,7 KB; 2x 35,7–70,4 KB). Una pantalla
+  carga una sola ilustración a 1x o 2x según densidad.
+
+| ID  | Slot                    | SHA-256 del master PNG                                             | 1x bytes | 2x bytes |
+| --- | ----------------------- | ------------------------------------------------------------------ | -------: | -------: |
+| A01 | `workspace-local`       | `a0bf6e3a2627c2260d9b71977ffb56fd7135e1c1272f220cf7294a1172cae165` |   19.758 |   49.764 |
+| A02 | `workspace-cloud`       | `495fd6492002adeb82419282a569fc4bc066555095034350b2356003b8d01e04` |   24.238 |   60.738 |
+| A03 | `folder-picker-empty`   | `f0e7522ae1bd195a170bfbc97860754a46d5b7eb13edbaff8c0680d743456e89` |   19.028 |   46.834 |
+| A04 | `gentle-error`          | `465e111fdd26efa292ffb5f0596f49eac7abd2df1dcbea877111f1a20b026b59` |   14.966 |   36.576 |
+| A05 | `onboarding-university` | `64fc41cf81132e73084541d1846d56408151627e9a0aa72bf63dbaffa076d19e` |   24.922 |   62.076 |
+| A06 | `onboarding-faculty`    | `03ed602a5597f0f339bd05674bc171e71cb8e1560b292a1ff523d2fa63d42ff0` |   28.394 |   72.084 |
+| A07 | `onboarding-program`    | `f04be4d4cb6f6d004fca8a78d4ad41e08c8aba4812dfec7dbfd08be1100ca087` |   24.884 |   64.484 |
+| A08 | `onboarding-plan`       | `130b779286e1cae1378386bad2162c81c038116983c34ee16a2aa8bb89259879` |   21.088 |   52.130 |
+| A09 | `onboarding-manual`     | `f456e46b1bd0d21016b0c01385adb3b01b4bb9c28ab4933ae16a0bd0c00f1601` |   20.300 |   50.578 |
+| A10 | `onboarding-ready`      | `08e075ccef31fc5cceae5a730491c8256535c5f0f74b00564f6766e06ef561ee` |   22.310 |   55.772 |
+| A11 | `onboarding-progress`   | `9dacb02022f19721ac13f9e6c983d24f5af970fa8be909e3c7d6ddf099e3531a` |   20.760 |   49.796 |
+| A12 | `today-study`           | `0d8ba1a0af703578c7d6dbc1e9287f833cf2fee6164a47e61b0d99c49543573d` |   23.572 |   60.970 |
+| A13 | `today-empty`           | `1195bcedc871d660dba0ae15c2e07cf4b555b01f512daebe38c172c8ca883962` |   23.734 |   60.466 |
+| A14 | `plan-unselected`       | `d5ea0cf5e540456793484acd69d2976a98f10de040a0c35013b1c2d0b93f516c` |   19.004 |   46.042 |
+| A15 | `plan-empty`            | `2cbba11fc09f5b7702e72ff74db19ae1b8f92fbec49cfc0b898eb05f5625e01d` |   21.862 |   54.168 |
+| A16 | `courses-empty`         | `ca0b2c9220b0f0c2fac4b24702f89d44d66c4d3744cc6983e15ed79b5b512e61` |   21.466 |   52.824 |
+| A17 | `offline-study`         | `5ee95c0ba902bd502858ec3090a9d752eef4b297b1345db6714168d706446724` |   22.262 |   55.962 |
+
+Los `alt` del registro se reescribieron para describir el raster y no el SVG anterior (p. ej.
+`today-empty`: escritorio con cuaderno, taza y planta; `plan-unselected`: estante vacío con un libro).
+La tabla de superficies de arriba sigue siendo el mapa de destino; donde dice `<slot>.svg` y el slot
+ya es raster, la pantalla debe montar `<Illustration name="<slot>">` en lugar del `<img>` directo.

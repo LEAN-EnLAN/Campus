@@ -192,7 +192,7 @@ body:has(.campus-blue) {
 }
 .campus-account-identity {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
   gap: 0.75rem;
   padding: 0.625rem 0.625rem 0.75rem;
@@ -208,7 +208,10 @@ body:has(.campus-blue) {
   font-weight: var(--font-weight-label);
 }
 .campus-account-detail {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
   color: var(--color-ink-muted);
   font-size: var(--text-xs);
 }

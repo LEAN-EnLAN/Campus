@@ -26,7 +26,7 @@ describe('AccountMenu', () => {
     render(<AccountMenu identity={local} onChangeWorkspace={() => {}} />)
     await userEvent.click(screen.getByRole('button', { name: /Espacio de trabajo/ }))
     const menu = screen.getByRole('menu')
-    expect(menu).toHaveAccessibleName(/Facultad.*Espacio local · sin cuenta.*Local/)
+    expect(menu).toHaveAccessibleName(/Facultad.*Local.*Sin cuenta/)
     expect(screen.getAllByRole('menuitem').map((item) => item.textContent)).toEqual([
       'Cambiar de espacio de trabajo',
     ])
@@ -38,7 +38,7 @@ describe('AccountMenu', () => {
     const trigger = screen.getByRole('button', { name: 'Cuenta: ana@example.com' })
     expect(trigger).toHaveTextContent('A')
     await userEvent.click(trigger)
-    expect(screen.getByRole('menu')).toHaveAccessibleName(/ana@example\.com.*Campus Cloud/)
+    expect(screen.getByRole('menu')).toHaveAccessibleName(/ana@example\.com.*Cloud/)
     await userEvent.click(screen.getByRole('menuitem', { name: 'Cerrar sesión' }))
     expect(onSignOut).toHaveBeenCalledTimes(1)
     expect(screen.queryByRole('menu')).not.toBeInTheDocument()

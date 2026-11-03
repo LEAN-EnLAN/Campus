@@ -57,7 +57,6 @@ export function AccountMenu({
 
   const isLocal = identity.kind === 'local'
   const name = isLocal ? identity.folderName : (identity.email ?? 'Cuenta de Campus Cloud')
-  const detail = isLocal ? 'Espacio local · sin cuenta' : 'Campus Cloud'
   const initial = isLocal ? null : initialOf(identity.email)
   const ModeIcon = isLocal ? FolderOpen : Cloud
 
@@ -146,11 +145,13 @@ export function AccountMenu({
             </span>
             <span className="min-w-0">
               <span className="campus-account-name">{name}</span>
-              <span className="campus-account-detail">{detail}</span>
-            </span>
-            <span className="campus-account-mode">
-              <ModeIcon aria-hidden="true" className="size-3.5" />
-              {isLocal ? 'Local' : 'Cloud'}
+              <span className="campus-account-detail">
+                <span className="campus-account-mode">
+                  <ModeIcon aria-hidden="true" className="size-3.5" />
+                  {isLocal ? 'Local' : 'Cloud'}
+                </span>
+                {isLocal ? 'Sin cuenta' : null}
+              </span>
             </span>
           </div>
 

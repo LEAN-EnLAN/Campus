@@ -3,7 +3,7 @@ import { useEffect, useId, useRef, useState } from 'react'
 import type { ClipboardEvent, DragEvent, FormEvent } from 'react'
 
 import { Button } from '@/components/ui/button'
-import { TextareaField, TextField } from '@/components/ui/field'
+import { SelectField, TextareaField, TextField } from '@/components/ui/field'
 import { Modal } from '@/components/ui/modal'
 import {
   classifyIncoming,
@@ -34,10 +34,23 @@ export interface AddResourceDialogProps {
   readClipboard?: () => Promise<string | null>
   /** Read after the student clicks "Pegar"; may prompt. */
   pasteClipboard?: () => Promise<string | null>
+  /**
+   * Lets the student file the material under a subject (Material page). Omit it
+   * where the subject is already fixed (a subject's page). The caller owns the
+   * value, so its `onSave` reads the same choice the student sees.
+   */
+  subjectChoice?: SubjectChoice
+}
+
+export interface SubjectChoice {
+  subjects: readonly { id: string; name: string }[]
+  /** `null` is "Sin materia". */
+  value: string | null
+  onChange: (subjectId: string | null) => void
 }
 
 /**
- * Add material to a subject.
+ * Add material to a subject, or to the library with an optional subject.
  *
  * The main surface takes whatever the student already has — a dragged or pasted
  * link or text — and turns it into a draft with a suggested title. Typing it by
@@ -69,6 +82,7 @@ function AddResourceForm({
   error,
   readClipboard = readClipboardTextIfGranted,
   pasteClipboard = readClipboardText,
+  subjectChoice,
 }: Omit<AddResourceDialogProps, 'open'> & { titleId: string }) {
   const [draft, setDraft] = useState<ResourceDraft | null>(null)
   const [titleTouched, setTitleTouched] = useState(false)
@@ -398,6 +412,21 @@ function AddResourceForm({
           </span>
         </div>
       )}
+
+      {subjectChoice && subjectChoice.subjects.length > 0 ? (
+        <SelectField
+          label="Materia"
+          value={subjectChoice.value ?? ''}
+          onChange={(e) => subjectChoice.onChange(e.target.value || null)}
+        >
+          <option value="">Sin materia</option>
+          {subjectChoice.subjects.map((subject) => (
+            <option key={subject.id} value={subject.id}>
+              {subject.name}
+            </option>
+          ))}
+        </SelectField>
+      ) : null}
 
       {saveError ? (
         <p role="alert" className="text-danger text-sm font-medium">

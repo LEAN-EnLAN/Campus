@@ -1,36 +1,34 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { ExternalLink, FileText, Link2, Plus, Search, Trash2 } from 'lucide-react'
-import { useMemo, useRef, useState } from 'react'
+import { useMemo, useState } from 'react'
 
 import { EmptyState, ErrorState, LoadingRows } from '@/components/empty-state'
 import { PageHeader, SectionHeading } from '@/components/page-header'
 import { Button } from '@/components/ui/button'
-import { SelectField, TextField, TextareaField } from '@/components/ui/field'
 import { useAcademicPlan } from '@/features/academic/queries'
+import { AddResourceDialog } from '@/features/courses/add-resource-dialog'
 import { useCreateResource, useDeleteResource, useResources } from '@/features/items/queries'
 
 export const Route = createFileRoute('/_app/library')({
   component: LibraryScreen,
 })
 
-/** CAP-RESOURCE-001 — links and notes. No upload until validation is proven. */
+/**
+ * CAP-RESOURCE-001 — links and notes. No upload until validation is proven.
+ * Adding goes through the same dialog as a subject's page, plus a subject choice.
+ */
 function LibraryScreen() {
   const plan = useAcademicPlan()
   const resourcesQuery = useResources()
   const createResource = useCreateResource()
   const deleteResource = useDeleteResource()
 
-  const [kind, setKind] = useState<'link' | 'note'>('link')
-  const [title, setTitle] = useState('')
-  const [url, setUrl] = useState('')
-  const [body, setBody] = useState('')
-  const [subjectId, setSubjectId] = useState('')
-  const [submitted, setSubmitted] = useState(false)
-  const [showForm, setShowForm] = useState(false)
+  const [dialogOpen, setDialogOpen] = useState(false)
+  // Kept between openings: consecutive material usually goes to the same subject.
+  const [subjectId, setSubjectId] = useState<string | null>(null)
   const [search, setSearch] = useState('')
   const [filterKind, setFilterKind] = useState<'all' | 'link' | 'note'>('all')
   const [filterSubject, setFilterSubject] = useState('all')
-  const titleRef = useRef<HTMLInputElement>(null)
 
   const resources = resourcesQuery.data ?? []
   const filtered = useMemo(
@@ -61,41 +59,9 @@ function LibraryScreen() {
     }))
   }, [filtered, plan.subjectById])
 
-  // Our own checks and our own words: the form opts out of the browser's
-  // (`noValidate`), and Guardar is never silently disabled — it says what is missing.
-  const titleError = title.trim().length === 0 ? 'Poné un título.' : null
-  const linkError =
-    kind !== 'link'
-      ? null
-      : url.trim().length === 0
-        ? 'Pegá el link.'
-        : !/^https?:\/\/\S+$/i.test(url.trim())
-          ? 'El link tiene que empezar con http:// o https://.'
-          : null
-  const bodyError = kind === 'note' && body.trim().length === 0 ? 'Escribí la nota.' : null
-
-  async function handleSubmit(event: React.FormEvent) {
-    event.preventDefault()
-    setSubmitted(true)
-    if (titleError || linkError || bodyError) return
-    try {
-      await createResource.mutateAsync({
-        title,
-        kind,
-        curriculumSubjectId: subjectId || null,
-        url: kind === 'link' ? url.trim() : null,
-        body: kind === 'note' ? body.trim() : null,
-      })
-      setTitle('')
-      setUrl('')
-      setBody('')
-      setSubmitted(false)
-      // Keep the form visible for consecutive links or notes; a disappearing
-      // form would otherwise send keyboard focus into an unmounted field.
-      titleRef.current?.focus()
-    } catch {
-      // Preserve user input and expose the mutation error in the form.
-    }
+  function openDialog() {
+    createResource.reset()
+    setDialogOpen(true)
   }
 
   return (
@@ -104,9 +70,9 @@ function LibraryScreen() {
         title="Material"
         description="Tus links y notas, organizados por materia."
         actions={
-          <Button variant="primary" onClick={() => setShowForm((value) => !value)}>
+          <Button variant="primary" onClick={openDialog}>
             <Plus aria-hidden="true" className="size-4" />
-            {showForm ? 'Cerrar formulario' : 'Agregar material'}
+            Agregar material
           </Button>
         }
       />
@@ -125,86 +91,16 @@ function LibraryScreen() {
         </div>
       </div>
 
-      {showForm ? (
-        <section
-          aria-labelledby="agregar-material"
-          className="blue-secondary-panel flex flex-col gap-4"
-        >
-          <SectionHeading id="agregar-material">Agregar</SectionHeading>
-
-          <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <SelectField
-                label="Tipo"
-                value={kind}
-                onChange={(e) => setKind(e.target.value as 'link' | 'note')}
-              >
-                <option value="link">Link</option>
-                <option value="note">Nota</option>
-              </SelectField>
-
-              <SelectField
-                label="Materia"
-                value={subjectId}
-                onChange={(e) => setSubjectId(e.target.value)}
-              >
-                <option value="">Sin materia</option>
-                {plan.views.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name}
-                  </option>
-                ))}
-              </SelectField>
-            </div>
-
-            <TextField
-              ref={titleRef}
-              label="Título"
-              placeholder={kind === 'link' ? 'Apunte de la cátedra' : 'Fórmulas de la unidad 3'}
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              error={submitted ? titleError : null}
-              required
-            />
-
-            {kind === 'link' ? (
-              <TextField
-                label="Link"
-                type="url"
-                placeholder="https://…"
-                value={url}
-                onChange={(e) => setUrl(e.target.value)}
-                error={submitted ? linkError : null}
-                required
-              />
-            ) : (
-              <TextareaField
-                label="Nota"
-                placeholder="Escribí lo que no querés olvidarte."
-                value={body}
-                onChange={(e) => setBody(e.target.value)}
-                error={submitted ? bodyError : null}
-                required
-              />
-            )}
-
-            {createResource.error ? (
-              <p role="alert" className="text-danger text-sm font-medium">
-                {(createResource.error as Error).message}
-              </p>
-            ) : null}
-
-            <Button
-              type="submit"
-              variant="primary"
-              className="self-start"
-              disabled={createResource.isPending}
-            >
-              {createResource.isPending ? 'Guardando…' : 'Guardar'}
-            </Button>
-          </form>
-        </section>
-      ) : null}
+      <AddResourceDialog
+        open={dialogOpen}
+        onClose={() => setDialogOpen(false)}
+        onSave={(resource) =>
+          createResource.mutateAsync({ ...resource, curriculumSubjectId: subjectId })
+        }
+        saving={createResource.isPending}
+        error={createResource.error}
+        subjectChoice={{ subjects: plan.views, value: subjectId, onChange: setSubjectId }}
+      />
 
       <section className="blue-secondary-panel" aria-label="Material guardado">
         <div className="blue-secondary-panel-title">
@@ -273,7 +169,7 @@ function LibraryScreen() {
             title="Todavía no guardaste nada"
             description="Guardá el link al drive de la cátedra o esa nota que siempre buscás antes del parcial."
             action={
-              <Button variant="primary" onClick={() => setShowForm(true)}>
+              <Button variant="primary" onClick={openDialog}>
                 Agregar material
               </Button>
             }

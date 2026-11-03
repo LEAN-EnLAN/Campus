@@ -298,4 +298,59 @@ describe('AddResourceDialog', () => {
       'https://example.com/apunte',
     )
   })
+  it('asks for no subject where the subject is already fixed', async () => {
+    await mount()
+    expect(screen.queryByRole('combobox', { name: 'Materia' })).not.toBeInTheDocument()
+  })
+
+  it('lets the library file the material under a subject, or under none', async () => {
+    const saved: { resource: ValidResource; subjectId: string | null }[] = []
+    function LibraryHarness() {
+      const [open, setOpen] = useState(true)
+      const [subjectId, setSubjectId] = useState<string | null>(null)
+      return (
+        <AddResourceDialog
+          open={open}
+          onClose={() => setOpen(false)}
+          onSave={async (resource) => {
+            saved.push({ resource, subjectId })
+          }}
+          saving={false}
+          error={null}
+          readClipboard={() => Promise.resolve(null)}
+          pasteClipboard={() => Promise.resolve(null)}
+          subjectChoice={{
+            subjects: [
+              { id: 'am1', name: 'Análisis Matemático I' },
+              { id: 'ag', name: 'Álgebra' },
+            ],
+            value: subjectId,
+            onChange: setSubjectId,
+          }}
+        />
+      )
+    }
+    const user = userEvent.setup()
+    render(<LibraryHarness />)
+    await screen.findByRole('dialog', { name: 'Agregar material' })
+
+    const select = screen.getByRole('combobox', { name: 'Materia' })
+    expect(select).toHaveDisplayValue('Sin materia')
+    expect(screen.getAllByRole('option').map((o) => o.textContent)).toEqual([
+      'Sin materia',
+      'Análisis Matemático I',
+      'Álgebra',
+    ])
+
+    await user.selectOptions(select, 'Álgebra')
+    pasteOn(surface(), { text: 'https://example.com/guia' })
+    await user.click(screen.getByRole('button', { name: 'Guardar' }))
+
+    expect(saved).toEqual([
+      {
+        resource: { kind: 'link', title: 'Guia', url: 'https://example.com/guia', body: null },
+        subjectId: 'ag',
+      },
+    ])
+  })
 })

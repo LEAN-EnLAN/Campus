@@ -81,6 +81,26 @@ describe('StatusControl', () => {
     expect(screen.queryByRole('group', { name: 'Elegir estado de Álgebra' })).toBeNull()
   })
 
+  it('confirms a save inside the trigger and a live region, never a line that shifts the row', async () => {
+    renderControl('pending')
+    const trigger = screen.getByRole('button', { name: /Estado de Álgebra/ })
+    await userEvent.click(within(await openChoices()).getByRole('button', { name: 'Cursando' }))
+    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('Guardado'))
+    expect(screen.getByRole('status')).toHaveClass('sr-only')
+    // The trigger still reads as a status, so the row keeps one control height.
+    expect(trigger.parentElement?.parentElement?.children).toHaveLength(2)
+  })
+
+  it('opens its choices inside the Campus Blue scope so they keep its colours', async () => {
+    render(
+      <div className="campus-blue" data-testid="scope">
+        <StatusControl subjectName="Álgebra" status="pending" onChange={() => undefined} />
+      </div>,
+    )
+    const choices = await openChoices()
+    expect(screen.getByTestId('scope')).toContainElement(choices)
+  })
+
   it('uses null to clear and does not re-write the selected state', async () => {
     const onChange = vi.fn(() => Promise.resolve())
     renderControl('passed', onChange)

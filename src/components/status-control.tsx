@@ -3,6 +3,7 @@ import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react'
 import { createPortal } from 'react-dom'
 
 import { StatusGlyph, statusLabel } from '@/components/academic-status'
+import { statusChipClass } from '@/components/academic-status-vocabulary'
 import { ENTRY_OPTIONS, entryValueOf, type EntryOption } from '@/domain/progress-entry'
 import type { StoredSubjectStatus, SubjectStatus } from '@/domain/types'
 import { cn } from '@/lib/utils'
@@ -43,6 +44,7 @@ export function StatusControl({
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [position, setPosition] = useState({ top: 0, left: 0, width: 238 })
+  const [host, setHost] = useState<Element | null>(null)
 
   useEffect(() => () => clearTimeout(timer.current), [])
 
@@ -97,6 +99,7 @@ export function StatusControl({
       left: Math.max(8, Math.min(rect.right - width, window.innerWidth - width - 8)),
       width,
     })
+    setHost(portalHost(triggerRef.current))
     setOpen(true)
   }
 
@@ -139,8 +142,13 @@ export function StatusControl({
   const displayStatus = status === 'available' || status === 'blocked' ? status : current
   const displayLabel = displayStatus === null ? 'Sin marcar' : statusLabel(displayStatus)
 
+  const shown = displayStatus ?? 'pending'
+
   return (
-    <div className={cn('inline-flex min-w-0 flex-col items-start gap-1', className)}>
+    // Only the trigger takes layout space, so a row can centre it against its own
+    // content. Save feedback lives INSIDE the trigger (the chevron turns into a
+    // check) plus a live region; a line under the button pushed it 10px off-centre.
+    <div className={cn('inline-flex min-w-0 flex-col items-end gap-1', className)}>
       <div role="group" aria-label={`Estado de ${subjectName}`}>
         <button
           ref={triggerRef}
@@ -152,41 +160,46 @@ export function StatusControl({
           disabled={saving}
           onClick={toggle}
           className={cn(
-            'border-rule bg-paper-elevated text-ink hover:border-accent-ink hover:bg-accent-soft inline-flex min-h-11 items-center justify-between gap-2 rounded-lg border px-3 text-xs font-semibold shadow-sm transition-colors',
-            variant === 'compact' ? 'min-w-32' : 'min-w-36',
-            saving && 'cursor-wait opacity-70',
+            // A tinted chip in the status's own tone: the column of chips is what
+            // makes a long list scannable. 32px visible, 44px to the touch (the
+            // ::after extends the hit area without changing the row's height).
+            'relative inline-flex h-8 items-center gap-1.5 rounded-md border border-transparent px-2.5 text-xs font-medium whitespace-nowrap',
+            'after:absolute after:inset-x-0 after:-inset-y-1.5',
+            'transition-shadow duration-150 hover:ring-1 hover:ring-current/30',
+            statusChipClass(shown),
+            variant === 'full' ? 'min-w-36 justify-between' : 'min-w-28 justify-between',
+            saving && 'cursor-wait',
           )}
         >
           {saving ? (
-            <LoaderCircle aria-hidden="true" className="size-4 animate-spin" />
-          ) : (
-            <StatusGlyph status={displayStatus ?? 'pending'} />
-          )}
+            <LoaderCircle aria-hidden="true" className="size-4 shrink-0 animate-spin" />
+          ) : variant === 'full' ? (
+            <StatusGlyph status={shown} className="text-current" />
+          ) : null}
           <span className="flex-1 text-left">{displayLabel}</span>
-          <ChevronDown
-            aria-hidden="true"
-            className={cn('size-4 shrink-0 transition-transform', open && 'rotate-180')}
-          />
+          {saved ? (
+            <Check aria-hidden="true" className="size-3.5 shrink-0" strokeWidth={2.5} />
+          ) : (
+            <ChevronDown
+              aria-hidden="true"
+              className={cn(
+                'size-3.5 shrink-0 opacity-70 transition-transform',
+                open && 'rotate-180',
+              )}
+            />
+          )}
         </button>
       </div>
-      <span
-        role="status"
-        aria-live="polite"
-        className="text-ink-muted inline-flex min-h-4 items-center gap-1 text-xs"
-      >
-        {saved ? (
-          <>
-            <Check aria-hidden="true" className="size-3" />
-            Guardado
-          </>
-        ) : null}
+      <span role="status" aria-live="polite" className="sr-only">
+        {saved ? 'Guardado' : null}
       </span>
       {error ? (
-        <p role="alert" className="text-danger max-w-60 text-xs font-medium">
+        <p role="alert" className="text-danger max-w-60 text-right text-xs font-medium">
           {error}
         </p>
       ) : null}
       {open &&
+        host &&
         createPortal(
           <div
             id={menuId}
@@ -214,8 +227,17 @@ export function StatusControl({
               </button>
             ))}
           </div>,
-          document.body,
+          host,
         )}
     </div>
   )
+}
+
+/**
+ * The menu is portaled out of scrolling rows, but NOT out of the Campus Blue
+ * scope: under `<body>` its tokens resolved to the legacy warm palette (a beige
+ * menu over a blue screen). The nearest `.campus-blue` keeps the role values.
+ */
+function portalHost(anchor: HTMLElement | null): Element {
+  return anchor?.closest('.campus-blue') ?? document.body
 }

@@ -94,6 +94,15 @@
   --text-3xl: 2.25rem;
   --text-3xl--line-height: 1.15;
 
+  /* Weight scale. Prompt ships four static faces (prompt.css: 400/500/600/700);
+     the browser does not interpolate between them, it SNAPS to the nearest face
+     above 500 — so a `650` rendered as Bold. Size carries rank between titles;
+     weight only separates the three jobs below. 700 is reserved and unused. */
+  --font-weight-body: 400; /* reading text, meta (meta is muted, not lighter) */
+  --font-weight-label: 500; /* buttons, links, nav, field labels, chips, eyebrows */
+  --font-weight-title: 600; /* card/section titles, emphasis (<strong>) */
+  --font-weight-display: 600; /* page titles — same face, size does the work */
+
   /* Geometry */
   --radius-xs: 3px; /* focus ring corners, key caps */
   --radius-sm: 6px; /* chips, small tiles */

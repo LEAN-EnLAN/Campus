@@ -20,7 +20,8 @@ const SIZE = {
 } as const
 
 /**
- * A registered raster illustration (WebP, transparent, 1x + 2x).
+ * A registered illustration: raster WebP (transparent, 1x + 2x), or the
+ * provisional SVG while the registry still flags the slot `vector`.
  *
  * Accessibility is a decision the caller makes, not a default:
  *   - `decorative`  the heading/text beside it already says it. alt="".
@@ -44,12 +45,15 @@ export function Illustration({
   eager?: boolean
   className?: string
 }) {
-  const { width, height, alt: described } = ILLUSTRATIONS[name]
-  // Backgrounds (1920 wide) ship one size; spots ship 1x and 2x.
-  const hasRetina = width < 1920
+  const entry = ILLUSTRATIONS[name]
+  const { width, height, alt: described } = entry
+  // Provisional SVGs scale on their own; raster backgrounds (1920 wide) ship
+  // one size; raster spots ship 1x and 2x.
+  const vector = 'vector' in entry
+  const hasRetina = !vector && width < 1920
   return (
     <img
-      src={`${BASE}/${name}.webp`}
+      src={`${BASE}/${name}.${vector ? 'svg' : 'webp'}`}
       srcSet={hasRetina ? `${BASE}/${name}.webp 1x, ${BASE}/${name}@2x.webp 2x` : undefined}
       alt={decorative ? '' : (alt ?? described)}
       width={width}

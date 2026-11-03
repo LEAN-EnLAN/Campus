@@ -1,3 +1,6 @@
+import { existsSync } from 'node:fs'
+import { join } from 'node:path'
+
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 
@@ -33,6 +36,21 @@ describe('Illustration', () => {
   it('ships backgrounds as a single size', () => {
     const { container } = render(<Illustration name="ambient-night" decorative />)
     expect(container.querySelector('img')).not.toHaveAttribute('srcset')
+  })
+
+  it('serves the provisional SVG for a slot that has no raster master yet', () => {
+    render(<Illustration name="material-empty" />)
+    const img = screen.getByRole('img', { name: ILLUSTRATIONS['material-empty'].alt })
+    expect(img).toHaveAttribute('src', '/campus-blue-assets/material-empty.svg')
+    expect(img).not.toHaveAttribute('srcset')
+  })
+
+  it('has every file the registry points at in public/', () => {
+    const dir = join(process.cwd(), 'public', 'campus-blue-assets')
+    for (const [name, entry] of Object.entries(ILLUSTRATIONS)) {
+      const files = 'vector' in entry ? [`${name}.svg`] : [`${name}.webp`, `${name}@2x.webp`]
+      for (const file of files) expect(existsSync(join(dir, file)), file).toBe(true)
+    }
   })
 
   it('registers one entry per illustration, each with Spanish alt text', () => {

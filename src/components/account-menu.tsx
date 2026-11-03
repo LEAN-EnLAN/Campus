@@ -161,7 +161,6 @@ export function AccountMenu({
             role="menu"
             aria-labelledby={identityId}
             onKeyDown={onMenuKeyDown}
-            className="campus-account-menu"
           >
             <button
               type="button"

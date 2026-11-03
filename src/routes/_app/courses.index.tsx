@@ -1,11 +1,12 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { Columns3, List, Search } from 'lucide-react'
+import { Columns3, Layers, List, Search, type LucideIcon } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
+import { StatusGlyph } from '@/components/academic-status'
+import { GROUP_STATUS } from '@/components/academic-status-vocabulary'
 import { EmptyState, ErrorState, LoadingRows } from '@/components/empty-state'
 import { PageHeader, SectionHeading } from '@/components/page-header'
 import { SubjectRow } from '@/components/subject-row'
-import { Button } from '@/components/ui/button'
 import {
   AddManualSubjectForm,
   RemoveManualSubjectButton,
@@ -22,6 +23,7 @@ import {
 import type { SubjectView } from '@/domain/types'
 import { useAcademicPlan } from '@/features/academic/queries'
 import { SubjectBoardView } from '@/features/courses/subject-board-view'
+import { cn } from '@/lib/utils'
 
 function searchKey(text: string): string {
   return text
@@ -36,6 +38,27 @@ export const Route = createFileRoute('/_app/courses/')({
 
 type Filter = StatusGroupId | 'todas'
 type View = 'list' | 'board'
+
+const VIEWS: { value: View; label: string; Icon: LucideIcon }[] = [
+  { value: 'list', label: 'Lista', Icon: List },
+  { value: 'board', label: 'Tablero', Icon: Columns3 },
+]
+
+/** One quiet track for both segmented controls; the chosen segment is lifted onto white. */
+const SEGMENTED =
+  'border-rule-soft bg-paper-sunken inline-flex flex-wrap items-center gap-0.5 rounded-lg border p-0.5'
+
+function segmentClass(active: boolean): string {
+  return cn(
+    // 32px visible; the ::after makes it 44px to a finger without growing the track.
+    'relative inline-flex h-8 items-center gap-1.5 rounded-md px-2.5 text-xs font-medium whitespace-nowrap',
+    'after:absolute after:inset-x-0 after:-inset-y-1.5',
+    'transition-colors duration-150',
+    active
+      ? 'bg-paper-elevated text-ink shadow-raised'
+      : 'text-ink-muted hover:bg-paper-elevated/70 hover:text-ink',
+  )
+}
 
 const FILTERS: { value: Filter; label: string }[] = [
   ...STATUS_GROUPS.map((g) => ({ value: g.id as Filter, label: g.label })),
@@ -175,56 +198,51 @@ function CoursesScreen() {
                 onChange={(event) => setQuery(event.target.value)}
               />
             </label>
-            {/* The board shows every column at once, so status chips would only
-            contradict it (a pressed chip over a board that ignores it). */}
-            {showBoard ? (
-              <div className="hidden" />
-            ) : (
-              <div
-                role="group"
-                aria-label="Filtrar materias"
-                className="flex flex-wrap gap-1.5"
-              >
-                {filters.map((f) => (
-                  <Button
-                    key={f.value}
-                    size="sm"
-                    variant={filter === f.value ? 'primary' : 'secondary'}
-                    aria-pressed={filter === f.value}
-                    onClick={() => chooseFilter(f.value)}
-                  >
-                    {f.label}
-                    {/* No opacity at all. opacity-70 composited to 3.84:1 and failed; 90%
-                  measured ~5.3:1 yet still tripped axe at 390px, which means it was
-                  sitting close enough to the threshold to be decided by rounding.
-                  A value that passes at four viewports out of five is not passing. */}
-                    <span className="text-xs" data-numeric>
-                      {counts.get(f.value) ?? 0}
-                    </span>
-                  </Button>
-                ))}
+            {/* The board shows every column at once, so status filters would only
+            contradict it (a pressed filter over a board that ignores it). */}
+            {showBoard ? null : (
+              <div role="group" aria-label="Filtrar materias" className={SEGMENTED}>
+                {filters.map((f) => {
+                  const active = filter === f.value
+                  const count = counts.get(f.value) ?? 0
+                  return (
+                    <button
+                      key={f.value}
+                      type="button"
+                      aria-pressed={active}
+                      title={`${f.label}: ${count}`}
+                      onClick={() => chooseFilter(f.value)}
+                      className={segmentClass(active)}
+                    >
+                      {f.value === 'todas' ? (
+                        <Layers aria-hidden="true" className="text-ink-muted size-4 shrink-0" />
+                      ) : (
+                        <StatusGlyph status={GROUP_STATUS[f.value]} />
+                      )}
+                      {/* The glyph is the filter; the word only on the chosen one.
+                      Everyone else still hears it (sr-only) and sees it on hover. */}
+                      <span className={active ? undefined : 'sr-only'}>{f.label}</span>{' '}
+                      <span data-numeric>{count}</span>
+                    </button>
+                  )
+                })}
               </div>
             )}
 
-            <div role="group" aria-label="Cómo ver tus materias" className="flex gap-1.5">
-              <Button
-                size="sm"
-                variant={view === 'list' ? 'primary' : 'secondary'}
-                aria-pressed={view === 'list'}
-                onClick={() => setView('list')}
-              >
-                <List aria-hidden="true" />
-                Lista
-              </Button>
-              <Button
-                size="sm"
-                variant={view === 'board' ? 'primary' : 'secondary'}
-                aria-pressed={view === 'board'}
-                onClick={() => setView('board')}
-              >
-                <Columns3 aria-hidden="true" />
-                Tablero
-              </Button>
+            <div role="group" aria-label="Cómo ver tus materias" className={SEGMENTED}>
+              {VIEWS.map(({ value, label, Icon }) => (
+                <button
+                  key={value}
+                  type="button"
+                  aria-pressed={view === value}
+                  title={label}
+                  onClick={() => setView(value)}
+                  className={segmentClass(view === value)}
+                >
+                  <Icon aria-hidden="true" className="size-4 shrink-0" />
+                  <span className={view === value ? undefined : 'sr-only'}>{label}</span>
+                </button>
+              ))}
             </div>
           </div>
 
@@ -265,7 +283,7 @@ function CoursesScreen() {
                 }
               />
             ) : (
-              <ul className="blue-list">
+              <ul className="border-rule bg-paper-elevated mt-1 flex flex-col gap-px rounded-lg border p-1">
                 {visible.map((subject) => (
                   <li key={subject.id}>
                     <SubjectRow
@@ -315,18 +333,7 @@ function CoursesScreen() {
               <div className="min-w-0 flex-1">
                 {STATUS_GROUPS.map((group) => (
                   <div key={group.id} className="blue-stat-row">
-                    <span
-                      className="blue-status-dot"
-                      data-status={
-                        group.id === 'aprobadas'
-                          ? 'passed'
-                          : group.id === 'final_pendiente'
-                            ? 'regularized'
-                            : group.id === 'disponibles'
-                              ? 'available'
-                              : 'in_progress'
-                      }
-                    />{' '}
+                    <StatusGlyph status={GROUP_STATUS[group.id]} />{' '}
                     <strong>{groups[group.id].length}</strong>{' '}
                     <span className="truncate">{group.label}</span>
                   </div>
@@ -340,16 +347,16 @@ function CoursesScreen() {
               <h2>Estado actual</h2>
             </div>
             <div className="blue-stat-row">
-              <span className="blue-status-dot" />
+              <StatusGlyph status="in_progress" />
               {groups.cursando.length} materias cursando
             </div>
             <div className="blue-stat-row">
-              <span className="blue-status-dot" data-status="regularized" />
+              <StatusGlyph status="regularized" />
               {groups.final_pendiente.length} finales pendientes
             </div>
             {plan.prerequisitesKnown ? (
               <div className="blue-stat-row">
-                <span className="blue-status-dot" data-status="available" />
+                <StatusGlyph status="available" />
                 {groups.disponibles.length} disponibles
               </div>
             ) : (

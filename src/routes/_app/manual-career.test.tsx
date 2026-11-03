@@ -148,6 +148,41 @@ describe('Materias', () => {
     expect(screen.getByRole('button', { name: /Cursando/, pressed: true })).toBeInTheDocument()
   })
 
+  it('filters by status glyph and count, naming only the chosen one but every one to a reader', async () => {
+    const store = emptyStore({
+      subjects: [subject('a', 'Álgebra'), subject('b', 'Física')],
+      states: [
+        {
+          curriculumSubjectId: 'a',
+          status: 'in_progress',
+          grade: null,
+          startedAt: null,
+          completedAt: null,
+          notes: null,
+        },
+      ],
+    })
+    await renderScreen(<Courses />, fakeCampusBackend(store))
+    const filters = await screen.findByRole('group', { name: 'Filtrar materias' })
+
+    // Accessible name = label + count, for the chosen filter and the rest alike.
+    const cursando = within(filters).getByRole('button', { name: 'Cursando 1', pressed: true })
+    const todas = within(filters).getByRole('button', { name: 'Todas 2', pressed: false })
+    // Each filter wears its status glyph, and hovering says what it is.
+    expect(cursando.querySelector('svg')).toBeInTheDocument()
+    expect(todas).toHaveAttribute('title', 'Todas: 2')
+    // Only the chosen filter shows its word; the others keep it for screen readers.
+    expect(within(todas).getByText('Todas')).toHaveClass('sr-only')
+    expect(within(cursando).getByText('Cursando')).not.toHaveClass('sr-only')
+    expect(screen.queryByRole('group', { name: 'Estado de Física' })).toBeNull()
+
+    await userEvent.click(todas)
+    expect(
+      within(filters).getByRole('button', { name: 'Todas 2', pressed: true }),
+    ).toBeInTheDocument()
+    expect(await screen.findByRole('group', { name: 'Estado de Física' })).toBeInTheDocument()
+  })
+
   it('without a carrera it still asks to choose one', async () => {
     await renderScreen(<Courses />, fakeCampusBackend(emptyStore({ context: null })))
     expect(await screen.findByText('Todavía no elegiste tu carrera')).toBeInTheDocument()

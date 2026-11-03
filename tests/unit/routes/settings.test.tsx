@@ -67,7 +67,8 @@ describe('Ajustes with a local folder', () => {
 
     const section = await screen.findByRole('region', { name: 'Espacio de trabajo' })
     expect(within(section).getByText('En esta computadora')).toBeInTheDocument()
-    expect(within(section).getAllByText('Campus', { exact: true })).toHaveLength(2)
+    // Once, in its own row: the old card repeated it in a header block and a 'Nombre' row.
+    expect(within(section).getByText('Campus', { exact: true })).toBeInTheDocument()
     expect(within(section).getByText('/home/estudiante/Campus')).toBeInTheDocument()
   })
 

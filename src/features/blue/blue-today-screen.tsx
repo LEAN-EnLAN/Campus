@@ -247,8 +247,10 @@ export function BlueTodayScreen() {
             <section className="blue-panel">
               <div className="blue-panel-head">
                 <h2>Calendario de hoy</h2>
-                <Link className="blue-text-link" to="/calendar">
-                  Ver calendario
+                {/* 'Abrir', not 'Ver calendario': the rail is 280px and the title
+                    already says calendar; the longer label forced a second line. */}
+                <Link className="blue-text-link" to="/calendar" aria-label="Abrir calendario">
+                  Abrir
                   <ArrowRight aria-hidden="true" />
                 </Link>
               </div>

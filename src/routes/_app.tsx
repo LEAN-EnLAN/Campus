@@ -2,6 +2,7 @@ import { createFileRoute, Outlet, useNavigate, useRouterState } from '@tanstack/
 import { useEffect, useState } from 'react'
 
 import { AcademicShell } from '@/components/academic-shell'
+import type { AccountIdentity } from '@/components/account-menu'
 import { QuickCapture, type QuickCaptureValues } from '@/components/quick-capture'
 import { titleForPath } from '@/components/nav-model'
 import { ToastProvider, useToast } from '@/components/toast'
@@ -9,6 +10,8 @@ import { SearchPalette } from '@/features/search/search-palette'
 import { useAcademicPlan } from '@/features/academic/queries'
 import { useRequiresAccount } from '@/lib/runtime/identity'
 import { useAuth } from '@/features/auth/auth-context'
+import { useSignOut } from '@/features/auth/use-sign-out'
+import { useWorkspace } from '@/lib/runtime/workspace'
 import { useDocumentTitle } from '@/lib/hooks/use-document-title'
 import { useAcademicItems, useCreateAcademicItem, useResources } from '@/features/items/queries'
 
@@ -44,6 +47,8 @@ function AppFrame() {
   // here sent those students to a login screen they cannot satisfy.
   const requiresAccount = useRequiresAccount()
   const navigate = useNavigate()
+  const workspace = useWorkspace()
+  const signOut = useSignOut()
 
   const [captureOpen, setCaptureOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
@@ -138,9 +143,25 @@ function AppFrame() {
     }
   }
 
+  // Same reading as Settings: a folder means Local (no account), otherwise Cloud.
+  const identity: AccountIdentity = workspace.folder
+    ? { kind: 'local', folderName: workspace.folder.name }
+    : { kind: 'cloud', email: session?.user.email ?? null }
+
+  async function handleSignOut() {
+    const error = await signOut.signOut()
+    if (error) toast.show({ message: error })
+  }
+
   return (
     <>
       <AcademicShell
+        account={{
+          identity,
+          onChangeWorkspace: workspace.change,
+          onSignOut: requiresAccount && session ? () => void handleSignOut() : undefined,
+          signingOut: signOut.pending,
+        }}
         academicLabel={plan.programName ?? plan.context?.unmappedLabel}
         onQuickCapture={() => setCaptureOpen(true)}
         onSearch={() => setSearchOpen(true)}

@@ -1,9 +1,10 @@
 import { Link, useRouterState } from '@tanstack/react-router'
-import { Bell, BookOpen, ChevronDown, Ellipsis, Plus, Search } from 'lucide-react'
+import { BookOpen, Ellipsis, Plus, Search } from 'lucide-react'
 import { useEffect, useState, type ReactNode } from 'react'
 
 import { cn } from '@/lib/utils'
 
+import { AccountMenu, type AccountMenuProps } from './account-menu'
 import {
   isCurrentSection,
   isInMore,
@@ -42,12 +43,15 @@ export function AcademicShell({
   onQuickCapture,
   onSearch,
   academicLabel,
+  account,
 }: {
   children: ReactNode
   rail?: ReactNode
   onQuickCapture: () => void
   onSearch: () => void
   academicLabel?: string | null
+  /** The avatar menu. Tone is the shell's call (navy on mobile, paper on desktop). */
+  account?: Omit<AccountMenuProps, 'tone'>
 }) {
   const pathname = useRouterState({ select: (state) => state.location.pathname })
 
@@ -119,9 +123,13 @@ export function AcademicShell({
 
         {/* ---- Main + rail ---- */}
         <div className={cn('flex min-w-0 flex-1 flex-col', isWorkspace && 'min-h-0')}>
-          <MobileTopBar onSearch={onSearch} />
+          <MobileTopBar onSearch={onSearch} account={account} />
 
-          <DesktopTopBar onSearch={onSearch} onQuickCapture={onQuickCapture} />
+          <DesktopTopBar
+            onSearch={onSearch}
+            onQuickCapture={onQuickCapture}
+            account={account}
+          />
 
           <div
             className={cn(
@@ -207,16 +215,18 @@ function NavLink({ item, current }: { item: NavItem; current: boolean }) {
 function DesktopTopBar({
   onSearch,
   onQuickCapture,
+  account,
 }: {
   onSearch: () => void
   onQuickCapture: () => void
+  account?: Omit<AccountMenuProps, 'tone'>
 }) {
   return (
     <header className="campus-blue-topbar hidden min-h-19 items-center justify-between gap-5 px-7 md:flex">
       <button
         type="button"
         onClick={onSearch}
-        className="campus-blue-search flex min-h-11 w-full max-w-[800px] items-center gap-3 px-4 text-left text-sm"
+        className="campus-blue-search flex min-h-11 w-full max-w-200 items-center gap-3 px-4 text-left text-sm"
         aria-label="Abrir búsqueda global"
       >
         <Search aria-hidden="true" className="size-4" />
@@ -234,26 +244,19 @@ function DesktopTopBar({
         >
           <Plus className="size-5" aria-hidden="true" />
         </button>
-        <Link
-          to="/settings"
-          className="campus-blue-top-action"
-          aria-label="Configurar notificaciones"
-        >
-          <Bell className="size-5" aria-hidden="true" />
-        </Link>
-        <Link
-          to="/settings"
-          className="campus-blue-avatar"
-          aria-label="Abrir ajustes de cuenta"
-        >
-          C <ChevronDown aria-hidden="true" className="ml-1 size-3" />
-        </Link>
+        {account ? <AccountMenu {...account} tone="paper" /> : null}
       </div>
     </header>
   )
 }
 
-function MobileTopBar({ onSearch }: { onSearch: () => void }) {
+function MobileTopBar({
+  onSearch,
+  account,
+}: {
+  onSearch: () => void
+  account?: Omit<AccountMenuProps, 'tone'>
+}) {
   return (
     <header className="campus-blue-mobile-top sticky top-0 z-30 flex items-center justify-between gap-3 px-4 py-3 md:hidden">
       <Link
@@ -263,14 +266,17 @@ function MobileTopBar({ onSearch }: { onSearch: () => void }) {
         <BookOpen aria-hidden="true" className="campus-blue-logo-mark size-5" />
         Campus
       </Link>
-      <button
-        type="button"
-        onClick={onSearch}
-        aria-label="Buscar"
-        className="campus-blue-shell-icon"
-      >
-        <Search aria-hidden="true" className="size-5" />
-      </button>
+      <div className="flex items-center gap-1">
+        <button
+          type="button"
+          onClick={onSearch}
+          aria-label="Buscar"
+          className="campus-blue-shell-icon"
+        >
+          <Search aria-hidden="true" className="size-5" />
+        </button>
+        {account ? <AccountMenu {...account} tone="shell" /> : null}
+      </div>
     </header>
   )
 }

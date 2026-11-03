@@ -118,6 +118,21 @@ _shape_: `blocked` is a dashed outline, `unmarked/pending/available` is a hollow
 | `2xl`  | 28  | Page title (mobile)                                                 |
 | `3xl`  | 36  | Page title (desktop). Screen titles use `clamp(2rem, 3vw, 2.6rem)`. |
 
+- **Weight** (`--font-weight-*` in `tokens.css`; stylesheets use `var(--font-weight-…)`, components
+  use `font-normal`/`font-medium`/`font-semibold`, which are the same three values). Rule: **size and
+  position carry rank; weight only separates three jobs.** Prompt ships static 400/500/600/700
+  faces and the browser snaps between them (a `650` rendered as Bold), so only these values exist:
+
+| Token                   | Value | Use                                                                          |
+| ----------------------- | ----- | ---------------------------------------------------------------------------- |
+| `--font-weight-body`    | 400   | Reading text, descriptions, table cells, meta (meta is _muted_, not lighter) |
+| `--font-weight-label`   | 500   | Buttons, links, nav items, field and group labels, chips, counters, eyebrows |
+| `--font-weight-title`   | 600   | Card/panel/section titles, `<strong>` (preflight's `bolder` would be 700)    |
+| `--font-weight-display` | 600   | Page titles (`.blue-screen-title`); the size step does the work              |
+
+700 is shipped but reserved: nothing uses it. A label never changes weight between states (the
+nav's current item is marked by its fill, not by going bold, so the word does not jump).
+
 - **Tracking:** `tracking-eyebrow` (0.12em) and `tracking-caps` (0.18em) are the only positive
   tracking. Display titles use −0.025em to −0.04em (Prompt is wide).
 - **Numerals:** `time` and `[data-numeric]` are tabular.
@@ -152,7 +167,9 @@ _shape_: `blocked` is a dashed outline, `unmarked/pending/available` is a hollow
 - **Screen:** `.blue-screen` (grid, 24px gap) → `.blue-screen-head` (title, subtitle, one action) →
   content. Title is the page `<h1>`. Onboarding caps its container at 1300px.
 - **Panel:** `.blue-panel` white, 1px `rule-soft`, `radius-lg`, 16px pad; `.blue-panel-soft` for the one
-  informational panel (accent-soft). Panel head = `h2` + optional count/link.
+  informational panel (accent-soft). Panel head = `h2` + optional count/link. The link
+  (`.blue-text-link`) is one short line that never wraps, with a Lucide `ArrowRight`, not a `→` glyph;
+  the title is the part allowed to wrap, so keep the link short ("Abrir", "Ver plan").
 - **Empty state:** one `Illustration` (decorative when the title already says it, else described),
   one sentence in the title, optional one-line description, **at most one action**. Dashed `rule`
   box when it replaces a list; borderless (`quiet`) inside a section that has its own heading.

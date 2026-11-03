@@ -21,7 +21,7 @@ body:has(.blue-startup) {
 }
 .blue-startup-step {
   color: var(--color-accent);
-  font-weight: 700;
+  font-weight: var(--font-weight-label);
   font-size: var(--text-sm);
   letter-spacing: 0.04em;
 }
@@ -40,7 +40,7 @@ body:has(.blue-startup) {
 }
 .blue-startup-option h2 {
   font-size: 1.3rem;
-  font-weight: 700;
+  font-weight: var(--font-weight-title);
   color: var(--color-ink);
 }
 .blue-startup-illustration {

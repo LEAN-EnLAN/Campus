@@ -248,7 +248,7 @@
 
   .df-campus-chip-block .df-campus-chip-title {
     white-space: normal;
-    font-weight: 500;
+    font-weight: var(--font-weight-label);
   }
 
   .df-campus-chip-block .df-campus-chip-detail {
@@ -325,7 +325,7 @@
     /* Quieter than a heading: it marks where you are, it does not announce a
        section. The grid below it is the content. */
     font-size: var(--text-lg);
-    font-weight: 500;
+    font-weight: var(--font-weight-label);
     color: var(--color-ink-muted);
   }
 
@@ -369,6 +369,13 @@
 @layer base {
   * {
     border-color: var(--color-rule);
+  }
+
+  /* Preflight's `bolder` lands on Prompt Bold (700); emphasis in this system is
+     the title weight. Layered, so a utility like `font-medium` still wins. */
+  b,
+  strong {
+    font-weight: var(--font-weight-title);
   }
 
   html {
@@ -461,7 +468,7 @@
     background: var(--color-paper-elevated);
     padding: 0.5rem 0.875rem;
     font-size: var(--text-sm);
-    font-weight: 500;
+    font-weight: var(--font-weight-label);
     box-shadow: var(--shadow-raised);
     transition: top 140ms var(--ease-out-quiet);
   }

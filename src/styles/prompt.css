@@ -41,7 +41,7 @@ body,
   font-family: 'Prompt', system-ui, sans-serif;
 }
 .campus-blue .blue-screen-title {
-  font-weight: 600;
+  font-weight: var(--font-weight-display);
   letter-spacing: -0.035em;
   line-height: 1.2;
 }

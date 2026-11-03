@@ -499,7 +499,7 @@
   margin-bottom: 1rem;
 }
 .campus-blue .blue-secondary-panel-title h2 {
-  font-weight: 700;
+  font-weight: var(--font-weight-title);
   font-size: var(--text-lg);
 }
 .campus-blue .blue-secondary-panel-title > span {
@@ -526,7 +526,7 @@
 }
 .campus-blue .blue-secondary-summary strong {
   color: var(--blue-02);
-  font-weight: 750;
+  font-weight: var(--font-weight-display);
   font-size: 1.7rem;
   font-variant-numeric: tabular-nums;
 }
@@ -563,7 +563,7 @@
   gap: 0.2rem;
   color: var(--color-ink-muted);
   font-size: 0.73rem;
-  font-weight: 600;
+  font-weight: var(--font-weight-label);
 }
 .campus-blue .blue-secondary-filter select {
   width: 100%;

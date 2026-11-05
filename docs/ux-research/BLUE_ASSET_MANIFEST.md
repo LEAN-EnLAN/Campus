@@ -1591,3 +1591,66 @@ Los `alt` del registro se reescribieron para describir el raster y no el SVG ant
 `today-empty`: escritorio con cuaderno, taza y planta; `plan-unselected`: estante vacío con un libro).
 La tabla de superficies de arriba sigue siendo el mapa de destino; donde dice `<slot>.svg` y el slot
 ya es raster, la pantalla debe montar `<Illustration name="<slot>">` en lugar del `<img>` directo.
+
+## Raster STYLE-A T6 — 5 de noviembre de 2026
+
+**37 masters nuevos pasan a WebP** (22 slots que eran `vector: true` + 15 slots nuevos). Mismo
+proceso que T5: Codex Image Gen, familia STYLE-A con A01 como referencia, masters PNG RGBA
+1280×800 fuera del repo (lote `campus-t6-assets`, prompts exactos en su `MANIFEST.md`), exportados
+con `node scripts/optimize-assets.mjs <png> --only=…`.
+
+- **Peso:** 74 archivos, 3.649.434 bytes (≈3.48 MB). Se borraron los 39 SVG
+  provisionales que ya nadie referenciaba (49.839 bytes); el test del registro ahora también falla
+  si queda en `public/campus-blue-assets` un archivo que el registro no apunta.
+- **`ambient-*` siguen como SVG.** Sus masters STYLE-A son spots de objetos 1280×800 (cuaderno y
+  sol, lámpara, luna), no bandas 1920×640; el fondo por franja horaria es un gradiente CSS
+  (`prompt.css`, `data-campus-period`) que no monta ninguna imagen. Como fondo se verían mal
+  (objetos centrados detrás de paneles) y sumarían ~4×75 KB sin lugar donde mostrarse.
+- **Tamaño `icon`** (64–80 px) para cabeceras de tarjetas de Ajustes y el menú de cuenta: sirve
+  sólo el archivo 1x (640 px ya cubre cualquier densidad a ese tamaño; el 2x serían ~70 KB más).
+- **Sin montar, con motivo:** `section-*` (toda pantalla con estado vacío ya tiene un slot más
+  específico y no va una ilustración sobre cada encabezado), `desktop-app` (la doctrina de
+  escritorio prohíbe `isTauri` en componentes y no hay destino de descarga para una fila
+  "Campus para Windows"), `import-plan` (Campus no tiene flujo de importación), `course-notes-empty`
+  (la ficha de una materia nueva mostraba dos spots apilados), `courses-finals-empty` (el filtro
+  Final pendiente usa `status-final-pending`).
+
+| ID    | Slot                          | SHA-256 del master PNG                                             | 1x bytes | 2x bytes | Ubicación                                                          |
+| ----- | ----------------------------- | ------------------------------------------------------------------ | -------: | -------: | ------------------------------------------------------------------ |
+| B1-01 | `vault-cloud-unavailable`     | `7d44f46783ea325b28697f1cc2500f01888dc861162e8ca1f7c147b76cf49aa0` |   25.706 |   66.598 | live · Notas en Cloud (`_app/vault.tsx`)                           |
+| B1-02 | `calendar-empty`              | `d28d1cdfd5195572e1351198e3e78aedd48806b4efea88a5759b0f23430984c9` |   32.328 |   94.072 | live · Calendario vacío                                            |
+| B1-03 | `material-empty`              | `3ba3682a71c4831511c17651cc2a796e2c0964fd50bfccc40c1ce476d24d2400` |   27.382 |   75.704 | live · Material vacío                                              |
+| B1-04 | `notes-empty`                 | `9d0c7d22fdf68f5e93f2ccaedabe8ffa453c01d915efc2a74b9d73d8d50c768f` |   25.032 |   68.826 | live · Notas, carpeta sin notas                                    |
+| B1-05 | `login-signin`                | `ba9ecb05fb1be961d4fb6a4eb8dc97a51e47d9e7870a24ab36c097901dabcd97` |   30.214 |   86.478 | live · Login, Iniciar sesión                                       |
+| B1-06 | `login-signup`                | `557cdc65eb79932994b0d6a71662c27246b9c3889d828faaa45ff4e0cdb52cef` |   25.110 |   66.802 | live · Login, Crear cuenta                                         |
+| B1-07 | `password-recovery`           | `7e135f78b69d99ce2d431e76ec7d387a7f34b147d45cb34adecb924331d947ab` |   26.866 |   69.820 | live · Login, recuperar contraseña                                 |
+| B1-08 | `password-new`                | `1416c56a6926f805e8e07b18d12fa168b748a48dcd6c862768c304b2ed848407` |   25.976 |   74.574 | live · Login, contraseña nueva                                     |
+| B1-09 | `auth-email`                  | `39c0a287b06ff3da9fca8059ab6394c865b7ef6488973e5e134659653759d693` |   26.384 |   71.790 | live · Login, aviso de email enviado                               |
+| B1-10 | `courses-filter-empty`        | `d960ec7c1a598f7dc92509ed46adf028e0cf74dbf460d1ce1505b5632e67e263` |   31.656 |   92.982 | live · Materias, búsqueda sin resultados / Disponibles vacío       |
+| B1-11 | `courses-current-empty`       | `f0980f1d833908290a8f17df116d207a40f41f3f4982b241ee70d17c6ba2c03b` |   26.492 |   67.570 | live · Materias, Cursando vacío                                    |
+| B1-12 | `courses-finals-empty`        | `520c3e45c497416c3618e26e0b597ca0609f4cb4e1b40930428a9434650ad529` |   27.180 |   69.652 | registrado sin montar (Final pendiente usa `status-final-pending`) |
+| B1-13 | `course-not-found`            | `4b821d7a75195fcb8340b8401b0abd089c8ec1e5ea854fa4af9d3f05e3bf23ce` |   32.950 |   84.708 | live · Materia inexistente                                         |
+| B1-14 | `course-tasks-empty`          | `bd451079c830f0f4685d0f4e329d07a1eb4a3571e9e8bb6b4eede3d47e0820ec` |   25.010 |   62.640 | live · Materia, Fechas vacío                                       |
+| B1-15 | `material-drop-zone`          | `880d197c8777fe278607e4ae7878079cfb1deec20d008dd893579be6b2fb4f99` |   25.450 |   62.314 | live · Agregar material, zona para soltar (sin borrador)           |
+| B1-16 | `course-notes-empty`          | `05a5a9ac52e22b54bd51f94363280e57d110a814f7b8fe38ce4731aad6448386` |   22.988 |   57.674 | registrado sin montar (una sola ilustración por ficha de materia)  |
+| B1-17 | `notes-select`                | `290c515d96863b5252b46673b6d0a16ab9532041ceab6bc1edc409000a9886e4` |   23.522 |   62.354 | live · Notas, panel sin nota abierta                               |
+| B1-18 | `search-empty`                | `51150e7ba45fad9313cacd8ba5cb7c5e83e30b6dbbb4f5676539400fdfb38ab4` |   26.048 |   68.376 | live · Material, filtros sin resultados                            |
+| B1-19 | `settings-workspace`          | `9c5a19c2fbcc90244b97cdfd2c5a9cf6231383d75f7faf74b8b71400fe348ea8` |   23.208 |   58.386 | live · Ajustes, Espacio de trabajo (icon)                          |
+| B1-20 | `settings-privacy`            | `7913a275afbdafef4ad3872ddad9ae445bb26ac0bbe8ce2bc325d290d3924999` |   21.310 |   51.724 | live · Ajustes, Privacidad (icon)                                  |
+| B1-21 | `page-not-found`              | `df246dbbb860fb9bd2fa0f6a972e0e2817cd95233a1dcb9ee2b805276d4b0162` |   20.896 |   55.842 | live · 404                                                         |
+| B1-22 | `config-unavailable`          | `443db4ccdee80743a33ea3d3f6bf0858753a924903f758fdf97be078f568c0c4` |   29.120 |   75.118 | live · Falta configuración (`config-error.tsx`)                    |
+| B2-01 | `settings-appearance`         | `b6f3c81cfc58b1b20a029bb69b4fe22baa1b0bed91f1bb4bb92e8f6dd26afb8a` |   25.706 |   63.348 | live · Ajustes, Apariencia (icon)                                  |
+| B2-03 | `settings-career`             | `14d6a669b89e81542835ed643959c17ec4a5ae43ecf6b3bba6579bf39f1fa58e` |   26.604 |   75.372 | live · Ajustes, Tu carrera (icon)                                  |
+| B2-05 | `section-calendar`            | `4bb5eafa935a2bad5b9afceb21f721d425d53dc1576a9baa199403808a3fe203` |   28.570 |   73.330 | registrado sin montar                                              |
+| B2-06 | `section-notes`               | `baa8a571f9df090d26ebd4fa708cd449e33fc9b1a08efde3247544a167dc484e` |   32.376 |   93.844 | registrado sin montar                                              |
+| B2-07 | `section-material`            | `e1380545d2fc19d5d83b010232b7653ad5cecf933542277b2a9a8cb9914c0408` |   25.138 |   64.140 | registrado sin montar                                              |
+| B2-08 | `section-plan`                | `79685f8b8b87a0070f88d36319462a408ccd5828ded41fbc5124f556b185d361` |   25.738 |   66.776 | registrado sin montar                                              |
+| B2-09 | `section-courses`             | `b14334cbd397353cbf71b543d69b4c472b5b4adba56bea36a07a084a18f3844d` |   28.920 |   74.254 | registrado sin montar                                              |
+| B2-10 | `section-today`               | `5881fbe2dfb53397fe285fa82daf401823670a96b73d83624269b89f6228c943` |   31.292 |   84.516 | registrado sin montar                                              |
+| B2-11 | `status-approved-celebration` | `d2f3affa0cc9862925ac6961fc48126640d0af2ade5b7c25a0e713df2d2d736c` |   26.442 |   71.356 | live · Materias, Aprobadas vacío                                   |
+| B2-12 | `status-final-pending`        | `4349f576decead065488f825bdd643bbba7a08e55a7c49b635905d7f43976f72` |   30.810 |   88.438 | live · Materias, Final pendiente vacío                             |
+| B2-16 | `account-local`               | `0e7b62630ed7078f9e2df63af71cfa25a7d7c0ed05a9e43314859497e08cdc6e` |   28.354 |   72.224 | live · Menú de cuenta, Local (icon)                                |
+| B2-17 | `account-cloud`               | `e999600469245de1e4491903738920ac255066714fff1e6970ccb9c70091ada6` |   29.294 |   79.428 | live · Menú de cuenta, Cloud (icon)                                |
+| B2-18 | `desktop-app`                 | `43aaced78c9e3c6003720f9c3e7fb42703889fd0b351355bd6e628a5e8eeb120` |   25.234 |   64.402 | registrado sin montar (sin `isTauri` en componentes)               |
+| B2-19 | `sync-offline`                | `da0b3d45b7c6cbcbf9639002e0e433b6b13ff90c2bde88d1c898da549b2cee8a` |   24.886 |   61.548 | live · Startup, Cloud inalcanzable                                 |
+| B2-20 | `import-plan`                 | `f8b973ac1a9f75fbfd6d8009e72c260925e727654c8a817f844dd41f956a4c83` |   28.790 |   73.472 | registrado sin montar (no hay flujo de importación)                |

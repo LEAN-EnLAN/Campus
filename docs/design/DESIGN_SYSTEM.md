@@ -158,7 +158,7 @@ nav's current item is marked by its fill, not by going bold, so the word does no
 | `Button`                                             | Variants `primary · secondary · ghost · danger · link`; sizes `md 40 · sm 32 · lg 44 · icon 36 · icon-touch 44`. A screen rarely needs two primaries. It owns colour and spacing — do not restyle with `className` (lint `no-restyle`). Touch targets ≥ 44px on touch surfaces.                                                                                                                                                                                                                        |
 | `Field`, `TextField`, `SelectField`, `TextareaField` | `<label htmlFor>` always; error linked by `aria-describedby` + `aria-invalid`; error text is words, not just a red border. The select's chevron is a Lucide icon in `ink-muted` (it was a hardcoded warm-grey data-URI).                                                                                                                                                                                                                                                                               |
 | `Modal`, `ModalFooter`                               | `role=dialog`, `aria-modal`, named by `labelledBy`. Escape closes; Tab wraps over the **real tab stops** (`tabbable.ts`: a radio group counts once; hidden/inert/disabled skipped); focus restored on close; scroll locked. The backdrop is pointer-only (`aria-hidden`, not in the tab order). Panel is a bottom sheet under `sm` (`max-h-sheet`), centred from `sm` (`max-h-dialog`), both `dvh`-based. `ModalFooter` is sticky with a top rule and safe-area padding so Save/Cancel stay reachable. |
-| `Illustration`                                       | A registered raster image (`illustrations.ts`): WebP 1x + `@2x`, intrinsic width/height (no layout shift), lazy by default, `decorative` ⇒ `alt=""`. Sizes `xs/sm/md/lg`. Never carries state or action; never a CSS background. See section 6.                                                                                                                                                                                                                                                        |
+| `Illustration`                                       | A registered raster image (`illustrations.ts`): WebP 1x + `@2x`, intrinsic width/height (no layout shift), lazy by default, `decorative` ⇒ `alt=""`. Sizes `icon/xs/sm/md/lg` (`icon` 64–80 px ships 1x only). Never carries state or action; never a CSS background. See section 6.                                                                                                                                                                                                                   |
 | `KanbanBoard`                                        | Drag + keyboard; the floating card is the one real shadow. Dynamic geometry goes through CSS custom properties (`--rail-width`, `--fade-mask`).                                                                                                                                                                                                                                                                                                                                                        |
 | `DotMatrix`                                          | Loading indicator; decorative unless given a `label`. Geometry via `--dm-*` variables.                                                                                                                                                                                                                                                                                                                                                                                                                 |
 
@@ -192,16 +192,20 @@ style family, master SHA-256, bytes): `docs/ux-research/BLUE_ASSET_MANIFEST.md`.
 
 - **Masters stay out of the repo.** Only the exported WebP ships in `public/campus-blue-assets`; the
   manifest's SHA-256 pins the exact PNG each file came from.
-- **Raster vs provisional.** 17 slots are raster (STYLE-A, Nov 2026). The rest still ship the
-  provisional SVG and are flagged `vector: true` in the registry, so `<Illustration>` serves `.svg`
-  for them. When a master lands: run the script, drop the flag; the registry test fails if a file the
-  registry points at is missing.
+- **Raster vs provisional.** 54 slots are raster (STYLE-A: 17 in T5, 37 in T6, Nov 2026). Only the
+  four `ambient-*` slots still ship a provisional SVG, flagged `vector: true`: their STYLE-A masters
+  are object spots, not 1920×640 bands, and the time-of-day backdrop is a CSS gradient that mounts
+  no image. The registry test fails if a file the registry points at is missing **or** if
+  `public/campus-blue-assets` holds a file the registry does not point at.
+- **Registered but unmounted** (have a raster, no screen yet, reasons in the asset manifest):
+  `section-*`, `desktop-app`, `import-plan`, `course-notes-empty`, `courses-finals-empty`.
 - **Mount through `<Illustration>`**, never a hand-written `<img src="/campus-blue-assets/…">`: it
   sets intrinsic `width`/`height` (no layout shift), `srcset` 1x/2x, lazy loading (pass `eager` only
   above the fold) and the alt policy (`decorative` when the heading already says it).
 
-Rules: one spot illustration per panel, 176–240px on 390 and 220–300px on 1440, never above the
-primary action's fold; backgrounds are decorative (`alt=""`) and sit behind opaque panels.
+Rules: one spot illustration per panel (and one per screen where empty panels stack), 176–240px on
+390 and 220–300px on 1440, 64–80px (`icon`) in card headers and menus, never above the primary
+action's fold; backgrounds are decorative (`alt=""`) and sit behind opaque panels.
 
 ## 6b. Brand
 

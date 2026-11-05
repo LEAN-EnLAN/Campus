@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
+import { CampusLogo } from '@/components/brand/campus-logo'
 import { Button } from '@/components/ui/button'
 import { Illustration } from '@/components/ui/illustration'
 import { TextField } from '@/components/ui/field'
@@ -115,14 +116,7 @@ function LoginScreen() {
     <main className="blue-onboarding">
       <div className="blue-onboarding-container">
         <header className="blue-onboarding-top">
-          <div className="blue-onboarding-brand">
-            <span className="blue-onboarding-brand-mark" aria-hidden="true">
-              C
-            </span>
-            <span>
-              Campus<span className="blue-onboarding-brand-dot">.</span>
-            </span>
-          </div>
+          <CampusLogo wordmark className="blue-onboarding-brand" />
           <button
             type="button"
             onClick={workspace.change}

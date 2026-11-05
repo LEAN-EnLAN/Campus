@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { ArrowLeft, ArrowRight, Check, Cloud, FolderOpen, GraduationCap } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 
+import { CampusLogo } from '@/components/brand/campus-logo'
 import { ErrorState } from '@/components/empty-state'
 import { Button } from '@/components/ui/button'
 import { Illustration } from '@/components/ui/illustration'
@@ -158,14 +159,7 @@ function OnboardingScreen() {
     <main className="blue-onboarding">
       <div className="blue-onboarding-container">
         <header className="blue-onboarding-top">
-          <div className="blue-onboarding-brand">
-            <span aria-hidden="true" className="blue-onboarding-brand-mark">
-              C
-            </span>
-            <span>
-              Campus<span className="blue-onboarding-brand-dot">.</span>
-            </span>
-          </div>
+          <CampusLogo wordmark className="blue-onboarding-brand" />
           {existing.data ? (
             <Link to="/settings" className="blue-onboarding-text-link">
               <ArrowLeft size={16} aria-hidden="true" /> Volver a ajustes

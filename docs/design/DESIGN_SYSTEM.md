@@ -203,6 +203,38 @@ style family, master SHA-256, bytes): `docs/ux-research/BLUE_ASSET_MANIFEST.md`.
 Rules: one spot illustration per panel, 176–240px on 390 and 220–300px on 1440, never above the
 primary action's fold; backgrounds are decorative (`alt=""`) and sit behind opaque panels.
 
+## 6b. Brand
+
+The mark is a **C arc and a dot**: a student (the dot) at the opening of the campus (the C). Two
+shapes, no letterforms, no gradient. Approved, hand-built geometry — do not redraw it.
+
+| Source of truth                        | What                                                                                      |
+| -------------------------------------- | ----------------------------------------------------------------------------------------- |
+| `public/brand/campus-mark.svg`         | The mark on transparent: navy arc + blue dot                                              |
+| `public/brand/favicon.svg`             | App icon: white arc + light-blue dot on a navy rounded square (radius 14/64, mark at 78%) |
+| `src/components/brand/campus-logo.tsx` | `<CampusLogo tone wordmark>` — the same paths inline (a test pins them to the SVG)        |
+| `scripts/build-brand.mjs`              | Favicon set, PWA icons and the 1024 PNG masters in `docs/brand/`                          |
+
+- **Geometry** (64 × 64 frame, group offset `translate(0.4 -2)`): arc of a circle centred at
+  (30, 34), radius 20, stroke 9, butt caps, open towards the upper right from (39.39, 16.34) to
+  (48.54, 41.49); dot at (50.67, 26.48), radius 7.
+- **Colours** (`--brand-*` in `tokens.css`, never a surface role): on light — navy `#10224a` arc,
+  blue `#155dd6` dot; on the navy shell — white arc, light-blue `#5b9bff` dot. The app icon
+  background is navy `#10224a`, which is also the PWA `theme_color`.
+- **Wordmark:** "Campus" in Prompt 600, tracking −0.035em, set at the same size the mark is 1.5×
+  of; gap 0.4em. Text, not outlines, so it stays accessible.
+- **Clear space:** at least the dot's diameter (14/64 of the mark) on every side; nothing else
+  inside it.
+- **Minimum size:** 16 px for the mark (the 16 px favicon is the floor). Below 24 px use the mark
+  alone, without the wordmark.
+- **Icon set:** `favicon.svg` + `favicon.ico` (16/32/48), `apple-touch-icon.png` 180 and
+  `icon-maskable-512.png` full-bleed navy (launchers mask them; the maskable mark sits at 70%,
+  inside the 80% safe circle), `icon-192/512.png` as drawn. Desktop icons are generated from
+  `docs/brand/favicon-1024.png` (`docs/desktop/BUILD.md`).
+- **Don't:** recolour outside the two tones (the light tone never goes on navy); rotate, skew or
+  stretch; outline, shadow or gradient it; replace the C with a font glyph; close the gap or move
+  the dot; set it over an illustration or photo; use it as a bullet or a loading spinner.
+
 ## 7. Accessibility floor (non-negotiable)
 
 Semantic landmarks · real `<button>`/`<a>` · every control has an accessible name · visible focus

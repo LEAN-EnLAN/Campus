@@ -1,8 +1,10 @@
 import { Link, useRouterState } from '@tanstack/react-router'
-import { BookOpen, Ellipsis, Plus, Search } from 'lucide-react'
+import { Ellipsis, Plus, Search } from 'lucide-react'
 import { useEffect, useState, type ReactNode } from 'react'
 
 import { cn } from '@/lib/utils'
+
+import { CampusLogo } from './brand/campus-logo'
 
 import { AccountMenu, type AccountMenuProps } from './account-menu'
 import {
@@ -84,10 +86,9 @@ export function AcademicShell({
         >
           <Link
             to="/today"
-            className="campus-blue-logo mb-8 flex min-h-8 items-center gap-3 px-2 font-serif text-xl"
+            className="campus-blue-logo mb-8 flex min-h-8 items-center px-2 text-xl"
           >
-            <BookOpen aria-hidden="true" className="campus-blue-logo-mark size-6" />
-            Campus
+            <CampusLogo tone="dark" wordmark />
           </Link>
 
           {NAV.map((item) => (
@@ -259,12 +260,8 @@ function MobileTopBar({
 }) {
   return (
     <header className="campus-blue-mobile-top sticky top-0 z-30 flex items-center justify-between gap-3 px-4 py-3 md:hidden">
-      <Link
-        to="/today"
-        className="campus-blue-logo -my-2.5 flex items-center gap-2 py-2.5 font-serif text-xl"
-      >
-        <BookOpen aria-hidden="true" className="campus-blue-logo-mark size-5" />
-        Campus
+      <Link to="/today" className="campus-blue-logo -my-2.5 flex items-center py-2.5 text-xl">
+        <CampusLogo tone="dark" wordmark />
       </Link>
       <div className="flex items-center gap-1">
         <button

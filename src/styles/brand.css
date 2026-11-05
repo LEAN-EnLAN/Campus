@@ -1,0 +1,32 @@
+/* The Campus mark (`<CampusLogo>`, src/components/brand). Brand colours are fixed
+ * on purpose: they are the logo's, not a surface role, so they live in
+ * `--brand-*` tokens and never follow the accent. */
+.campus-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+  color: var(--brand-navy);
+  --campus-logo-dot: var(--brand-blue);
+  line-height: 1;
+  white-space: nowrap;
+}
+.campus-logo[data-tone='dark'] {
+  color: var(--brand-on-navy);
+  --campus-logo-dot: var(--brand-blue-light);
+}
+.campus-logo-mark {
+  width: 1.5em;
+  height: 1.5em;
+  flex: none;
+  /* The mark's optical box is inset in its 64 frame; pull it back so the C, not
+     the frame, aligns with the text column. */
+  margin-inline-start: -0.12em;
+}
+.campus-logo-dot {
+  fill: var(--campus-logo-dot);
+}
+.campus-logo-word {
+  font-family: var(--font-sans);
+  font-weight: var(--font-weight-title);
+  letter-spacing: -0.035em;
+}

@@ -24,6 +24,7 @@
  * they declare. Nothing else may import a stylesheet. */
 @import './tokens.css';
 @import './base.css';
+@import './brand.css';
 @import './campus-blue.css';
 @import './blue-secondary.css';
 @import './blue-onboarding.css';

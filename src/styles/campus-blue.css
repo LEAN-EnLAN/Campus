@@ -47,10 +47,6 @@ body:has(.campus-blue) {
   color: var(--color-on-tint);
   background: rgb(255 255 255 / 0.1);
 }
-.campus-blue-logo-mark {
-  color: var(--blue-14);
-  fill: color-mix(in srgb, currentColor 30%, transparent);
-}
 .campus-blue-institution {
   color: var(--blue-16);
   border-top: 1px solid rgb(255 255 255 / 0.15);

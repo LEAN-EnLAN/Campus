@@ -23,30 +23,9 @@
   gap: 16px;
   border-bottom: 1px solid var(--color-rule-soft);
 }
+/* The header's <CampusLogo>: only the size is the surface's; colours are the brand's. */
 .blue-onboarding-brand {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
   font-size: 24px;
-  font-weight: var(--font-weight-title);
-  letter-spacing: -0.06em;
-  color: var(--color-shell);
-  white-space: nowrap;
-}
-.blue-onboarding-brand-mark {
-  width: 34px;
-  height: 34px;
-  border-radius: var(--radius-md);
-  display: inline-grid;
-  place-items: center;
-  font-size: 18px;
-  font-weight: var(--font-weight-title);
-  background: var(--color-accent);
-  color: var(--color-on-tint);
-  letter-spacing: -0.04em;
-}
-.blue-onboarding-brand-dot {
-  color: var(--blue-10);
 }
 .blue-onboarding-top-note {
   font-size: var(--text-sm);

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 
+import { CampusLogo } from '@/components/brand/campus-logo'
 import { Button } from '@/components/ui/button'
 import { CircularDotMatrix } from '@/components/ui/dot-matrix'
 import { Illustration } from '@/components/ui/illustration'
@@ -114,7 +115,9 @@ export function Startup() {
       <main className="blue-startup min-h-dvh w-full">
         <div className="blue-startup-content mx-auto grid min-h-dvh w-full max-w-xl content-center gap-8 p-6">
           <header className="space-y-2">
-            <h1 className="text-3xl font-semibold">Campus</h1>
+            <h1 className="text-3xl font-semibold">
+              <CampusLogo wordmark />
+            </h1>
             <p className="text-ink-muted">Entrá con tu cuenta para trabajar.</p>
           </header>
 
@@ -159,6 +162,7 @@ export function Startup() {
     <main className="blue-startup min-h-dvh w-full">
       <div className="blue-startup-content mx-auto grid min-h-dvh w-full max-w-5xl content-center gap-8 p-6">
         <header className="space-y-2">
+          <CampusLogo wordmark className="mb-6 text-xl" />
           <p className="blue-startup-step">Tu espacio de trabajo</p>
           <h1 className="text-3xl font-semibold">Elegí cómo querés usar Campus</h1>
           <p className="text-ink-muted">¿Dónde querés guardar tus materias y tus notas?</p>

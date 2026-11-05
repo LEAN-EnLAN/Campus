@@ -245,6 +245,13 @@
   --color-canvas: #f8fafd;
   --color-startup-wash: #eaf3ff;
 
+  /* Brand (the logo's own colours, DESIGN_SYSTEM.md "Brand"). Not roles: a
+     surface never paints with these, only <CampusLogo> and the icon set do. */
+  --brand-navy: #10224a;
+  --brand-blue: #155dd6;
+  --brand-on-navy: #ffffff;
+  --brand-blue-light: #5b9bff;
+
   /* Ramp primitives, darkest first. Clustered from every blue the stylesheets
      used to hardcode (OKLab distance <= 0.04, i.e. below a noticeable step).
      Reach for a semantic token first; a ramp step is for a tint that has no role yet. */

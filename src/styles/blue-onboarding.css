@@ -184,7 +184,21 @@
   background: var(--color-paper-elevated);
 }
 .blue-onboarding-section-heading {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: 20px;
+  align-items: center;
   margin-bottom: 25px;
+}
+.blue-onboarding-section-heading > :not(.blue-onboarding-step-art) {
+  grid-column: 1;
+}
+/* Beside the step's heading, never above the choices: same frame on every step,
+   so moving between steps does not shift the list. */
+.blue-onboarding-step-art {
+  grid-column: 2;
+  grid-row: 1 / span 3;
+  width: 176px;
 }
 .blue-onboarding-section-heading > span {
   font-size: var(--text-2xs);
@@ -615,6 +629,10 @@
   }
   .blue-onboarding-section-heading {
     margin-bottom: 16px;
+    column-gap: 12px;
+  }
+  .blue-onboarding-step-art {
+    width: 104px;
   }
   .blue-onboarding-section-heading h2 {
     font-size: 21px;

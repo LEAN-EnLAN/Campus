@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { cloudUnreachableMessage, translateAuthError } from './auth-errors'
+import { cloudUnreachableMessage, isCloudUnreachable, translateAuthError } from './auth-errors'
 
 describe('translateAuthError', () => {
   it('says there is no connection when the device is offline', () => {
@@ -52,5 +52,14 @@ describe('cloudUnreachableMessage', () => {
   it('tells offline from the service being down', () => {
     expect(cloudUnreachableMessage(false)).toMatch(/conexión a internet/)
     expect(cloudUnreachableMessage(true)).toMatch(/Campus Cloud no responde/)
+  })
+})
+
+describe('isCloudUnreachable', () => {
+  it('recognises both connection sentences and nothing else', () => {
+    expect(isCloudUnreachable(cloudUnreachableMessage(false))).toBe(true)
+    expect(isCloudUnreachable(cloudUnreachableMessage(true))).toBe(true)
+    expect(isCloudUnreachable('Email o contraseña incorrectos.')).toBe(false)
+    expect(isCloudUnreachable(null)).toBe(false)
   })
 })

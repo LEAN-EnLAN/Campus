@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 
-import { EmptyState } from './empty-state'
+import { EmptyState, ErrorState } from './empty-state'
 
 describe('EmptyState', () => {
   it('is one sentence and, at most, one action', () => {
@@ -26,5 +26,30 @@ describe('EmptyState', () => {
 
     expect(container.firstElementChild?.className).not.toContain('border')
     expect(screen.getByText('Nada más agendado para hoy.')).toBeInTheDocument()
+  })
+
+  it('takes a registry name and serves its raster, silent beside the title', () => {
+    const { container } = render(
+      <EmptyState illustration="courses-empty" title="Todavía no cargaste materias" />,
+    )
+    const img = container.querySelector('img')
+    expect(img).toHaveAttribute('src', '/campus-blue-assets/courses-empty.webp')
+    expect(img).toHaveAttribute('alt', '')
+    expect(img).toHaveAttribute('width', '640')
+    expect(img).toHaveAttribute('height', '400')
+  })
+})
+
+describe('ErrorState', () => {
+  it('stays a bare alert unless the error is the whole screen', () => {
+    const { container, rerender } = render(<ErrorState />)
+    expect(container.querySelector('img')).toBeNull()
+
+    rerender(<ErrorState illustration="gentle-error" />)
+    expect(container.querySelector('img')).toHaveAttribute(
+      'src',
+      '/campus-blue-assets/gentle-error.webp',
+    )
+    expect(screen.getByRole('alert')).toHaveTextContent('No pudimos cargar esto')
   })
 })

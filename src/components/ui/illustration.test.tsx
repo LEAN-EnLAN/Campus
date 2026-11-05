@@ -1,4 +1,4 @@
-import { existsSync } from 'node:fs'
+import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 
 import { render, screen } from '@testing-library/react'
@@ -57,5 +57,15 @@ describe('Illustration', () => {
     const entries = Object.entries(ILLUSTRATIONS)
     expect(entries).toHaveLength(43)
     for (const [, v] of entries) expect(v.alt.length).toBeGreaterThan(8)
+  })
+
+  it('is the only way a screen reaches the asset folder', () => {
+    // A hand-written path would keep serving the provisional SVG after its raster lands.
+    const src = join(process.cwd(), 'src')
+    const offenders = readdirSync(src, { recursive: true, encoding: 'utf8' })
+      .filter((file) => /\.tsx?$/.test(file) && !/\.test\.tsx?$/.test(file))
+      .filter((file) => join(src, file) !== join(src, 'components', 'ui', 'illustration.tsx'))
+      .filter((file) => readFileSync(join(src, file), 'utf8').includes('/campus-blue-assets/'))
+    expect(offenders).toEqual([])
   })
 })

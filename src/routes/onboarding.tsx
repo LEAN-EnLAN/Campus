@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from 'react'
 
 import { ErrorState } from '@/components/empty-state'
 import { Button } from '@/components/ui/button'
+import { Illustration } from '@/components/ui/illustration'
+import type { IllustrationName } from '@/components/ui/illustrations'
 import { TextField } from '@/components/ui/field'
 import {
   useAcademicContext,
@@ -24,6 +26,13 @@ export const Route = createFileRoute('/onboarding')({
 })
 
 const STEPS = ['Universidad', 'Facultad', 'Carrera', 'Plan'] as const
+/** One spot per step, beside its heading: it never pushes the choices down. */
+const STEP_ART: readonly IllustrationName[] = [
+  'onboarding-university',
+  'onboarding-faculty',
+  'onboarding-program',
+  'onboarding-plan',
+]
 
 /**
  * CAP-ONBOARD-001 / CAP-ONBOARD-002 — 60–120 seconds, four choices, no avatar,
@@ -168,12 +177,7 @@ function OnboardingScreen() {
 
         {confirmed ? (
           <section className="blue-onboarding-complete" role="status">
-            <img
-              src="/campus-blue-assets/onboarding-ready.svg"
-              alt="Documento académico con una marca de confirmación"
-              width={640}
-              height={400}
-            />
+            <Illustration name="onboarding-ready" decorative eager size="lg" />
             <span className="blue-onboarding-eyebrow">Configuración guardada</span>
             <h1 ref={stepHeading} tabIndex={-1}>
               Tu plan ya está en Campus.
@@ -272,6 +276,13 @@ function OnboardingScreen() {
                         ][activeStep]
                       }
                     </p>
+                    <Illustration
+                      name={STEP_ART[activeStep] ?? 'onboarding-university'}
+                      decorative
+                      eager
+                      size="sm"
+                      className="blue-onboarding-step-art"
+                    />
                   </div>
                 ) : (
                   <div className="blue-onboarding-section-heading">
@@ -282,6 +293,13 @@ function OnboardingScreen() {
                     <p>
                       Guardaremos el nombre que indiques para empezar a organizar tus materias.
                     </p>
+                    <Illustration
+                      name="onboarding-manual"
+                      decorative
+                      eager
+                      size="sm"
+                      className="blue-onboarding-step-art"
+                    />
                   </div>
                 )}
 
@@ -466,12 +484,7 @@ function OnboardingScreen() {
                   className="blue-onboarding-workspace-card"
                   data-active={Boolean(workspace.folder)}
                 >
-                  <img
-                    src="/campus-blue-assets/workspace-local.svg"
-                    width={640}
-                    height={400}
-                    alt="Ilustración de una carpeta de materias guardada en esta computadora"
-                  />
+                  <Illustration name="workspace-local" decorative size="sm" />
                   <span>
                     <FolderOpen size={16} aria-hidden="true" /> En esta computadora
                   </span>
@@ -480,12 +493,7 @@ function OnboardingScreen() {
                   </small>
                 </div>
                 <div className="blue-onboarding-workspace-card" data-active={!workspace.folder}>
-                  <img
-                    src="/campus-blue-assets/workspace-cloud.svg"
-                    width={640}
-                    height={400}
-                    alt="Ilustración de un espacio académico almacenado en Cloud"
-                  />
+                  <Illustration name="workspace-cloud" decorative size="sm" />
                   <span>
                     <Cloud size={16} aria-hidden="true" /> Campus Cloud
                   </span>

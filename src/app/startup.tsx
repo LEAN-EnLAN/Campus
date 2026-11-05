@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { CircularDotMatrix } from '@/components/ui/dot-matrix'
+import { Illustration } from '@/components/ui/illustration'
 
 import { useRuntime } from '@/lib/runtime/context'
 import { cloudUnreachableMessage } from '@/features/auth/auth-errors'
@@ -255,11 +256,11 @@ export function Startup() {
             aria-labelledby="startup-local"
             className="blue-startup-option border-rule bg-paper-elevated flex flex-col gap-3 rounded-lg border p-5"
           >
-            <img
-              src="/campus-blue-assets/workspace-local.svg"
-              alt=""
-              width={640}
-              height={400}
+            <Illustration
+              name="workspace-local"
+              decorative
+              eager
+              size="lg"
               className="blue-startup-illustration"
             />
             <h2 id="startup-local" className="font-serif text-lg">
@@ -371,11 +372,12 @@ export function Startup() {
             aria-labelledby="startup-cloud"
             className="blue-startup-option border-rule bg-paper-elevated flex flex-col gap-3 rounded-lg border p-5"
           >
-            <img
-              src="/campus-blue-assets/workspace-cloud.svg"
-              alt=""
-              width={640}
-              height={400}
+            {/* Same frame either way, so the swap never moves the button. */}
+            <Illustration
+              name={cloudError ? 'offline-study' : 'workspace-cloud'}
+              decorative
+              eager
+              size="lg"
               className="blue-startup-illustration"
             />
             <h2 id="startup-cloud" className="font-serif text-lg">

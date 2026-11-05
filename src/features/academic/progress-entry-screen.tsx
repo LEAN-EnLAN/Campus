@@ -7,6 +7,7 @@ import { AcademicYearDisclosure } from '@/components/academic-year-disclosure'
 import { PageHeader, SectionHeading } from '@/components/page-header'
 import { StatusControl } from '@/components/status-control'
 import { Button } from '@/components/ui/button'
+import { Illustration } from '@/components/ui/illustration'
 import { listOrderConflicts, orderConflictMessage } from '@/domain/consistency'
 import { approveYear, revertChanges, type StatusChange } from '@/domain/progress-entry'
 import type { SubjectView } from '@/domain/types'
@@ -57,7 +58,7 @@ export function ProgressEntryScreen() {
     return (
       <div className="flex flex-col gap-8">
         <PageHeader title="Contanos hasta dónde llegaste" />
-        <ErrorState error={plan.error} />
+        <ErrorState error={plan.error} illustration="gentle-error" />
       </div>
     )
   }
@@ -66,6 +67,7 @@ export function ProgressEntryScreen() {
       <div className="flex flex-col gap-8">
         <PageHeader title="Contanos hasta dónde llegaste" />
         <EmptyState
+          illustration="plan-unselected"
           title="Todavía no elegiste tu carrera"
           description="Elegí universidad, facultad, carrera y plan para cargar tu avance."
           action={
@@ -85,6 +87,7 @@ export function ProgressEntryScreen() {
       <div className="flex flex-col gap-8">
         <PageHeader title="Contanos hasta dónde llegaste" />
         <EmptyState
+          illustration="plan-empty"
           title="Todavía no hay materias para marcar"
           description={
             plan.isUnmapped
@@ -137,20 +140,31 @@ export function ProgressEntryScreen() {
 
   return (
     <div className="flex flex-col gap-8">
-      <PageHeader
-        eyebrow={plan.isUnmapped ? plan.context?.unmappedLabel : plan.programName}
-        title="Contanos hasta dónde llegaste"
-        description="Marcá lo que ya tenés. Después lo podés cambiar materia por materia."
-        actions={
-          <Button
-            variant="secondary"
-            onClick={finish}
-            disabled={setMany.isPending || setStatus.isPending}
-          >
-            Revisar mi avance
-          </Button>
-        }
-      />
+      {/* The last onboarding step: its spot sits beside the title, not above the years. */}
+      <div className="flex items-start gap-4">
+        <PageHeader
+          className="min-w-0 flex-1"
+          eyebrow={plan.isUnmapped ? plan.context?.unmappedLabel : plan.programName}
+          title="Contanos hasta dónde llegaste"
+          description="Marcá lo que ya tenés. Después lo podés cambiar materia por materia."
+          actions={
+            <Button
+              variant="secondary"
+              onClick={finish}
+              disabled={setMany.isPending || setStatus.isPending}
+            >
+              Revisar mi avance
+            </Button>
+          }
+        />
+        <Illustration
+          name="onboarding-progress"
+          decorative
+          eager
+          size="xs"
+          className="w-24 shrink-0 sm:w-28"
+        />
+      </div>
 
       {plan.isUnmapped ? (
         <p className="border-rule bg-paper-elevated text-ink-muted rounded-lg border border-dashed px-4 py-3 text-sm">

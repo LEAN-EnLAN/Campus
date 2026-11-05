@@ -13,6 +13,11 @@ export function cloudUnreachableMessage(online: boolean): string {
     : 'No tenés conexión a internet. Revisala y probá de nuevo.'
 }
 
+/** Whether a message on screen is one of the two above: the service, not the form, failed. */
+export function isCloudUnreachable(message: string | null): boolean {
+  return message === cloudUnreachableMessage(true) || message === cloudUnreachableMessage(false)
+}
+
 const UNREACHABLE = [
   'failed to fetch',
   'fetch failed',

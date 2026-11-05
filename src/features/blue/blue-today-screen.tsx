@@ -8,6 +8,7 @@ import { ProgressLine } from '@/components/progress-line'
 import { StatusGlyph } from '@/components/academic-status'
 import { QuickCapture, type QuickCaptureValues } from '@/components/quick-capture'
 import { Button } from '@/components/ui/button'
+import { Illustration } from '@/components/ui/illustration'
 import type { AgendaEntry } from '@/domain/agenda'
 import type { SubjectView } from '@/domain/types'
 import { useAcademicPlan } from '@/features/academic/queries'
@@ -112,6 +113,8 @@ export function BlueTodayScreen() {
   const finales = plan.views.filter((subject) => subject.status === 'regularized')
   const dueCount = today.today.length + today.overdue.length
   const isLoading = itemsQuery.isLoading || plan.isLoading
+  const nothingPending =
+    dueCount === 0 && today.upcoming.length === 0 && today.undated.length === 0
   async function handleCapture(values: QuickCaptureValues) {
     try {
       await createItem.mutateAsync(values)
@@ -192,14 +195,25 @@ export function BlueTodayScreen() {
                   · {today.today.length} de hoy
                 </p>
               </div>
+              {/* One spot per screen: with nothing pending the empty state below carries it. */}
+              {nothingPending ? null : (
+                <Illustration
+                  name="today-study"
+                  decorative
+                  eager
+                  size="xs"
+                  className="ml-auto w-24 shrink-0 sm:w-28"
+                />
+              )}
             </div>
             {renderSection('blue-overdue', 'Atrasadas', today.overdue, true)}
             {renderSection('blue-today', 'Hoy', today.today)}
             {renderSection('blue-upcoming', 'Próximas', today.upcoming)}
             {renderSection('blue-undated', 'Sin fecha', today.undated)}
-            {dueCount === 0 && today.upcoming.length === 0 && today.undated.length === 0 ? (
+            {nothingPending ? (
               <EmptyState
                 quiet
+                illustration={plan.hasContext ? 'today-empty' : undefined}
                 title="No hay tareas pendientes"
                 description="Cuando agregues una fecha o tarea, va a aparecer acá."
                 action={
@@ -233,6 +247,7 @@ export function BlueTodayScreen() {
             ) : null}
             {!plan.hasContext && !plan.isLoading && !plan.error ? (
               <EmptyState
+                illustration="plan-unselected"
                 title="Todavía no elegiste tu carrera"
                 action={
                   <Link to="/onboarding" className="blue-text-link">

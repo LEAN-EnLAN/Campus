@@ -10,8 +10,10 @@ import {
 import { useEffect, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
+import { Illustration } from '@/components/ui/illustration'
 import { TextField } from '@/components/ui/field'
 import { useAuth } from '@/features/auth/auth-context'
+import { isCloudUnreachable } from '@/features/auth/auth-errors'
 import { useDocumentTitle } from '@/lib/hooks/use-document-title'
 import { useWorkspace } from '@/lib/runtime/workspace'
 
@@ -280,11 +282,11 @@ function LoginScreen() {
             </p>
           </div>
           <aside className="blue-login-side" aria-label="Campus Cloud">
-            <img
-              src="/campus-blue-assets/workspace-cloud.svg"
-              width={640}
-              height={400}
-              alt="Ilustración de un espacio académico almacenado en Cloud"
+            {/* Same frame either way: the swap only says the connection, not the form, failed. */}
+            <Illustration
+              name={isCloudUnreachable(error) ? 'offline-study' : 'workspace-cloud'}
+              eager
+              size="lg"
             />
             <span className="blue-onboarding-eyebrow">Todo tu espacio académico</span>
             <h2>Tu cursada, siempre a mano.</h2>

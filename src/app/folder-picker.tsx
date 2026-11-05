@@ -2,6 +2,7 @@ import { ChevronRight, CornerLeftUp, Folder } from 'lucide-react'
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
+import { Illustration } from '@/components/ui/illustration'
 import { vaultErrorCode } from '@/lib/vault/errors'
 import type { FolderListing } from '@/lib/vault/http-vault-access'
 import { cn } from '@/lib/utils'
@@ -237,6 +238,7 @@ export function FolderPicker({
         <div className="min-h-48 px-1 py-2" aria-busy={loading}>
           {problem ? (
             <div role="alert" className="text-danger px-3 py-2 text-sm">
+              <Illustration name="gentle-error" decorative size="xs" className="mb-2" />
               <p>{MESSAGES[problem]}</p>
               {problem === 'unavailable' ? (
                 <button
@@ -292,11 +294,21 @@ export function FolderPicker({
           ) : null}
 
           {hasListing && names.length === 0 && !loading ? (
-            <p className="text-ink-muted px-3 py-2 text-sm">
-              {filter.trim().length > 0
-                ? `Ninguna carpeta se llama «${filter.trim()}». Probá con menos letras.`
-                : 'No hay carpetas acá adentro. Podés usar esta misma carpeta o volver atrás.'}
-            </p>
+            filter.trim().length > 0 ? (
+              <p className="text-ink-muted px-3 py-2 text-sm">
+                {`Ninguna carpeta se llama «${filter.trim()}». Probá con menos letras.`}
+              </p>
+            ) : (
+              <div className="flex flex-col items-start gap-2 px-3 py-2">
+                {/* One spot per panel: a load problem above already has its own. */}
+                {problem ? null : (
+                  <Illustration name="folder-picker-empty" decorative size="xs" />
+                )}
+                <p className="text-ink-muted text-sm">
+                  No hay carpetas acá adentro. Podés usar esta misma carpeta o volver atrás.
+                </p>
+              </div>
+            )
           ) : null}
         </div>
 

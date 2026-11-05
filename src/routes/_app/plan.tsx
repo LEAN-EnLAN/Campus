@@ -41,7 +41,7 @@ function PlanScreen() {
     return (
       <div className="flex flex-col gap-8">
         <PageHeader title="Tu plan" />
-        <ErrorState error={plan.error} />
+        <ErrorState error={plan.error} illustration="gentle-error" />
       </div>
     )
   }
@@ -51,6 +51,7 @@ function PlanScreen() {
       <div className="flex flex-col gap-8">
         <PageHeader title="Tu plan" />
         <EmptyState
+          illustration="plan-unselected"
           title="Todavía no elegiste tu carrera"
           description="Elegí universidad, facultad, carrera y plan para ver tus materias y correlativas."
           action={
@@ -140,6 +141,7 @@ function PlanScreen() {
           {plan.views.length === 0 ? (
             <EmptyState
               quiet
+              illustration="plan-empty"
               title="Todavía no cargaste ninguna materia. Agregá la primera y después marcá en qué estás."
             />
           ) : null}

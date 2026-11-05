@@ -3,6 +3,7 @@ import { useEffect, useId, useRef, useState } from 'react'
 import type { ClipboardEvent, DragEvent, FormEvent } from 'react'
 
 import { Button } from '@/components/ui/button'
+import { Illustration } from '@/components/ui/illustration'
 import { SelectField, TextareaField, TextField } from '@/components/ui/field'
 import { Modal } from '@/components/ui/modal'
 import {
@@ -257,10 +258,16 @@ function AddResourceForm({
           dragging ? 'border-accent bg-accent-soft' : 'border-rule bg-paper-sunken',
         )}
       >
-        <MousePointerClick
-          aria-hidden="true"
-          className={cn('size-6', dragging ? 'text-accent-ink' : 'text-ink-faint')}
-        />
+        {/* The picture only while the zone is the whole invitation; once a draft is
+            open the zone shrinks and the pointer glyph is enough. */}
+        {draft ? (
+          <MousePointerClick
+            aria-hidden="true"
+            className={cn('size-6', dragging ? 'text-accent-ink' : 'text-ink-faint')}
+          />
+        ) : (
+          <Illustration name="material-drop-zone" decorative size="xs" />
+        )}
         <p className="text-ink text-sm font-medium">
           {dragging ? 'Soltalo para usarlo' : 'Arrastrá un link o un texto acá'}
         </p>

@@ -378,7 +378,7 @@ export function Startup() {
           >
             {/* Same frame either way, so the swap never moves the button. */}
             <Illustration
-              name={cloudError ? 'offline-study' : 'workspace-cloud'}
+              name={cloudError ? 'sync-offline' : 'workspace-cloud'}
               decorative
               eager
               size="lg"

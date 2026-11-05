@@ -5,6 +5,7 @@ import { useMemo, useState } from 'react'
 import { StatusGlyph } from '@/components/academic-status'
 import { GROUP_STATUS } from '@/components/academic-status-vocabulary'
 import { EmptyState, ErrorState, LoadingRows } from '@/components/empty-state'
+import type { IllustrationName } from '@/components/ui/illustrations'
 import { PageHeader, SectionHeading } from '@/components/page-header'
 import { SubjectRow } from '@/components/subject-row'
 import {
@@ -58,6 +59,25 @@ function segmentClass(active: boolean): string {
       ? 'bg-paper-elevated text-ink shadow-raised'
       : 'text-ink-muted hover:bg-paper-elevated/70 hover:text-ink',
   )
+}
+
+/**
+ * The empty list's picture. A search that matched nothing is about the search,
+ * not the status, so it wins over the chip; each status group then gets its own.
+ */
+function emptyArt(noSubjects: boolean, searching: boolean, filter: Filter): IllustrationName {
+  if (noSubjects) return 'courses-empty'
+  if (searching) return 'courses-filter-empty'
+  switch (filter) {
+    case 'cursando':
+      return 'courses-current-empty'
+    case 'final_pendiente':
+      return 'status-final-pending'
+    case 'aprobadas':
+      return 'status-approved-celebration'
+    default:
+      return 'courses-filter-empty'
+  }
 }
 
 const FILTERS: { value: Filter; label: string }[] = [
@@ -256,9 +276,11 @@ function CoursesScreen() {
             ) : visible.length === 0 ? (
               <EmptyState
                 className="mt-2"
-                illustration={
-                  plan.isUnmapped && plan.views.length === 0 ? 'courses-empty' : undefined
-                }
+                illustration={emptyArt(
+                  plan.isUnmapped && plan.views.length === 0,
+                  query.trim() !== '',
+                  filter,
+                )}
                 title={
                   plan.isUnmapped && plan.views.length === 0
                     ? 'Todavía no cargaste materias'
@@ -266,7 +288,9 @@ function CoursesScreen() {
                       ? 'No estás cursando nada todavía'
                       : filter === 'final_pendiente'
                         ? 'No tenés finales pendientes'
-                        : 'No hay materias acá'
+                        : filter === 'aprobadas'
+                          ? 'Todavía no tenés materias aprobadas'
+                          : 'No hay materias acá'
                 }
                 description={
                   plan.isUnmapped && plan.views.length === 0

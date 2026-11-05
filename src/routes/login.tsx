@@ -12,6 +12,7 @@ import { useEffect, useState } from 'react'
 import { CampusLogo } from '@/components/brand/campus-logo'
 import { Button } from '@/components/ui/button'
 import { Illustration } from '@/components/ui/illustration'
+import type { IllustrationName } from '@/components/ui/illustrations'
 import { TextField } from '@/components/ui/field'
 import { useAuth } from '@/features/auth/auth-context'
 import { isCloudUnreachable } from '@/features/auth/auth-errors'
@@ -23,6 +24,14 @@ export const Route = createFileRoute('/login')({
 })
 
 type Mode = 'signin' | 'signup' | 'reset' | 'new-password'
+
+/** The aside's picture per form. A sent email (`notice`) and an offline error override it. */
+const MODE_ART: Record<Mode, IllustrationName> = {
+  signin: 'login-signin',
+  signup: 'login-signup',
+  reset: 'password-recovery',
+  'new-password': 'password-new',
+}
 
 function LoginScreen() {
   const { signIn, signUp, session, loading, recovering, requestPasswordReset, updatePassword } =
@@ -276,9 +285,16 @@ function LoginScreen() {
             </p>
           </div>
           <aside className="blue-login-side" aria-label="Campus Cloud">
-            {/* Same frame either way: the swap only says the connection, not the form, failed. */}
+            {/* Same frame in every state: the picture follows the form (and says when
+                the connection, not the form, failed); the words stay in the form. */}
             <Illustration
-              name={isCloudUnreachable(error) ? 'offline-study' : 'workspace-cloud'}
+              name={
+                isCloudUnreachable(error)
+                  ? 'offline-study'
+                  : notice
+                    ? 'auth-email'
+                    : MODE_ART[mode]
+              }
               eager
               size="lg"
             />

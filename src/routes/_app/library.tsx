@@ -176,6 +176,7 @@ function LibraryScreen() {
           />
         ) : filtered.length === 0 ? (
           <EmptyState
+            illustration="search-empty"
             title="No hay resultados"
             description="Probá otra búsqueda o cambiá los filtros."
             quiet

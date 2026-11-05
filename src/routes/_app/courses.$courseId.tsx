@@ -89,6 +89,7 @@ function CourseDetailScreen() {
       <div className="flex flex-col gap-6">
         <BackLink />
         <EmptyState
+          illustration="course-not-found"
           title="No encontramos esta materia"
           description="Puede que no pertenezca al plan que tenés elegido."
         />
@@ -193,6 +194,7 @@ function CourseDetailScreen() {
             ) : items.length === 0 ? (
               <EmptyState
                 quiet
+                illustration="course-tasks-empty"
                 title="No tenés nada anotado para esta materia."
                 action={
                   <Button variant="secondary" onClick={openCapture}>

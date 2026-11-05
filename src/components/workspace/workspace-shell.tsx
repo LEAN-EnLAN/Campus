@@ -1,4 +1,3 @@
-import { FileText } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { EmptyState } from '@/components/empty-state'
@@ -513,7 +512,7 @@ function EmptyPane({
     <div className="grid h-full place-items-center p-6">
       <EmptyState
         quiet
-        icon={FileText}
+        illustration={vaultIsEmpty ? 'notes-empty' : 'notes-select'}
         title={
           vaultIsEmpty
             ? 'Todavía no escribiste ninguna nota.'

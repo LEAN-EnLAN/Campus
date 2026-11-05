@@ -41,6 +41,7 @@ function CalendarScreen() {
     return (
       <div className="p-4 sm:p-6">
         <EmptyState
+          illustration="calendar-empty"
           title="Todavía no anotaste nada"
           description="Cuando cargues un parcial o una entrega, va a aparecer en el calendario."
         />

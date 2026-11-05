@@ -3,6 +3,8 @@ import { ArrowLeftRight, Check, ExternalLink, LogOut, Sun } from 'lucide-react'
 import { useEffect, type ReactNode } from 'react'
 
 import { Button, buttonVariants } from '@/components/ui/button'
+import { Illustration } from '@/components/ui/illustration'
+import type { IllustrationName } from '@/components/ui/illustrations'
 import { useAcademicPlan } from '@/features/academic/queries'
 import { useAuth } from '@/features/auth/auth-context'
 import { useSignOut } from '@/features/auth/use-sign-out'
@@ -22,20 +24,33 @@ function SettingsCard({
   id,
   title,
   description,
+  illustration,
   actions,
   children,
 }: {
   id: string
   title: string
   description?: string
+  /** A small decorative spot beside the title; the title already says what it shows. */
+  illustration?: IllustrationName
   actions?: ReactNode
   children?: ReactNode
 }) {
   return (
     <section className="blue-settings-card" aria-labelledby={id}>
       <header className="blue-settings-card-head">
-        <h2 id={id}>{title}</h2>
-        {description ? <p>{description}</p> : null}
+        <div className="min-w-0">
+          <h2 id={id}>{title}</h2>
+          {description ? <p>{description}</p> : null}
+        </div>
+        {illustration ? (
+          <Illustration
+            name={illustration}
+            decorative
+            size="icon"
+            className="-mt-1 w-16 shrink-0 sm:w-20"
+          />
+        ) : null}
       </header>
       {children}
       {actions ? <div className="blue-settings-actions">{actions}</div> : null}
@@ -89,6 +104,7 @@ export function SettingsScreen() {
             id="settings-workspace"
             title="Espacio de trabajo"
             description="Dónde están disponibles tus datos en esta sesión."
+            illustration="settings-workspace"
             actions={
               <Button variant="secondary" onClick={workspace.change}>
                 <ArrowLeftRight aria-hidden="true" />
@@ -121,6 +137,7 @@ export function SettingsScreen() {
             id="settings-appearance"
             title="Apariencia"
             description="El diseño azul de Campus, en modo claro."
+            illustration="settings-appearance"
           >
             <div className="blue-settings-choice-grid">
               <div className="blue-settings-choice-group">
@@ -233,6 +250,7 @@ export function SettingsScreen() {
             id="settings-academic"
             title="Tu carrera"
             description="Información del plan académico activo."
+            illustration="settings-career"
             actions={
               <>
                 <Link to="/onboarding" className={buttonVariants({ variant: 'secondary' })}>
@@ -277,6 +295,7 @@ export function SettingsScreen() {
             id="settings-privacy"
             title="Privacidad"
             description="Qué información utiliza Campus."
+            illustration="settings-privacy"
           >
             <div className="blue-settings-prose">
               <p>

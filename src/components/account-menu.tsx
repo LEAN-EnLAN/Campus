@@ -1,6 +1,8 @@
 import { ArrowLeftRight, Cloud, FolderOpen, Laptop, LogOut } from 'lucide-react'
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react'
 
+import { Illustration } from './ui/illustration'
+
 /** Who/where the student is. Local has no account: the identity IS the folder. */
 export type AccountIdentity =
   { kind: 'cloud'; email: string | null } | { kind: 'local'; folderName: string }
@@ -140,9 +142,13 @@ export function AccountMenu({
       {open ? (
         <div className="campus-account-popover">
           <div id={identityId} className="campus-account-identity">
-            <span className="campus-account-avatar campus-account-avatar-lg" aria-hidden="true">
-              {initial ?? <Laptop className="size-5" />}
-            </span>
+            {/* Where the work lives, drawn: the name and the mode beside it say it in words. */}
+            <Illustration
+              name={isLocal ? 'account-local' : 'account-cloud'}
+              decorative
+              size="icon"
+              className="w-16"
+            />
             <span className="min-w-0">
               <span className="campus-account-name">{name}</span>
               <span className="campus-account-detail">

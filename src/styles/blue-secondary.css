@@ -33,8 +33,13 @@
   padding: 1.25rem 1.5rem 1.5rem;
 }
 .campus-blue .blue-settings-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
   margin-bottom: 1rem;
 }
+
 .campus-blue .blue-settings-card-head h2 {
   color: var(--color-ink);
   font-size: var(--text-lg);

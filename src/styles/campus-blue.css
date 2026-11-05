@@ -153,11 +153,6 @@ body:has(.campus-blue) {
   line-height: 1;
   transition: box-shadow var(--duration-quick) var(--ease-out-quiet);
 }
-.campus-account-avatar-lg {
-  width: 2.5rem;
-  height: 2.5rem;
-  font-size: var(--text-base);
-}
 .campus-account-trigger:hover .campus-account-avatar,
 .campus-account-trigger[aria-expanded='true'] .campus-account-avatar {
   box-shadow: inset 0 0 0 2px var(--blue-14);

@@ -38,10 +38,17 @@ describe('Illustration', () => {
     expect(container.querySelector('img')).not.toHaveAttribute('srcset')
   })
 
-  it('serves the provisional SVG for a slot that has no raster master yet', () => {
-    render(<Illustration name="material-empty" />)
-    const img = screen.getByRole('img', { name: ILLUSTRATIONS['material-empty'].alt })
-    expect(img).toHaveAttribute('src', '/campus-blue-assets/material-empty.svg')
+  it('serves the provisional SVG for a slot still flagged vector', () => {
+    render(<Illustration name="ambient-morning" />)
+    const img = screen.getByRole('img', { name: ILLUSTRATIONS['ambient-morning'].alt })
+    expect(img).toHaveAttribute('src', '/campus-blue-assets/ambient-morning.svg')
+    expect(img).not.toHaveAttribute('srcset')
+  })
+
+  it('serves only the 1x file at icon size, where it already covers any density', () => {
+    render(<Illustration name="settings-career" size="icon" />)
+    const img = screen.getByRole('img', { name: ILLUSTRATIONS['settings-career'].alt })
+    expect(img).toHaveAttribute('src', '/campus-blue-assets/settings-career.webp')
     expect(img).not.toHaveAttribute('srcset')
   })
 
@@ -53,9 +60,20 @@ describe('Illustration', () => {
     }
   })
 
+  it('ships no file in public/ that the registry does not point at', () => {
+    // A provisional SVG left behind after its raster landed is dead weight nobody can reach.
+    const dir = join(process.cwd(), 'public', 'campus-blue-assets')
+    const expected = new Set(
+      Object.entries(ILLUSTRATIONS).flatMap(([name, entry]) =>
+        'vector' in entry ? [`${name}.svg`] : [`${name}.webp`, `${name}@2x.webp`],
+      ),
+    )
+    expect(readdirSync(dir).filter((file) => !expected.has(file))).toEqual([])
+  })
+
   it('registers one entry per illustration, each with Spanish alt text', () => {
     const entries = Object.entries(ILLUSTRATIONS)
-    expect(entries).toHaveLength(43)
+    expect(entries).toHaveLength(58)
     for (const [, v] of entries) expect(v.alt.length).toBeGreaterThan(8)
   })
 

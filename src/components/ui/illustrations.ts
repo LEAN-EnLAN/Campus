@@ -5,7 +5,9 @@
  * Files live in public/campus-blue-assets as `<name>.webp` (1x) and
  * `<name>@2x.webp`, built from the PNG masters by scripts/optimize-assets.mjs.
  * `vector: true` marks a slot that still ships its provisional `<name>.svg`
- * because no raster master exists yet; drop the flag when its WebP lands.
+ * instead of a raster. Only the four `ambient-*` backdrops keep it: their STYLE-A
+ * masters are 1280x800 object spots, not 1920x640 bands, and the time-of-day
+ * backdrop is a CSS gradient that mounts no image (DESIGN_SYSTEM.md section 6).
  * A name that is not here does not type-check, so a typo or a deleted image
  * fails the build instead of rendering a broken <img>.
  *
@@ -26,26 +28,22 @@ export const ILLUSTRATIONS = {
   'vault-cloud-unavailable': {
     width: 640,
     height: 400,
-    vector: true,
-    alt: 'Carpeta de apuntes local separada de Campus Cloud',
+    alt: 'Carpeta de cuadernos separada de una nube por una conexión interrumpida',
   },
   'calendar-empty': {
     width: 640,
     height: 400,
-    vector: true,
-    alt: 'Calendario académico sin fechas registradas',
+    alt: 'Calendario académico de pie con la grilla de días vacía',
   },
   'material-empty': {
     width: 640,
     height: 400,
-    vector: true,
-    alt: 'Libro y enlace para guardar material académico',
+    alt: 'Libro abierto junto a un eslabón de enlace para guardar material',
   },
   'notes-empty': {
     width: 640,
     height: 400,
-    vector: true,
-    alt: 'Cuaderno preparado para escribir la primera nota',
+    alt: 'Cuaderno abierto con hojas en blanco y una lapicera azul',
   },
   'onboarding-ready': {
     width: 640,
@@ -95,32 +93,27 @@ export const ILLUSTRATIONS = {
   'login-signin': {
     width: 640,
     height: 400,
-    vector: true,
-    alt: 'Libro junto a una puerta entreabierta',
+    alt: 'Puerta entreabierta junto a un libro cerrado',
   },
   'login-signup': {
     width: 640,
     height: 400,
-    vector: true,
-    alt: 'Cuaderno nuevo con una ficha para empezar',
+    alt: 'Cuaderno nuevo junto a una ficha en blanco',
   },
   'password-recovery': {
     width: 640,
     height: 400,
-    vector: true,
-    alt: 'Sobre y llave para recuperar el acceso',
+    alt: 'Sobre abierto junto a una llave',
   },
   'password-new': {
     width: 640,
     height: 400,
-    vector: true,
-    alt: 'Candado junto a una hoja para una contraseña nueva',
+    alt: 'Candado junto a una hoja en blanco',
   },
   'auth-email': {
     width: 640,
     height: 400,
-    vector: true,
-    alt: 'Sobre con una tarjeta de correo sin texto',
+    alt: 'Sobre abierto con una tarjeta de correo en blanco',
   },
   'today-study': {
     width: 640,
@@ -146,74 +139,62 @@ export const ILLUSTRATIONS = {
   'courses-filter-empty': {
     width: 640,
     height: 400,
-    vector: true,
-    alt: 'Fichas de materias y una lupa sin resultados',
+    alt: 'Tres fichas de materias en blanco detrás de una lupa',
   },
   'courses-current-empty': {
     width: 640,
     height: 400,
-    vector: true,
-    alt: 'Libro de cursada con un señalador sin marcar',
+    alt: 'Libro de cursada con una cinta señaladora sin marcar',
   },
   'courses-finals-empty': {
     width: 640,
     height: 400,
-    vector: true,
-    alt: 'Agenda de finales con un reloj sin fecha asignada',
+    alt: 'Agenda de finales con la página vacía junto a un reloj',
   },
   'course-not-found': {
     width: 640,
     height: 400,
-    vector: true,
-    alt: 'Ficha de una materia buscada con una lupa',
+    alt: 'Ficha de materia bajo una lupa, con el contorno de una ficha que falta',
   },
   'course-tasks-empty': {
     width: 640,
     height: 400,
-    vector: true,
-    alt: 'Ficha de cursada para anotar una tarea',
+    alt: 'Ficha de tareas con dos casillas sin marcar y una lapicera',
   },
   'material-drop-zone': {
-    width: 400,
-    height: 250,
-    vector: true,
-    alt: 'Enlace y tarjeta que se acercan a una bandeja',
+    width: 640,
+    height: 400,
+    alt: 'Eslabón de enlace y tarjeta en blanco sobre una bandeja abierta',
   },
   'course-notes-empty': {
     width: 640,
     height: 400,
-    vector: true,
-    alt: 'Dos hojas de apuntes con un enlace por agregar',
+    alt: 'Dos hojas de apuntes en blanco junto a un eslabón de enlace',
   },
   'notes-select': {
     width: 640,
     height: 400,
-    vector: true,
-    alt: 'Cuaderno cerrado con un señalador para abrir',
+    alt: 'Cuaderno cerrado con una cinta señaladora, listo para abrir',
   },
   'search-empty': {
     width: 640,
     height: 400,
-    vector: true,
-    alt: 'Lupa sobre fichas sin coincidencias',
+    alt: 'Lupa sobre dos fichas en blanco',
   },
   'settings-workspace': {
     width: 640,
     height: 400,
-    vector: true,
-    alt: 'Carpeta y separadores para organizar el espacio',
+    alt: 'Carpeta abierta con tres separadores junto a una laptop',
   },
   'settings-privacy': {
     width: 640,
     height: 400,
-    vector: true,
-    alt: 'Carpeta de apuntes con un candado',
+    alt: 'Escudo detrás de un candado y una carpeta cerrada',
   },
   'page-not-found': {
     width: 640,
     height: 400,
-    vector: true,
-    alt: 'Señalador y camino interrumpido hacia una hoja',
+    alt: 'Hoja con un señalador y un camino punteado que se corta',
   },
   'offline-study': {
     width: 640,
@@ -223,8 +204,82 @@ export const ILLUSTRATIONS = {
   'config-unavailable': {
     width: 640,
     height: 400,
-    vector: true,
-    alt: 'Dossier de configuración con una pieza por completar',
+    alt: 'Carpeta de configuración con un hueco cuadrado y la pieza que falta al lado',
+  },
+  'settings-appearance': {
+    width: 640,
+    height: 400,
+    alt: 'Abanico de muestras de color azules junto a una paleta',
+  },
+  'settings-career': {
+    width: 640,
+    height: 400,
+    alt: 'Birrete junto a tres hojas de plan de estudios con cuatrimestres vacíos',
+  },
+  'account-local': {
+    width: 640,
+    height: 400,
+    alt: 'Laptop con una carpeta de archivos en la pantalla',
+  },
+  'account-cloud': {
+    width: 640,
+    height: 400,
+    alt: 'Nube con una carpeta de archivos delante',
+  },
+  'sync-offline': {
+    width: 640,
+    height: 400,
+    alt: 'Nube tachada junto a un cuaderno abierto',
+  },
+  'status-approved-celebration': {
+    width: 640,
+    height: 400,
+    alt: 'Medalla con una tilde y dos cintas, entre papelitos azules',
+  },
+  'status-final-pending': {
+    width: 640,
+    height: 400,
+    alt: 'Reloj de arena junto a una hoja de examen final en blanco',
+  },
+  'import-plan': {
+    width: 640,
+    height: 400,
+    alt: 'Hoja en blanco que pasa a una grilla de seis cuatrimestres',
+  },
+  'desktop-app': {
+    width: 640,
+    height: 400,
+    alt: 'Monitor con una ventana de aplicación de tres paneles',
+  },
+  'section-today': {
+    width: 640,
+    height: 400,
+    alt: 'Hoja con una lista, una taza y un sol azul que asoma',
+  },
+  'section-plan': {
+    width: 640,
+    height: 400,
+    alt: 'Seis hojas de calendario en grilla, una por cuatrimestre',
+  },
+  'section-courses': {
+    width: 640,
+    height: 400,
+    alt: 'Tres libros académicos apilados, azules y blancos',
+  },
+  'section-material': {
+    width: 640,
+    height: 400,
+    alt: 'Tres tarjetas de recursos apiladas y dos eslabones de enlace',
+  },
+  'section-calendar': {
+    width: 640,
+    height: 400,
+    alt: 'Calendario de pie con la grilla en blanco y un día marcado',
+  },
+  'section-notes': {
+    width: 640,
+    height: 400,
+    alt: 'Cuaderno cerrado con una lapicera azul en diagonal',
   },
   'ambient-morning': { width: 1920, height: 640, vector: true, alt: 'Luz azul de la mañana' },
   'ambient-afternoon': { width: 1920, height: 640, vector: true, alt: 'Luz azul de la tarde' },

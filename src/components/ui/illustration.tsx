@@ -7,12 +7,14 @@ const BASE = '/campus-blue-assets'
 /**
  * Max rendered width per size, from 390px up. An illustration is a spot, not a
  * banner: one per panel, never next to the primary action's fold.
+ *   icon  card headers, menu identity      ~64–80px (1x file only: it is 8x already)
  *   xs  drop zones and dense panels       ~96–112px
  *   sm  cards beside other content        ~176–240px
  *   md  empty states (the default)        ~208–288px
  *   lg  Local/Cloud choice, onboarding    ~240–320px
  */
 const SIZE = {
+  icon: 'max-w-16 sm:max-w-20',
   xs: 'max-w-24 sm:max-w-28',
   sm: 'max-w-44 sm:max-w-60',
   md: 'max-w-52 sm:max-w-72',
@@ -48,9 +50,10 @@ export function Illustration({
   const entry = ILLUSTRATIONS[name]
   const { width, height, alt: described } = entry
   // Provisional SVGs scale on their own; raster backgrounds (1920 wide) ship
-  // one size; raster spots ship 1x and 2x.
+  // one size; raster spots ship 1x and 2x, except at icon size, where the 640px
+  // file already covers any screen density and the 2x would be ~70 KB wasted.
   const vector = 'vector' in entry
-  const hasRetina = !vector && width < 1920
+  const hasRetina = !vector && width < 1920 && size !== 'icon'
   return (
     <img
       src={`${BASE}/${name}.${vector ? 'svg' : 'webp'}`}

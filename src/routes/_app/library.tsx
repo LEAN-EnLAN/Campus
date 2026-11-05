@@ -165,7 +165,7 @@ function LibraryScreen() {
           <LoadingRows rows={4} />
         ) : resources.length === 0 ? (
           <EmptyState
-            illustration="/campus-blue-assets/material-empty.svg"
+            illustration="material-empty"
             title="Todavía no guardaste nada"
             description="Guardá el link al drive de la cátedra o esa nota que siempre buscás antes del parcial."
             action={

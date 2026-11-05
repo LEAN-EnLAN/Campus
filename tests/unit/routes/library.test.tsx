@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react'
+import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import type { ReactNode } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -7,14 +7,21 @@ import { Route } from '@/routes/_app/library'
 
 import { renderRoute } from '../helpers/render-route'
 
-const state = vi.hoisted(() => ({ create: vi.fn() }))
+const SUBJECT = { id: 'analisis-1', name: 'Análisis Matemático I' }
+
+const state = vi.hoisted(() => ({ create: vi.fn(), reset: vi.fn() }))
 
 vi.mock('@/features/academic/queries', () => ({
-  useAcademicPlan: () => ({ views: [], subjectById: new Map() }),
+  useAcademicPlan: () => ({ views: [SUBJECT], subjectById: new Map([[SUBJECT.id, SUBJECT]]) }),
 }))
 vi.mock('@/features/items/queries', () => ({
   useResources: () => ({ data: [], isLoading: false, error: null, refetch: vi.fn() }),
-  useCreateResource: () => ({ mutateAsync: state.create, isPending: false, error: null }),
+  useCreateResource: () => ({
+    mutateAsync: state.create,
+    reset: state.reset,
+    isPending: false,
+    error: null,
+  }),
   useDeleteResource: () => ({ mutate: vi.fn(), error: null }),
 }))
 
@@ -22,65 +29,83 @@ const Library = Route.options.component as () => ReactNode
 
 beforeEach(() => {
   state.create = vi.fn(async () => undefined)
+  state.reset = vi.fn()
 })
 
-describe('/library form', () => {
-  it('keeps Título and Link the same height', async () => {
-    renderRoute(Library)
-    await userEvent.click(
-      (await screen.findAllByRole('button', { name: 'Agregar material' }))[0]!,
-    )
+/** Open the dialog from the page header and switch to typing a link by hand. */
+async function openLinkDraft() {
+  const user = userEvent.setup()
+  renderRoute(Library)
+  await user.click((await screen.findAllByRole('button', { name: 'Agregar material' }))[0]!)
+  const dialog = await screen.findByRole('dialog', { name: 'Agregar material' })
+  await user.click(within(dialog).getByRole('button', { name: 'Escribir un link' }))
+  return { user, dialog }
+}
 
-    const title = await screen.findByLabelText(/Título/)
-    const link = screen.getByLabelText(/Link/, { selector: 'input' })
-    expect(link.className).toContain('h-10')
+describe('/library add material', () => {
+  it('opens a fresh dialog whose Título and Link share one height', async () => {
+    const { dialog } = await openLinkDraft()
+
+    // A previous failed save must not greet the next opening.
+    expect(state.reset).toHaveBeenCalledOnce()
+    const title = within(dialog).getByRole('textbox', { name: /Título/ })
+    const link = within(dialog).getByRole('textbox', { name: /Link/ })
     expect(title.className).toContain('h-10')
+    expect(link.className).toContain('h-10')
   })
 
   it('answers an empty save in Spanish, inline, without the browser bubble', async () => {
-    const user = userEvent.setup()
-    renderRoute(Library)
-    await user.click((await screen.findAllByRole('button', { name: 'Agregar material' }))[0]!)
+    const { user, dialog } = await openLinkDraft()
 
-    await user.click(await screen.findByRole('button', { name: 'Guardar' }))
+    await user.click(within(dialog).getByRole('button', { name: 'Guardar' }))
 
-    expect(screen.getByText('Poné un título.')).toHaveAttribute('role', 'alert')
-    expect(screen.getByText('Pegá el link.')).toBeInTheDocument()
+    expect(within(dialog).getByText('Poné un título para el material.')).toHaveAttribute(
+      'role',
+      'alert',
+    )
+    expect(
+      within(dialog).getByText('Ingresá un link que empiece con https:// o http://.'),
+    ).toBeInTheDocument()
     expect(state.create).not.toHaveBeenCalled()
-    expect(document.querySelector('form')).toHaveAttribute('novalidate')
+    expect(dialog.querySelector('form')).toHaveAttribute('novalidate')
   })
 
   it('rejects a link that is not a web address', async () => {
-    const user = userEvent.setup()
-    renderRoute(Library)
-    await user.click((await screen.findAllByRole('button', { name: 'Agregar material' }))[0]!)
+    const { user, dialog } = await openLinkDraft()
 
-    await user.type(await screen.findByLabelText(/Título/), 'Apunte')
+    await user.type(within(dialog).getByRole('textbox', { name: /Título/ }), 'Apunte')
     await user.type(
-      screen.getByLabelText(/Link/, { selector: 'input' }),
+      within(dialog).getByRole('textbox', { name: /Link/ }),
       'apunte de la cátedra',
     )
-    await user.click(screen.getByRole('button', { name: 'Guardar' }))
+    await user.click(within(dialog).getByRole('button', { name: 'Guardar' }))
 
     expect(
-      screen.getByText('El link tiene que empezar con http:// o https://.'),
+      within(dialog).getByText('Ingresá un link que empiece con https:// o http://.'),
     ).toBeInTheDocument()
     expect(state.create).not.toHaveBeenCalled()
   })
 
-  it('returns focus to Título after saving, ready for the next one', async () => {
-    const user = userEvent.setup()
-    renderRoute(Library)
-    await user.click((await screen.findAllByRole('button', { name: 'Agregar material' }))[0]!)
+  it('files the material under the subject chosen in the dialog, then closes', async () => {
+    const { user, dialog } = await openLinkDraft()
 
-    await user.type(await screen.findByLabelText(/Título/), 'Apunte')
+    await user.type(within(dialog).getByRole('textbox', { name: /Título/ }), 'Apunte')
     await user.type(
-      screen.getByLabelText(/Link/, { selector: 'input' }),
+      within(dialog).getByRole('textbox', { name: /Link/ }),
       'https://drive.example/x',
     )
-    await user.click(screen.getByRole('button', { name: 'Guardar' }))
+    await user.selectOptions(within(dialog).getByLabelText('Materia'), SUBJECT.name)
+    await user.click(within(dialog).getByRole('button', { name: 'Guardar' }))
 
     await vi.waitFor(() => expect(state.create).toHaveBeenCalledOnce())
-    await vi.waitFor(() => expect(screen.getByLabelText(/Título/)).toHaveFocus())
+    expect(state.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: 'link',
+        title: 'Apunte',
+        url: 'https://drive.example/x',
+        curriculumSubjectId: SUBJECT.id,
+      }),
+    )
+    await vi.waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
   })
 })

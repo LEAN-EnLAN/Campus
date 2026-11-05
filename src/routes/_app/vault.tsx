@@ -1,6 +1,8 @@
 import { createFileRoute, Link, useBlocker, useNavigate } from '@tanstack/react-router'
+import { ArrowRight } from 'lucide-react'
 import { useCallback, useRef } from 'react'
 
+import { Illustration } from '@/components/ui/illustration'
 import { WorkspaceShell } from '@/components/workspace/workspace-shell'
 import { useFiles } from '@/lib/files/context'
 import { useRuntimeVaultKey } from '@/lib/runtime/vault-key'
@@ -48,12 +50,11 @@ function VaultScreen() {
     return (
       <div className="bg-paper grid h-full place-items-center overflow-y-auto px-5 py-8">
         <div className="blue-panel w-full max-w-xl p-6 text-center sm:p-9">
-          <img
-            src="/campus-blue-assets/vault-cloud-unavailable.svg"
-            alt=""
-            width={640}
-            height={400}
-            className="mx-auto mb-2 h-48 w-full max-w-72 object-contain"
+          <Illustration
+            name="vault-cloud-unavailable"
+            decorative
+            eager
+            className="mx-auto mb-2 h-48"
           />
           <h1 className="text-ink font-serif text-2xl font-semibold">
             Tus notas todavía no están disponibles en Cloud
@@ -63,7 +64,8 @@ function VaultScreen() {
             usarlas, abrí Campus en tu computadora y elegí una carpeta.
           </p>
           <Link to="/settings" className="blue-button mt-5">
-            Cambiar de espacio de trabajo →
+            Cambiar de espacio de trabajo
+            <ArrowRight aria-hidden="true" className="size-4" />
           </Link>
         </div>
       </div>

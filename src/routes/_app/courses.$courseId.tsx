@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { ArrowLeft, ExternalLink, Plus, Trash2 } from 'lucide-react'
+import { ArrowLeft, ArrowRight, ExternalLink, Plus, Trash2 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
 import { AcademicStatus, StatusGlyph } from '@/components/academic-status'
@@ -391,7 +391,8 @@ function CourseDetailScreen() {
               Agregar entrega
             </Button>
             <Link to="/calendar" className="blue-text-link mt-3 inline-flex">
-              Abrir calendario →
+              Abrir calendario
+              <ArrowRight aria-hidden="true" />
             </Link>
           </section>
           <section className="blue-panel">
@@ -403,7 +404,8 @@ function CourseDetailScreen() {
               {resources.length === 1 ? 'recurso guardado' : 'recursos guardados'}
             </p>
             <Link to="/library" className="blue-text-link mt-3 inline-flex">
-              Ver biblioteca →
+              Ver biblioteca
+              <ArrowRight aria-hidden="true" />
             </Link>
           </section>
         </aside>

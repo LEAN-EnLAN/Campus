@@ -120,11 +120,32 @@ export const campusHighlight = syntaxHighlighting(
     //
     // Which is why every rule below that changes font-size or font-family —
     // heading, inline code, fence — must zero its leading too.
-    { tag: tags.heading1, fontSize: '1.3em', fontWeight: '700', lineHeight: '0' },
-    { tag: tags.heading2, fontSize: '1.15em', fontWeight: '650', lineHeight: '0' },
-    { tag: tags.heading3, fontSize: '1.05em', fontWeight: '600', lineHeight: '0' },
-    { tag: [tags.heading4, tags.heading5, tags.heading6], fontWeight: '600' },
-    { tag: tags.strong, fontWeight: '650' },
+    //
+    // Weights come from the token scale (600 at most): size carries the rank,
+    // and Prompt only ships 400/500/600/700, so a 650 rendered as Bold anyway.
+    {
+      tag: tags.heading1,
+      fontSize: '1.3em',
+      fontWeight: 'var(--font-weight-display)',
+      lineHeight: '0',
+    },
+    {
+      tag: tags.heading2,
+      fontSize: '1.15em',
+      fontWeight: 'var(--font-weight-title)',
+      lineHeight: '0',
+    },
+    {
+      tag: tags.heading3,
+      fontSize: '1.05em',
+      fontWeight: 'var(--font-weight-title)',
+      lineHeight: '0',
+    },
+    {
+      tag: [tags.heading4, tags.heading5, tags.heading6],
+      fontWeight: 'var(--font-weight-title)',
+    },
+    { tag: tags.strong, fontWeight: 'var(--font-weight-title)' },
     { tag: tags.emphasis, fontStyle: 'italic' },
     {
       tag: tags.strikethrough,

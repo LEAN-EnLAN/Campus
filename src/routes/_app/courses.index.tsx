@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { Columns3, Layers, List, Search, type LucideIcon } from 'lucide-react'
+import { ArrowRight, Columns3, Layers, List, Search, type LucideIcon } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
 import { StatusGlyph } from '@/components/academic-status'
@@ -144,7 +144,7 @@ function CoursesScreen() {
     return (
       <div className="flex flex-col gap-8">
         <PageHeader title="Tus materias" />
-        <ErrorState error={plan.error} />
+        <ErrorState error={plan.error} illustration="gentle-error" />
       </div>
     )
   }
@@ -154,6 +154,7 @@ function CoursesScreen() {
       <div className="flex flex-col gap-8">
         <PageHeader title="Tus materias" />
         <EmptyState
+          illustration="plan-unselected"
           title="Todavía no elegiste tu carrera"
           description="Elegí universidad, facultad, carrera y plan para ver tus materias."
           action={
@@ -255,6 +256,9 @@ function CoursesScreen() {
             ) : visible.length === 0 ? (
               <EmptyState
                 className="mt-2"
+                illustration={
+                  plan.isUnmapped && plan.views.length === 0 ? 'courses-empty' : undefined
+                }
                 title={
                   plan.isUnmapped && plan.views.length === 0
                     ? 'Todavía no cargaste materias'
@@ -316,7 +320,8 @@ function CoursesScreen() {
             <div className="blue-panel-head">
               <h2>Resumen de materias</h2>
               <Link to="/plan" className="blue-text-link">
-                Ver plan →
+                Ver plan
+                <ArrowRight aria-hidden="true" />
               </Link>
             </div>
             <div className="flex items-center gap-4">
@@ -370,7 +375,8 @@ function CoursesScreen() {
               <h2>Continuá tu recorrido</h2>
             </div>
             <Link to="/plan/progress" className="blue-text-link">
-              Actualizar avance académico →
+              Actualizar avance académico
+              <ArrowRight aria-hidden="true" />
             </Link>
           </section>
         </aside>

@@ -45,6 +45,23 @@ describe('signUp on a hosted project', () => {
     })
   })
 
+  it('carries the signup consent in the metadata the profile trigger reads', async () => {
+    auth.signUp.mockResolvedValue({ data: { session: null }, error: null })
+    const get = capture()
+
+    await act(async () => {
+      await get().signUp('a@b.com', 'secret1', 'Cami', { metricsConsent: true })
+    })
+
+    expect(auth.signUp).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        options: expect.objectContaining({
+          data: { display_name: 'Cami', metrics_consent: true },
+        }),
+      }),
+    )
+  })
+
   it('reports that e-mail confirmation is pending when no session comes back', async () => {
     auth.signUp.mockResolvedValue({ data: { session: null }, error: null })
     const get = capture()

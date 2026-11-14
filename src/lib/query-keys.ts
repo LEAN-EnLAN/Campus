@@ -20,4 +20,7 @@ export const queryKeys = {
   manualSubjects: ['manual-subjects'] as const,
   academicItems: ['academic-items'] as const,
   resources: ['resources'] as const,
+
+  /** Cloud account settings (metrics consent). Absent in Local. */
+  accountProfile: ['account-profile'] as const,
 } as const

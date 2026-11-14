@@ -6,6 +6,7 @@ import { createRouter, RouterProvider } from '@tanstack/react-router'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 
+import { TelemetryBridge } from '@/features/account/telemetry-bridge'
 import { AuthProvider } from '@/features/auth/auth-context'
 import { WorkspaceQueryProvider } from '@/features/auth/workspace-query-provider'
 import { RuntimeProvider } from '@/lib/runtime/context'
@@ -58,6 +59,7 @@ createRoot(rootElement).render(
           onWorkspaceClosed={leftWorkspace}
         >
           <WorkspaceQueryProvider>
+            <TelemetryBridge />
             <RouterProvider router={router} />
           </WorkspaceQueryProvider>
         </RuntimeProvider>

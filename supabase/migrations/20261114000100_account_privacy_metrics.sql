@@ -20,6 +20,32 @@ alter table public.profiles
   add column metrics_consent    boolean not null default false,
   add column metrics_consent_at timestamptz;
 
+-- The signup checkbox. Consent is written by the same trigger that creates the
+-- profile, from the signup metadata, so it holds even when the account needs
+-- email confirmation first (no session yet, so the client could not write it)
+-- and it adds no step between "Crear cuenta" and Hoy. Only the literal JSON
+-- `true` counts; anything else, or nothing, is "no".
+create or replace function public.handle_new_user()
+returns trigger
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  consent boolean := coalesce(new.raw_user_meta_data -> 'metrics_consent' = 'true'::jsonb, false);
+begin
+  insert into public.profiles (id, display_name, metrics_consent, metrics_consent_at)
+  values (
+    new.id,
+    nullif(new.raw_user_meta_data ->> 'display_name', ''),
+    consent,
+    case when consent then now() end
+  )
+  on conflict (id) do nothing;
+  return new;
+end;
+$$;
+
 -- --------------------------------------------------------------------------
 -- 2. Product events — counts of clicks, never content.
 -- --------------------------------------------------------------------------

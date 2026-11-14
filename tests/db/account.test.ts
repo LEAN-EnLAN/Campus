@@ -100,3 +100,52 @@ describe('SupabaseBackend — account capabilities', () => {
     expect(count).toBe(0)
   })
 })
+
+describe('signup checkbox — consent saved with the profile', () => {
+  async function signUpWith(data: Record<string, unknown>) {
+    const anon = createClient(SUPABASE_URL, ANON_KEY, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    })
+    const email = `signup-${Date.now()}-${Math.floor(Math.random() * 1e6)}@campus.test`
+    const signed = await anon.auth.signUp({
+      email,
+      password: 'campus-account-123',
+      options: { data: { display_name: 'Cami', ...data } },
+    })
+    if (signed.error || !signed.data.user)
+      throw new Error(`signUp failed: ${signed.error?.message}`)
+    const id = signed.data.user.id
+    const { data: row } = await admin
+      .from('profiles')
+      .select('display_name, metrics_consent, metrics_consent_at')
+      .eq('id', id)
+      .single()
+    await admin.auth.admin.deleteUser(id)
+    return row as {
+      display_name: string | null
+      metrics_consent: boolean
+      metrics_consent_at: string | null
+    }
+  }
+
+  it('stores consent and its moment when the box was ticked', async () => {
+    const row = await signUpWith({ metrics_consent: true })
+    expect(row.display_name).toBe('Cami')
+    expect(row.metrics_consent).toBe(true)
+    expect(row.metrics_consent_at).not.toBeNull()
+  })
+
+  it('leaves consent off when the box was not ticked', async () => {
+    const row = await signUpWith({})
+    expect(row).toEqual({
+      display_name: 'Cami',
+      metrics_consent: false,
+      metrics_consent_at: null,
+    })
+  })
+
+  it('only the JSON value true counts as consent', async () => {
+    const row = await signUpWith({ metrics_consent: 'yes' })
+    expect(row.metrics_consent).toBe(false)
+  })
+})

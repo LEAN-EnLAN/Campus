@@ -18,6 +18,8 @@ interface AuthValue {
     email: string,
     password: string,
     displayName: string,
+    /** The signup checkbox. Stored with the profile by the database, never later. */
+    options?: { metricsConsent?: boolean },
   ) => Promise<{ error: string | null; needsConfirmation: boolean }>
   signOut: () => Promise<void>
 }
@@ -83,14 +85,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           return { error: translateAuthError(String(cause), navigator.onLine) }
         }
       },
-      signUp: async (email, password, displayName) => {
+      signUp: async (email, password, displayName, signUpOptions) => {
         let result
         try {
           result = await supabase.auth.signUp({
             email,
             password,
             options: {
-              data: { display_name: displayName },
+              // `metrics_consent` is read by the profile trigger: consent is saved
+              // with the account, even when the email still needs confirming.
+              data: {
+                display_name: displayName,
+                ...(signUpOptions?.metricsConsent ? { metrics_consent: true } : {}),
+              },
               // The confirmation link must come back to wherever Campus is served
               // from, not to the project's configured Site URL (a localhost
               // default until someone edits it). The origin must also be listed in

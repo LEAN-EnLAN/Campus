@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useMemo } from 'react'
 
-import { computeSubjectViews, groupByYear } from '@/domain/availability'
+import { computeSubjectViews, groupByYear, type AvailabilityInput } from '@/domain/availability'
 import { manualStates, manualToCurriculumSubject } from '@/domain/manual-subjects'
 import { computeProgress } from '@/domain/progress'
 import type {
@@ -260,6 +260,11 @@ export interface AcademicPlan {
   /** Only meaningful while `isUnmapped`: what the student typed in. */
   manualSubjects: ManualSubject[]
   views: SubjectView[]
+  /**
+   * What `views` was computed from, for a catalog plan once it has loaded; null
+   * otherwise. The simulator recomputes from this with imagined statuses.
+   */
+  availabilityInput: AvailabilityInput | null
   byYear: ReturnType<typeof groupByYear>
   progress: ReturnType<typeof computeProgress>
   subjectById: Map<string, SubjectView>
@@ -303,6 +308,11 @@ export function useAcademicPlan(): AcademicPlan {
   const states = statesQuery.data
   const prerequisitesKnown = isUnmapped ? false : (bundleQuery.data?.prerequisitesKnown ?? true)
 
+  const availabilityInput = useMemo((): AvailabilityInput | null => {
+    if (isUnmapped || !bundleSubjects || !prerequisites || !states) return null
+    return { subjects: bundleSubjects, prerequisites, states, prerequisitesKnown }
+  }, [isUnmapped, bundleSubjects, prerequisites, states, prerequisitesKnown])
+
   const views = useMemo(() => {
     if (isUnmapped) {
       if (!manualSubjects) return []
@@ -313,14 +323,8 @@ export function useAcademicPlan(): AcademicPlan {
         prerequisitesKnown: false,
       })
     }
-    if (!bundleSubjects || !prerequisites || !states) return []
-    return computeSubjectViews({
-      subjects: bundleSubjects,
-      prerequisites,
-      states,
-      prerequisitesKnown,
-    })
-  }, [isUnmapped, manualSubjects, bundleSubjects, prerequisites, states, prerequisitesKnown])
+    return availabilityInput ? computeSubjectViews(availabilityInput) : []
+  }, [isUnmapped, manualSubjects, availabilityInput])
 
   const byYear = useMemo(() => groupByYear(views), [views])
   const progress = useMemo(() => computeProgress(views), [views])
@@ -334,6 +338,7 @@ export function useAcademicPlan(): AcademicPlan {
     prerequisitesNote: isUnmapped ? null : (bundleQuery.data?.prerequisitesNote ?? null),
     manualSubjects: manualSubjects ?? [],
     views,
+    availabilityInput,
     byYear,
     progress,
     subjectById,

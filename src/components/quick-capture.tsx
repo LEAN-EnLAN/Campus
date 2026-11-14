@@ -50,6 +50,7 @@ export function QuickCapture({
   onOpenChange,
   subjects,
   defaultSubjectId = null,
+  defaultKind = 'assignment',
   items = [],
   onSubmit,
   isPending = false,
@@ -59,6 +60,8 @@ export function QuickCapture({
   onOpenChange: (open: boolean) => void
   subjects: readonly SubjectView[]
   defaultSubjectId?: string | null
+  /** The kind the form opens on ("Agendar final" opens on `final`). */
+  defaultKind?: AcademicItemKind
   /** Items already saved: a Final is checked against the finals already booked. */
   items?: readonly AcademicItem[]
   onSubmit: (values: QuickCaptureValues) => Promise<void> | void
@@ -69,7 +72,7 @@ export function QuickCapture({
   const firstFieldRef = useRef<HTMLInputElement>(null)
 
   const [title, setTitle] = useState('')
-  const [kind, setKind] = useState<AcademicItemKind>('assignment')
+  const [kind, setKind] = useState<AcademicItemKind>(defaultKind)
   const [subjectId, setSubjectId] = useState<string>(defaultSubjectId ?? '')
   const [dueDate, setDueDate] = useState('')
   const [dueTime, setDueTime] = useState('')
@@ -84,7 +87,7 @@ export function QuickCapture({
   useEffect(() => {
     if (!open) return
     setTitle('')
-    setKind('assignment')
+    setKind(defaultKind)
     setSubjectId(defaultSubjectId ?? '')
     setDueDate('')
     setDueTime('')
@@ -92,7 +95,7 @@ export function QuickCapture({
     setSubmitted(false)
     const timer = window.setTimeout(() => firstFieldRef.current?.focus(), 20)
     return () => window.clearTimeout(timer)
-  }, [open, defaultSubjectId])
+  }, [open, defaultSubjectId, defaultKind])
 
   if (!open) return null
 

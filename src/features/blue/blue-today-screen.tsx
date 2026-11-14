@@ -1,6 +1,6 @@
 import { Link } from '@tanstack/react-router'
 import { ArrowRight, CalendarDays, Check, Plus } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 
 import { DeadlineRow } from '@/components/deadline-row'
 import { EmptyState, ErrorState, LoadingRows } from '@/components/empty-state'
@@ -16,6 +16,7 @@ import { useAcademicItems, useCreateAcademicItem } from '@/features/items/querie
 import { useCompleteItem } from '@/features/items/use-complete-item'
 import { buildToday, daysLeftLabel } from '@/features/items/today-model'
 import { dueTimeLabel } from '@/features/items/due'
+import { PENDING_FINALS_ID } from '@/features/plan/pending-finals-model'
 
 const dateFormat = new Intl.DateTimeFormat('es-AR', {
   weekday: 'long',
@@ -66,19 +67,24 @@ function BlueSection({
 function SubjectsPanel({
   title,
   subjects,
+  link,
 }: {
   title: string
   subjects: readonly SubjectView[]
+  /** Where "Ver todas" goes; the subjects list by default. */
+  link?: ReactNode
 }) {
   if (subjects.length === 0) return null
   return (
     <section className="blue-panel">
       <div className="blue-panel-head">
         <h2>{title}</h2>
-        <Link className="blue-text-link" to="/courses">
-          Ver todas
-          <ArrowRight aria-hidden="true" />
-        </Link>
+        {link ?? (
+          <Link className="blue-text-link" to="/courses">
+            Ver todas
+            <ArrowRight aria-hidden="true" />
+          </Link>
+        )}
       </div>
       <ul>
         {subjects.slice(0, 5).map((subject) => (
@@ -294,7 +300,16 @@ export function BlueTodayScreen() {
               )}
             </section>
             <SubjectsPanel title="Mis materias" subjects={cursando} />
-            <SubjectsPanel title="Regularizadas (final pendiente)" subjects={finales} />
+            <SubjectsPanel
+              title="Regularizadas (final pendiente)"
+              subjects={finales}
+              link={
+                <Link className="blue-text-link" to="/plan" hash={PENDING_FINALS_ID}>
+                  Finales pendientes
+                  <ArrowRight aria-hidden="true" />
+                </Link>
+              }
+            />
           </aside>
         </div>
       )}

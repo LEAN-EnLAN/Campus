@@ -19,6 +19,7 @@ import { renderRoute } from '../helpers/render-route'
 const state = vi.hoisted(() => ({
   items: [] as AcademicItem[],
   views: [] as { id: string; name: string; status: string; yearLevel: number }[],
+  hasContext: true,
   createAsync: vi.fn<(values: QuickCaptureValues) => Promise<void>>(),
   track: vi.fn(),
   download: vi.fn(),
@@ -56,7 +57,7 @@ vi.mock('@/features/academic/queries', () => ({
   useAcademicPlan: () => ({
     views: state.views,
     subjectById: new Map(state.views.map((v) => [v.id, v])),
-    hasContext: true,
+    hasContext: state.hasContext,
     isUnmapped: false,
     isLoading: false,
     error: null,
@@ -98,6 +99,7 @@ const mount = () =>
 beforeEach(() => {
   state.items = []
   state.views = [{ id: 'alg', name: 'Álgebra', status: 'in_progress', yearLevel: 1 }]
+  state.hasContext = true
   state.createAsync = vi.fn().mockResolvedValue(undefined)
   state.track = vi.fn()
   state.download = vi.fn()
@@ -216,6 +218,29 @@ describe('a shared link, opened on Hoy', () => {
     expect(screen.queryByRole('dialog')).toBeNull()
     expect(state.createAsync).not.toHaveBeenCalled()
     expect(state.track).not.toHaveBeenCalled()
+  })
+
+  // Opened while signed out: /add → login/sign-up → Hoy (no carrera yet, the
+  // layout sends them to onboarding) → onboarding → Hoy. The draft must survive
+  // the first, plan-less visit to Hoy and open on the one after onboarding.
+  it('keeps the draft through a visit before onboarding and opens it once there is a plan', async () => {
+    acceptSharedCapture('?kind=midterm&title=Primer%20parcial&ref=abcdefgh')
+    state.hasContext = false
+    const before = mount()
+
+    await screen.findByRole('heading', { name: 'Hoy', level: 1 })
+    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(window.sessionStorage.getItem(PENDING_CAPTURE_KEY)).not.toBeNull()
+    before.unmount()
+
+    state.hasContext = true
+    mount()
+
+    const dialog = await screen.findByRole('dialog', { name: 'Agregar parcial' })
+    expect(within(dialog).getByRole('textbox', { name: '¿Qué es?' })).toHaveValue(
+      'Primer parcial',
+    )
+    expect(window.sessionStorage.getItem(PENDING_CAPTURE_KEY)).toBeNull()
   })
 
   it('opens nothing without a shared draft', async () => {

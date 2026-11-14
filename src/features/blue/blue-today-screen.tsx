@@ -15,7 +15,13 @@ import { useAcademicPlan } from '@/features/academic/queries'
 import { useAcademicItems, useCreateAcademicItem } from '@/features/items/queries'
 import { useCompleteItem } from '@/features/items/use-complete-item'
 import { useItemActions } from '@/features/items/use-item-actions'
-import { buildToday, daysLeftLabel } from '@/features/items/today-model'
+import {
+  buildToday,
+  daysLeftLabel,
+  laterLine,
+  todayHeadline,
+  UPCOMING_DAYS,
+} from '@/features/items/today-model'
 import { dueTimeLabel } from '@/features/items/due'
 
 const dateFormat = new Intl.DateTimeFormat('es-AR', {
@@ -25,47 +31,83 @@ const dateFormat = new Intl.DateTimeFormat('es-AR', {
   year: 'numeric',
 })
 
-function BlueSection({
-  id,
-  title,
-  rows,
-  subjectName,
-  onComplete,
-  onEdit,
-  onDelete,
-  overdue = false,
-}: {
-  id: string
-  title: string
+interface RowsProps {
   rows: (AgendaEntry & { daysLeft?: number })[]
   subjectName: (id: string | null) => string | null
   onComplete: (entry: AgendaEntry, done: boolean) => void
   onEdit: (item: AcademicItem) => void
   onDelete: (item: AcademicItem) => void
   overdue?: boolean
-}) {
-  if (rows.length === 0) return null
+}
+
+function BlueRows({
+  rows,
+  subjectName,
+  onComplete,
+  onEdit,
+  onDelete,
+  overdue = false,
+}: RowsProps) {
+  return (
+    <div className="blue-list">
+      {rows.map((entry) => (
+        <DeadlineRow
+          key={entry.item.id}
+          item={entry.item}
+          subjectId={entry.item.curriculumSubjectId}
+          subjectName={subjectName(entry.item.curriculumSubjectId)}
+          overdue={overdue}
+          dayLabel={entry.daysLeft === undefined ? undefined : daysLeftLabel(entry.daysLeft)}
+          onToggle={(done) => onComplete(entry, done)}
+          onEdit={() => onEdit(entry.item)}
+          onDelete={() => onDelete(entry.item)}
+        />
+      ))}
+    </div>
+  )
+}
+
+function BlueSection({ id, title, ...rows }: RowsProps & { id: string; title: string }) {
+  if (rows.rows.length === 0) return null
   return (
     <section aria-labelledby={id}>
-      <h2 id={id} className="blue-section-label">
+      {/* Focusable so "Ver próximas" can land the student here, not just scroll. */}
+      <h2 id={id} tabIndex={-1} className="blue-section-label">
         {title}
-        <span className="blue-count">{rows.length}</span>
+        <span className="blue-count">{rows.rows.length}</span>
       </h2>
-      <div className="blue-list">
-        {rows.map((entry) => (
-          <DeadlineRow
-            key={entry.item.id}
-            item={entry.item}
-            subjectId={entry.item.curriculumSubjectId}
-            subjectName={subjectName(entry.item.curriculumSubjectId)}
-            overdue={overdue}
-            dayLabel={entry.daysLeft === undefined ? undefined : daysLeftLabel(entry.daysLeft)}
-            onToggle={(done) => onComplete(entry, done)}
-            onEdit={() => onEdit(entry.item)}
-            onDelete={() => onDelete(entry.item)}
-          />
-        ))}
-      </div>
+      <BlueRows {...rows} />
+    </section>
+  )
+}
+
+/**
+ * Everything past the 14-day window, folded into one line that names the next
+ * one. Hoy stays about the next two weeks, and nothing open is ever hidden.
+ */
+function LaterSection({
+  id,
+  summary,
+  open,
+  onOpenChange,
+  ...rows
+}: RowsProps & {
+  id: string
+  summary: string
+  open: boolean
+  onOpenChange: (open: boolean) => void
+}) {
+  return (
+    <section aria-labelledby={id}>
+      <details open={open} onToggle={(event) => onOpenChange(event.currentTarget.open)}>
+        <summary
+          id={id}
+          className="text-ink-muted hover:text-ink min-h-11 cursor-pointer py-2 text-sm"
+        >
+          {summary}
+        </summary>
+        <BlueRows {...rows} />
+      </details>
     </section>
   )
 }
@@ -121,8 +163,30 @@ export function BlueTodayScreen() {
   const finales = plan.views.filter((subject) => subject.status === 'regularized')
   const dueCount = today.today.length + today.overdue.length
   const isLoading = itemsQuery.isLoading || plan.isLoading
-  const nothingPending =
-    dueCount === 0 && today.upcoming.length === 0 && today.undated.length === 0
+  // "Nothing pending" means NOTHING open, anywhere — not "nothing in the next
+  // two weeks". A final in three weeks used to get "Agregar mi primera entrega".
+  const nothingPending = today.openCount === 0
+  const [laterOpen, setLaterOpen] = useState(false)
+  const quietDay =
+    dueCount === 0
+      ? todayHeadline({
+          dueToday: 0,
+          upcoming: today.next
+            ? [{ title: today.next.item.title, daysLeft: today.next.daysLeft }]
+            : [],
+          undated: today.undated.length,
+        })
+      : null
+  const nextLater = today.next !== null && today.next.daysLeft > UPCOMING_DAYS
+  const later = laterLine(today.later, subjectName)
+
+  /** "Ver próximas": scroll to where the next item is listed and move focus there. */
+  function showNext() {
+    if (nextLater) setLaterOpen(true)
+    const target = document.getElementById(nextLater ? 'blue-later' : 'blue-upcoming')
+    target?.scrollIntoView?.({ block: 'start' })
+    target?.focus()
+  }
   async function handleCapture(values: QuickCaptureValues) {
     try {
       await createItem.mutateAsync(values)
@@ -195,17 +259,30 @@ export function BlueTodayScreen() {
                   <Check aria-hidden="true" className="size-5" />
                 )}
               </span>
-              <div>
-                <strong>
-                  {dueCount > 0
-                    ? `Tenés ${dueCount} ${dueCount === 1 ? 'pendiente' : 'pendientes'} para revisar`
-                    : 'No tenés entregas para hoy'}
-                </strong>
-                <p>
-                  {today.overdue.length} {today.overdue.length === 1 ? 'atrasada' : 'atrasadas'}{' '}
-                  · {today.today.length} de hoy
-                </p>
-              </div>
+              {quietDay && !nothingPending ? (
+                <div>
+                  <strong>{quietDay.title}</strong>
+                  {quietDay.description ? <p>{quietDay.description}</p> : null}
+                  {today.next ? (
+                    <Button variant="link" size="sm" className="h-auto px-0" onClick={showNext}>
+                      {nextLater ? 'Ver más adelante' : 'Ver próximas'}
+                    </Button>
+                  ) : null}
+                </div>
+              ) : (
+                <div>
+                  <strong>
+                    {dueCount > 0
+                      ? `Tenés ${dueCount} ${dueCount === 1 ? 'pendiente' : 'pendientes'} para revisar`
+                      : 'No tenés entregas para hoy'}
+                  </strong>
+                  <p>
+                    {today.overdue.length}{' '}
+                    {today.overdue.length === 1 ? 'atrasada' : 'atrasadas'} ·{' '}
+                    {today.today.length} de hoy
+                  </p>
+                </div>
+              )}
               {/* One spot per screen: with nothing pending the empty state below carries it. */}
               {nothingPending ? null : (
                 <Illustration
@@ -220,6 +297,19 @@ export function BlueTodayScreen() {
             {renderSection('blue-overdue', 'Atrasadas', today.overdue, true)}
             {renderSection('blue-today', 'Hoy', today.today)}
             {renderSection('blue-upcoming', 'Próximas', today.upcoming)}
+            {later ? (
+              <LaterSection
+                id="blue-later"
+                summary={later}
+                open={laterOpen}
+                onOpenChange={setLaterOpen}
+                rows={today.later}
+                subjectName={subjectName}
+                onComplete={(entry, done) => complete(entry.item, done)}
+                onEdit={actions.edit}
+                onDelete={actions.remove}
+              />
+            ) : null}
             {renderSection('blue-undated', 'Sin fecha', today.undated)}
             {nothingPending ? (
               <EmptyState

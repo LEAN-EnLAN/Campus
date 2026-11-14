@@ -119,13 +119,59 @@ describe('Hoy', () => {
     mount()
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Hoy' })).toBeInTheDocument()
-    expect(screen.getByText('No tenés entregas para hoy')).toBeInTheDocument()
+    expect(screen.getByText('Nada para hoy.')).toBeInTheDocument()
+    expect(screen.getByText('Lo próximo: Parcial de Álgebra, en 3 días.')).toBeInTheDocument()
     const upcoming = screen.getByRole('heading', { name: /^Próximas/ }).closest('section')!
     expect(within(upcoming).getByText('Parcial de Álgebra')).toBeInTheDocument()
     expect(within(upcoming).getByText(/En 3 días/)).toBeInTheDocument()
-    // The new hero can report zero for today, but the page must not claim
-    // there are no pending tasks while an upcoming deadline exists.
+    // The page must not claim there are no pending tasks while one is coming.
     expect(screen.queryByText('No hay tareas pendientes')).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Agregar mi primera entrega' })).toBeNull()
+  })
+
+  it('"Ver próximas" moves focus to the list that holds the next item', async () => {
+    const user = userEvent.setup()
+    state.items = [item('Parcial de Álgebra', { dueAt: at(3) })]
+    mount()
+
+    await user.click(await screen.findByRole('button', { name: 'Ver próximas' }))
+    expect(screen.getByRole('heading', { name: /^Próximas/ })).toHaveFocus()
+  })
+
+  it('offers "Agregar mi primera entrega" only with zero open items', async () => {
+    state.items = [item('Hecho', { dueAt: at(2), status: 'done' })]
+    mount()
+
+    expect(await screen.findByText('No hay tareas pendientes')).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Agregar mi primera entrega' }),
+    ).toBeInTheDocument()
+  })
+
+  it('never hides an item past the 14 days: no "primera entrega", and a line that names it', async () => {
+    const user = userEvent.setup()
+    state.views = [{ id: 'alg', name: 'Álgebra', status: 'in_progress', yearLevel: 1 }]
+    const far = new Date(NOW.getFullYear(), NOW.getMonth(), NOW.getDate() + 30, 12)
+    const ddmm = `${String(far.getDate()).padStart(2, '0')}/${String(far.getMonth() + 1).padStart(2, '0')}`
+    state.items = [
+      item('Final de Álgebra', { dueAt: at(30), kind: 'final', curriculumSubjectId: 'alg' }),
+      item('TP integrador', { dueAt: at(40) }),
+    ]
+    mount()
+
+    expect(await screen.findByText('Nada para hoy.')).toBeInTheDocument()
+    expect(screen.getByText('Lo próximo: Final de Álgebra, en 30 días.')).toBeInTheDocument()
+    expect(screen.queryByText('No hay tareas pendientes')).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Agregar mi primera entrega' })).toBeNull()
+
+    const line = screen.getByText(
+      `Más adelante: 2 fechas · la próxima es Final de Álgebra (Álgebra), ${ddmm}`,
+    )
+    // Folded until asked; "Ver más adelante" opens it.
+    expect(line.closest('details')).not.toHaveAttribute('open')
+    await user.click(screen.getByRole('button', { name: 'Ver más adelante' }))
+    expect(line.closest('details')).toHaveAttribute('open')
+    expect(screen.getByRole('button', { name: 'Editar TP integrador' })).toBeVisible()
   })
 
   it('says so inside "Hoy" when only overdue work is left, as one quiet sentence', async () => {

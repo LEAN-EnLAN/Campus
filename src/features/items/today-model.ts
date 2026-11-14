@@ -1,6 +1,8 @@
 import { buildAgenda, type AgendaEntry } from '@/domain/agenda'
 import type { AcademicItem } from '@/domain/types'
 
+import { dueDateLabel } from './due'
+
 /**
  * What Hoy shows, decided in one place.
  *
@@ -20,16 +22,56 @@ export interface TodayModel {
   overdue: AgendaEntry[]
   today: AgendaEntry[]
   upcoming: UpcomingEntry[]
+  /**
+   * Open items past the 14-day window, soonest first. Never dropped: Hoy used
+   * to forget them, and with nothing closer it then told the student they had
+   * nothing pending at all.
+   */
+  later: UpcomingEntry[]
   undated: AgendaEntry[]
+  /** The soonest open item from tomorrow on, however far. */
+  next: UpcomingEntry | null
+  /** Every open item, dated or not. Zero is the only "nothing pending". */
+  openCount: number
 }
 
 export function buildToday(items: readonly AcademicItem[], now: Date): TodayModel {
   const agenda = buildAgenda(items, now)
-  const upcoming = [...agenda.tomorrow, ...agenda.week, ...agenda.later]
-    .filter((entry) => (entry.dayOffset ?? Infinity) <= UPCOMING_DAYS)
-    .map((entry) => ({ ...entry, daysLeft: entry.dayOffset as number }))
+  const ahead = [...agenda.tomorrow, ...agenda.week, ...agenda.later].map((entry) => ({
+    ...entry,
+    daysLeft: entry.dayOffset as number,
+  }))
+  const upcoming = ahead.filter((entry) => entry.daysLeft <= UPCOMING_DAYS)
+  const later = ahead.filter((entry) => entry.daysLeft > UPCOMING_DAYS)
 
-  return { overdue: agenda.overdue, today: agenda.today, upcoming, undated: agenda.undated }
+  return {
+    overdue: agenda.overdue,
+    today: agenda.today,
+    upcoming,
+    later,
+    undated: agenda.undated,
+    next: ahead[0] ?? null,
+    openCount:
+      agenda.overdue.length + agenda.today.length + ahead.length + agenda.undated.length,
+  }
+}
+
+/**
+ * "Más adelante: 3 fechas · la próxima es Final (Álgebra), 20/11".
+ *
+ * The one line that stands for everything past the window, so nothing open is
+ * ever hidden from Hoy; the list itself is one click away.
+ */
+export function laterLine(
+  later: readonly UpcomingEntry[],
+  subjectName: (subjectId: string | null) => string | null,
+): string | null {
+  const first = later[0]
+  if (!first) return null
+  const count = later.length === 1 ? '1 fecha' : `${later.length} fechas`
+  const subject = subjectName(first.item.curriculumSubjectId)
+  const what = subject ? `${first.item.title} (${subject})` : first.item.title
+  return `Más adelante: ${count} · la próxima es ${what}, ${dueDateLabel(first.item)}`
 }
 
 /** "Mañana", "En 10 días". */

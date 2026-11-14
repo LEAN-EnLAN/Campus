@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import type { AcademicItem } from '@/domain/types'
 
 import { dateOnlyDueAt } from './due'
-import { buildToday, daysLeftLabel, todayHeadline } from './today-model'
+import { buildToday, daysLeftLabel, laterLine, todayHeadline } from './today-model'
 
 const NOW = new Date(2026, 9, 7, 10, 0, 0)
 
@@ -114,5 +114,59 @@ describe('todayHeadline', () => {
 
     expect(headline.title).toBe('No tenés nada para hoy.')
     expect(headline.description).toBe('Buen momento para adelantar algo, o para no hacer nada.')
+  })
+})
+
+describe('what lies past the 14-day window', () => {
+  it('keeps items past the window under "later", never dropped', () => {
+    const today = buildToday(
+      [item('in15', { dueAt: inDays(15) }), item('in40', { dueAt: inDays(40) })],
+      NOW,
+    )
+
+    expect(today.upcoming).toEqual([])
+    expect(today.later.map((e) => [e.item.id, e.daysLeft])).toEqual([
+      ['in15', 15],
+      ['in40', 40],
+    ])
+  })
+
+  it('names the next item however far it is, and counts every open item', () => {
+    const today = buildToday(
+      [
+        item('in30', { dueAt: inDays(30) }),
+        item('sin-fecha'),
+        item('hecho', { dueAt: inDays(1), status: 'done' }),
+      ],
+      NOW,
+    )
+
+    expect(today.next?.item.id).toBe('in30')
+    expect(today.next?.daysLeft).toBe(30)
+    expect(today.openCount).toBe(2)
+  })
+
+  it('has openCount 0 only when nothing is open at all', () => {
+    expect(buildToday([item('x', { status: 'done', dueAt: inDays(3) })], NOW).openCount).toBe(0)
+    expect(buildToday([item('late', { dueAt: inDays(-3) })], NOW).openCount).toBe(1)
+  })
+
+  it('sums the later items up in one line: count, the next one, its subject and date', () => {
+    const later = buildToday(
+      [
+        item('Final', { dueAt: inDays(20), kind: 'final', curriculumSubjectId: 'alg' }),
+        item('TP', { dueAt: inDays(25) }),
+      ],
+      NOW,
+    ).later
+    const name = (id: string | null) => (id === 'alg' ? 'Álgebra' : null)
+
+    expect(laterLine(later, name)).toBe(
+      'Más adelante: 2 fechas · la próxima es Final (Álgebra), 27/10',
+    )
+    expect(laterLine(later.slice(1), name)).toBe(
+      'Más adelante: 1 fecha · la próxima es TP, 01/11',
+    )
+    expect(laterLine([], name)).toBeNull()
   })
 })

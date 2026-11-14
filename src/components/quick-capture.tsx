@@ -109,6 +109,9 @@ export function QuickCapture({
   const [subjectId, setSubjectId] = useState<string>(defaultSubjectId ?? '')
   const [dueDate, setDueDate] = useState('')
   const [dueTime, setDueTime] = useState('')
+  // The title complains only after a save attempt — never on leaving the field.
+  // On blur, the message pushed the footer down mid-click, so pressing Cancelar
+  // on an empty form first raised "Poné un título." and missed the button.
   const [touched, setTouched] = useState(false)
   // Date and time complain after a save attempt (or on leaving the field), never
   // while the student is still typing "2" on the way to "23/10/2026".
@@ -252,7 +255,6 @@ export function QuickCapture({
           placeholder="TP 4 de Análisis Matemático II"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          onBlur={() => setTouched(true)}
           error={titleError}
           autoComplete="off"
           required
@@ -313,7 +315,8 @@ export function QuickCapture({
             onChange={(e) => setDueTime(e.target.value)}
             onBlur={() => dueTime.trim() !== '' && setSubmitted(true)}
             error={timeError}
-            hint="Sin hora, queda para todo el día."
+            // Only while it is true: with a time typed it contradicts the form.
+            hint={dueTime.trim() === '' ? 'Sin hora, queda para todo el día.' : undefined}
           />
         </div>
 
@@ -330,7 +333,14 @@ export function QuickCapture({
         ) : null}
 
         <div className="border-rule-soft mt-1 flex justify-end gap-2 border-t pt-4">
-          <Button variant="ghost" disabled={isPending} onClick={() => onOpenChange(false)}>
+          <Button
+            variant="ghost"
+            disabled={isPending}
+            // Keep the focus where it is: a blur here would let a field show its
+            // message and move this button out from under the pointer mid-click.
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => onOpenChange(false)}
+          >
             Cancelar
           </Button>
           <Button type="submit" variant="primary" disabled={isPending}>

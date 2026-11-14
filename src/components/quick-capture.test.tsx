@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
@@ -181,6 +181,46 @@ describe('modal behaviour', () => {
     await user.keyboard('{Escape}')
 
     expect(onOpenChange).toHaveBeenCalledWith(false)
+  })
+
+  // The QA run: Cancelar on an empty form blurred the title, "Poné un título."
+  // appeared, the footer moved and the click landed on nothing.
+  it('closes on the first Cancelar with an empty title, without raising the title message', async () => {
+    const onOpenChange = vi.fn()
+    const { user } = mount({ onOpenChange })
+    const titleField = screen.getByLabelText(/¿Qué es\?/)
+    await vi.waitFor(() => expect(titleField).toHaveFocus())
+
+    const cancel = screen.getByRole('button', { name: 'Cancelar' })
+    // Pressing the button must not take the focus off the field (no blur, no shift).
+    expect(fireEvent.mouseDown(cancel)).toBe(false)
+    expect(titleField).toHaveFocus()
+
+    await user.click(cancel)
+    expect(onOpenChange).toHaveBeenCalledTimes(1)
+    expect(onOpenChange).toHaveBeenCalledWith(false)
+    expect(screen.queryByText('Poné un título.')).toBeNull()
+  })
+
+  it('does not complain about the title just for leaving the field', async () => {
+    const { user } = mount()
+    await user.click(screen.getByLabelText(/¿Qué es\?/))
+    await user.tab()
+
+    expect(screen.queryByText('Poné un título.')).toBeNull()
+  })
+})
+
+describe('the all-day hint', () => {
+  it('says "Sin hora" only while there is no time', async () => {
+    const { user } = mount()
+    expect(screen.getByText('Sin hora, queda para todo el día.')).toBeInTheDocument()
+
+    await user.type(screen.getByLabelText('Hora'), '18:30')
+    expect(screen.queryByText('Sin hora, queda para todo el día.')).toBeNull()
+
+    await user.clear(screen.getByLabelText('Hora'))
+    expect(screen.getByText('Sin hora, queda para todo el día.')).toBeInTheDocument()
   })
 })
 

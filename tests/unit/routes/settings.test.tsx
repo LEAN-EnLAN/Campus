@@ -3,6 +3,8 @@ import userEvent from '@testing-library/user-event'
 import type { ReactNode } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { BackendProvider } from '@/lib/backends/context'
+import type { CampusBackend } from '@/lib/backends/types'
 import { Route } from '@/routes/_app/settings'
 import { RequiresAccountProvider } from '@/lib/runtime/identity'
 import { WorkspaceProvider, type WorkspaceValue } from '@/lib/runtime/workspace'
@@ -28,14 +30,18 @@ vi.mock('@/features/academic/queries', () => ({
 const Settings = Route.options.component as () => ReactNode
 
 function mount(workspace: WorkspaceValue, requiresAccount: boolean) {
+  // "Tus datos" reads the backend only when a download is asked for.
+  const backend = { kind: requiresAccount ? 'cloud' : 'local' } as CampusBackend
   const Screen = () => (
-    <ThemeProvider>
-      <RequiresAccountProvider value={requiresAccount}>
-        <WorkspaceProvider value={workspace}>
-          <Settings />
-        </WorkspaceProvider>
-      </RequiresAccountProvider>
-    </ThemeProvider>
+    <BackendProvider backend={backend}>
+      <ThemeProvider>
+        <RequiresAccountProvider value={requiresAccount}>
+          <WorkspaceProvider value={workspace}>
+            <Settings />
+          </WorkspaceProvider>
+        </RequiresAccountProvider>
+      </ThemeProvider>
+    </BackendProvider>
   )
   return renderRoute(Screen)
 }
@@ -70,6 +76,18 @@ describe('Ajustes with a local folder', () => {
     // Once, in its own row: the old card repeated it in a header block and a 'Nombre' row.
     expect(within(section).getByText('Campus', { exact: true })).toBeInTheDocument()
     expect(within(section).getByText('/home/estudiante/Campus')).toBeInTheDocument()
+  })
+
+  it('offers both exports under "Tus datos"', async () => {
+    mount(folder(), false)
+
+    const section = await screen.findByRole('region', { name: 'Tus datos' })
+    expect(
+      within(section).getByRole('button', { name: 'Descargar mis datos (JSON)' }),
+    ).toBeInTheDocument()
+    expect(
+      within(section).getByRole('button', { name: 'Mis fechas (.ics)' }),
+    ).toBeInTheDocument()
   })
 
   it('offers to change workspace and hands the student back to the picker', async () => {

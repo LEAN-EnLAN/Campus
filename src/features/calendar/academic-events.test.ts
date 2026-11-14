@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import type { AcademicItem } from '@/domain/types'
 
-import { projectAcademicItems, UNASSIGNED_CALENDAR } from './academic-events'
+import { chipTitle, projectAcademicItems, UNASSIGNED_CALENDAR } from './academic-events'
 
 const item = (over: Partial<AcademicItem> = {}): AcademicItem => ({
   id: 'i1',
@@ -126,5 +126,31 @@ describe('projectAcademicItems', () => {
     ])
 
     expect(events.map((e) => e.id)).toEqual(['early', 'tie', 'late'])
+  })
+})
+
+describe('chipTitle: a Final names its subject', () => {
+  it('adds the subject to a Final', () => {
+    expect(chipTitle({ kind: 'final', title: 'Final' }, 'Análisis II')).toBe(
+      'Final · Análisis II',
+    )
+  })
+
+  it('does not repeat a subject the title already names', () => {
+    expect(chipTitle({ kind: 'final', title: 'Final de Análisis II' }, 'Análisis II')).toBe(
+      'Final de Análisis II',
+    )
+  })
+
+  it('leaves other kinds, and finals with no subject, as typed', () => {
+    expect(chipTitle({ kind: 'midterm', title: 'Parcial' }, 'Álgebra')).toBe('Parcial')
+    expect(chipTitle({ kind: 'final', title: 'Final' }, null)).toBe('Final')
+  })
+
+  it('reaches the event the grid renders', () => {
+    const { events } = projectAcademicItems([item({ kind: 'final', title: 'Final' })], (id) =>
+      id === 'subj-analisis' ? 'Análisis II' : null,
+    )
+    expect(events[0]?.title).toBe('Final · Análisis II')
   })
 })

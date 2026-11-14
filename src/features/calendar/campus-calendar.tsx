@@ -26,7 +26,7 @@ import type { PaletteTheme } from '@/lib/design/palette'
 import { useTheme } from '@/lib/theme/theme-context'
 import { cn } from '@/lib/utils'
 
-import { projectAcademicItems, UNASSIGNED_CALENDAR } from './academic-events'
+import { chipTitle, projectAcademicItems, UNASSIGNED_CALENDAR } from './academic-events'
 import { AgendaList } from './agenda-list'
 import { undatedNote } from './undated-note'
 import { eventPaint, hueForSubject, type EventPaint } from './event-paint'
@@ -191,8 +191,8 @@ export function CampusCalendar() {
   )
 
   const { events, undated } = useMemo(
-    () => projectAcademicItems(itemsQuery.data ?? []),
-    [itemsQuery.data],
+    () => projectAcademicItems(itemsQuery.data ?? [], (id) => subjectNames.get(id) ?? null),
+    [itemsQuery.data, subjectNames],
   )
 
   // `dataUpdatedAt` is the version: it changes exactly when the item list does,
@@ -479,7 +479,9 @@ function MonthChip({
     >
       <span className="df-campus-chip-line">
         {time && <span className="df-campus-chip-time">{time}</span>}
-        <span className={cn('df-campus-chip-title', done && 'line-through')}>{item.title}</span>
+        <span className={cn('df-campus-chip-title', done && 'line-through')}>
+          {chipTitle(item, subject)}
+        </span>
       </span>
       {/* Present at rest, clipped by the chip's own height; the hover rule is
           what gives it room rather than a second render. */}

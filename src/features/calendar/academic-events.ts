@@ -60,7 +60,24 @@ function deadlineEnd(start: Date): Date {
   return hour.getTime() > limit.getTime() ? limit : hour
 }
 
-export function projectAcademicItems(items: readonly AcademicItem[]): CalendarProjection {
+/**
+ * What a chip says. A Final names its subject: four chips that all read "Final"
+ * in one turno tell the student nothing until they hover each one.
+ */
+export function chipTitle(
+  item: Pick<AcademicItem, 'kind' | 'title'>,
+  subject: string | null,
+): string {
+  if (item.kind !== 'final' || !subject) return item.title
+  if (item.title.toLocaleLowerCase('es').includes(subject.toLocaleLowerCase('es')))
+    return item.title
+  return `${item.title} · ${subject}`
+}
+
+export function projectAcademicItems(
+  items: readonly AcademicItem[],
+  subjectName: (subjectId: string) => string | null = () => null,
+): CalendarProjection {
   const events: { event: Event; sortKey: number; title: string }[] = []
   const undated: AcademicItem[] = []
 
@@ -91,7 +108,10 @@ export function projectAcademicItems(items: readonly AcademicItem[]): CalendarPr
       title: item.title,
       event: {
         id: item.id,
-        title: item.title,
+        title: chipTitle(
+          item,
+          item.curriculumSubjectId ? subjectName(item.curriculumSubjectId) : null,
+        ),
         // An all-day item carries a PlainDate: DayFlow reads the absence of a
         // time component as the all-day row, rather than a 00:00 block.
         start: allDay ? dateToPlainDate(start) : dateToPlainDateTime(start),

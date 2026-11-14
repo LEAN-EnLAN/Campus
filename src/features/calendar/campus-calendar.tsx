@@ -9,13 +9,24 @@ import {
   type CalendarType,
   type EventContentSlotArgs,
   type EventDetailContentProps,
+  type EventDetailDialogProps,
   type Locale,
 } from '@dayflow/react'
 import { CalendarPlus, ChevronLeft, ChevronRight, Pencil, Share2, Trash2 } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  type ComponentProps,
+} from 'react'
+import { createPortal } from 'react-dom'
 
 import { itemKindLabel } from '@/components/deadline-row'
 import { Button } from '@/components/ui/button'
+import { Modal } from '@/components/ui/modal'
 import type { AcademicItem } from '@/domain/types'
 import { useAcademicPlan } from '@/features/academic/queries'
 import { dueTimeLabel } from '@/features/items/due'
@@ -29,6 +40,7 @@ import { cn } from '@/lib/utils'
 
 import { chipTitle, projectAcademicItems, UNASSIGNED_CALENDAR } from './academic-events'
 import { AgendaList } from './agenda-list'
+import { openableChip } from './openable-chip'
 import { undatedNote } from './undated-note'
 import { eventPaint, hueForSubject, type EventPaint } from './event-paint'
 
@@ -221,6 +233,14 @@ export function CampusCalendar() {
       // no way to persist a new date — only `setDone`. A grid that lets you
       // move something and silently forgets is worse than one that does not.
       readOnly: { draggable: false, viewable: true },
+      // The detail is OUR dialog (see `EventDetailDialog`), not the vendor's
+      // floating panel: that one is placed beside the event with a fixed height
+      // guess, so for a chip low or right in the grid it ran past the viewport
+      // and took "Editar" and "Eliminar" with it.
+      useEventDetailDialog: true,
+      // One click opens it. The default ("dbClick", Mac Calendar style) left a
+      // single click doing nothing a student could see.
+      eventDetailTrigger: 'click',
       timeFormat: '24h',
     },
     // Re-key on the palette too: a theme or accent change repaints every
@@ -247,6 +267,9 @@ export function CampusCalendar() {
   const now = useMemo(() => new Date(), [])
 
   const gridRef = useRef<HTMLDivElement>(null)
+  // Where the detail dialog mounts: beside our other dialogs, inside the Campus
+  // Blue scope (for its tokens) and outside the vendor's grid, whose boxes clip.
+  const [dialogHost, setDialogHost] = useState<HTMLDivElement | null>(null)
   useSpanishVendorLabels(gridRef)
   useEffect(() => {
     if (mode !== 'week') return
@@ -259,6 +282,22 @@ export function CampusCalendar() {
     return () => window.cancelAnimationFrame(frame)
   }, [mode])
 
+  const renderDetail = (args: ComponentProps<typeof EventDetailDialog>['args']) =>
+    dialogHost
+      ? createPortal(
+          <EventDetailDialog
+            args={args}
+            subjectName={subjectName}
+            onToggle={complete}
+            onShare={(item) => void actions.share(item)}
+            onDownloadIcs={actions.downloadIcs}
+            onEdit={actions.edit}
+            onDelete={actions.remove}
+          />,
+          dialogHost,
+        )
+      : null
+
   const selectMode = (next: Mode) => {
     setAgendaOpen(next === 'agenda')
     if (next === 'month') calendar.changeView(ViewType.MONTH)
@@ -269,6 +308,7 @@ export function CampusCalendar() {
     <div className="blue-calendar flex min-h-0 flex-1 flex-col">
       {dialog}
       {actions.dialogs}
+      <div ref={setDialogHost} />
       <CalendarChrome
         // The agenda names its own period in its own header; a month title
         // above it would say something else.
@@ -327,17 +367,19 @@ export function CampusCalendar() {
           eventContentDay={(args) => (
             <GridChip args={args} subjectName={subjectName} paintFor={paintFor} />
           )}
-          eventDetailContent={(args) => (
-            <EventDetail
-              args={args}
-              subjectName={subjectName}
-              onToggle={complete}
-              onShare={(item) => void actions.share(item)}
-              onDownloadIcs={actions.downloadIcs}
-              onEdit={actions.edit}
-              onDelete={actions.remove}
-            />
-          )}
+          eventDetailDialog={(args) => renderDetail(args)}
+          // On a narrow screen the vendor swaps in its own editing drawer (title
+          // field, time pickers, "Eliminar" that bypasses our confirmation).
+          // Same dialog there: on a phone the Modal is a bottom sheet.
+          mobileEventDetail={(args) =>
+            args.draftEvent
+              ? renderDetail({
+                  event: args.draftEvent,
+                  isOpen: args.isOpen,
+                  onClose: args.onClose,
+                })
+              : null
+          }
         />
       </div>
 
@@ -480,6 +522,7 @@ function MonthChip({
 
   return (
     <span
+      {...openableChip}
       className={cn('df-campus-chip', done && 'opacity-55')}
       style={{ backgroundColor: paint.bg, color: paint.ink, borderColor: paint.line }}
     >
@@ -517,12 +560,46 @@ function GridChip({
   // one calendar should not look like two products depending on the view.
   return (
     <span
+      {...openableChip}
       className={cn('df-campus-chip df-campus-chip-block', done && 'opacity-55')}
       style={{ backgroundColor: paint.bg, color: paint.ink, borderColor: paint.line }}
     >
       <span className={cn('df-campus-chip-title', done && 'line-through')}>{item.title}</span>
       {subject && <span className="df-campus-chip-detail">{subject}</span>}
     </span>
+  )
+}
+
+/**
+ * The event's detail as a real dialog: under the header on a wide screen, a
+ * bottom sheet on a phone, never taller than the viewport (it scrolls inside),
+ * focus trapped, Escape to close. It replaced a floating panel that could open
+ * half off-screen.
+ */
+export function EventDetailDialog({
+  args,
+  ...detail
+}: { args: Pick<EventDetailDialogProps, 'event' | 'isOpen' | 'onClose'> } & Omit<
+  ComponentProps<typeof EventDetail>,
+  'args' | 'titleId'
+>) {
+  const titleId = useId()
+  // Only for one of OUR events: a vendor draft with no item has nothing to show.
+  if (!itemOf(args.event.meta)) return null
+  return (
+    // The vendor dismisses its selection on any document mousedown outside the
+    // elements it marks; without this mark a press inside the dialog closed it
+    // before the click landed, so "Editar" never opened anything.
+    <div data-event-detail-dialog="true">
+      <Modal
+        open={args.isOpen}
+        onClose={args.onClose}
+        labelledBy={titleId}
+        className="sm:max-w-md"
+      >
+        <EventDetail args={args} titleId={titleId} {...detail} />
+      </Modal>
+    </div>
   )
 }
 
@@ -539,6 +616,7 @@ export function EventDetail({
   onDownloadIcs,
   onEdit,
   onDelete,
+  titleId,
 }: {
   args: Pick<EventDetailContentProps, 'event' | 'onClose'>
   subjectName: (item: AcademicItem) => string | null
@@ -547,6 +625,8 @@ export function EventDetail({
   onDownloadIcs?: (item: AcademicItem) => void
   onEdit: (item: AcademicItem) => void
   onDelete: (item: AcademicItem) => void
+  /** Id for the heading, so a dialog around this can be named by it. */
+  titleId?: string
 }) {
   const item = itemOf(args.event.meta)
   if (!item) return null
@@ -561,7 +641,9 @@ export function EventDetail({
         <p className="text-2xs text-ink-muted tracking-caps uppercase">
           {itemKindLabel(item.kind)}
         </p>
-        <h3 className="text-ink font-serif text-lg font-semibold">{item.title}</h3>
+        <h3 id={titleId} className="text-ink font-serif text-lg font-semibold">
+          {item.title}
+        </h3>
         {subject && <p className="text-ink-muted text-sm">{subject}</p>}
       </div>
 

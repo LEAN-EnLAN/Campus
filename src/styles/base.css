@@ -146,6 +146,12 @@
       padding 160ms var(--ease-out-quiet);
   }
 
+  /* Chips take the keyboard focus (Enter/Space opens the detail). */
+  .df-campus-chip:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 1px;
+  }
+
   .df-campus-chip-line {
     display: flex;
     min-width: 0;

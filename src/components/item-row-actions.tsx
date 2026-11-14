@@ -20,6 +20,7 @@ export function ItemRowActions({
   icsDisabledReason = null,
   onEdit,
   onDelete,
+  className,
 }: {
   /** The item's title, for the accessible names. */
   title: string
@@ -29,10 +30,17 @@ export function ItemRowActions({
   icsDisabledReason?: string | null
   onEdit?: () => void
   onDelete?: () => void
+  /** Placement from the row: a narrow row moves the actions to their own line. */
+  className?: string
 }) {
   if (!onShare && !onDownloadIcs && !onEdit && !onDelete) return null
   return (
-    <span className="-my-1.5 flex shrink-0 items-center gap-0.5 transition-opacity duration-150 pointer-fine:opacity-40 pointer-fine:group-focus-within:opacity-100 pointer-fine:group-hover:opacity-100">
+    <span
+      className={cn(
+        '-my-1.5 flex shrink-0 items-center gap-0.5 transition-opacity duration-150 pointer-fine:opacity-40 pointer-fine:group-focus-within:opacity-100 pointer-fine:group-hover:opacity-100',
+        className,
+      )}
+    >
       {onShare ? (
         <Button
           variant="ghost"

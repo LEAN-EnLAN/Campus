@@ -9,6 +9,8 @@ import {
   type ReactNode,
 } from 'react'
 
+import { cn } from '@/lib/utils'
+
 /**
  * One quiet confirmation, with an optional way back.
  *
@@ -21,6 +23,8 @@ import {
 export interface ToastOptions {
   message: string
   action?: { label: string; onAction: () => void }
+  /** `error`: something did not happen. The words say so; the colour only backs them. */
+  tone?: 'info' | 'error'
 }
 
 interface ToastValue {
@@ -59,7 +63,13 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         className="bottom-toast pointer-events-none fixed inset-x-0 z-50 flex justify-center px-4 md:bottom-6"
       >
         {toast ? (
-          <p className="border-rule bg-paper-elevated text-ink pointer-events-auto flex items-center gap-3 rounded-lg border px-4 py-2.5 text-sm shadow-lg">
+          <p
+            data-tone={toast.tone ?? 'info'}
+            className={cn(
+              'bg-paper-elevated text-ink pointer-events-auto flex items-center gap-3 rounded-lg border px-4 py-2.5 text-sm shadow-lg',
+              toast.tone === 'error' ? 'border-danger border-l-4' : 'border-rule',
+            )}
+          >
             <span>{toast.message}</span>
             {toast.action ? (
               <span aria-hidden="true" className="text-ink-muted -mx-1.5">

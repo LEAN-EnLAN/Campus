@@ -16,6 +16,7 @@ import type {
   PrerequisiteEdge,
   UserSubjectState,
 } from '@/domain/types'
+import { ToastProvider } from '@/components/toast'
 import { BackendProvider } from '@/lib/backends/context'
 import { applyManualBatch, applyStatusBatch } from '@/lib/backends/normalize'
 import type { CampusBackend, SetSubjectStatusInput } from '@/lib/backends/types'
@@ -105,7 +106,10 @@ export async function renderScreen(screen: ReactNode, backend: CampusBackend) {
   const root = createRootRoute({
     component: () => (
       <QueryClientProvider client={client}>
-        <BackendProvider backend={backend}>{screen}</BackendProvider>
+        {/* The app layout provides it; mutations that confirm with a toast need it. */}
+        <ToastProvider>
+          <BackendProvider backend={backend}>{screen}</BackendProvider>
+        </ToastProvider>
       </QueryClientProvider>
     ),
   })

@@ -232,7 +232,7 @@ export function CampusCalendar() {
       ? (plan.subjectById.get(item.curriculumSubjectId)?.name ?? null)
       : null
 
-  const { complete, dialog } = useCompleteItem((id) =>
+  const { complete, isPending, dialog } = useCompleteItem((id) =>
     id ? (plan.subjectById.get(id)?.name ?? null) : null,
   )
   const actions = useItemActions({ subjects: plan.views, items: itemsQuery.data ?? [] })
@@ -285,6 +285,7 @@ export function CampusCalendar() {
           now={now}
           subjectName={subjectName}
           onToggle={complete}
+          isToggling={isPending}
           onEdit={actions.edit}
           onDelete={actions.remove}
         />

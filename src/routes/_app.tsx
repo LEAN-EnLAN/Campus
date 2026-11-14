@@ -136,8 +136,8 @@ function AppFrame() {
         curriculumSubjectId: values.curriculumSubjectId,
         dueAt: values.dueAt,
       })
+      // "Guardado: …" comes from the mutation itself, wherever an item is created.
       setCaptureOpen(false)
-      toast.show({ message: `Guardado: ${values.title}` })
     } catch {
       /* surfaced through createItem.error */
     }

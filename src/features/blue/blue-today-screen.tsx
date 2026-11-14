@@ -36,6 +36,7 @@ interface RowsProps {
   rows: (AgendaEntry & { daysLeft?: number })[]
   subjectName: (id: string | null) => string | null
   onComplete: (entry: AgendaEntry, done: boolean) => void
+  isCompleting: (id: string) => boolean
   onEdit: (item: AcademicItem) => void
   onDelete: (item: AcademicItem) => void
   overdue?: boolean
@@ -45,6 +46,7 @@ function BlueRows({
   rows,
   subjectName,
   onComplete,
+  isCompleting,
   onEdit,
   onDelete,
   overdue = false,
@@ -60,6 +62,7 @@ function BlueRows({
           overdue={overdue}
           dayLabel={entry.daysLeft === undefined ? undefined : daysLeftLabel(entry.daysLeft)}
           onToggle={(done) => onComplete(entry, done)}
+          togglePending={isCompleting(entry.item.id)}
           onEdit={() => onEdit(entry.item)}
           onDelete={() => onDelete(entry.item)}
         />
@@ -163,7 +166,7 @@ export function BlueTodayScreen() {
   const today = useMemo(() => buildToday(itemsQuery.data ?? [], now), [itemsQuery.data, now])
   const subjectName = (id: string | null) =>
     id ? (plan.subjectById.get(id)?.name ?? null) : null
-  const { complete, dialog } = useCompleteItem(subjectName)
+  const { complete, isPending: isCompleting, dialog } = useCompleteItem(subjectName)
   const actions = useItemActions({ subjects: plan.views, items: itemsQuery.data ?? [] })
   const cursando = plan.views.filter((subject) => subject.status === 'in_progress')
   const finales = plan.views.filter((subject) => subject.status === 'regularized')
@@ -219,6 +222,7 @@ export function BlueTodayScreen() {
       overdue={overdue}
       subjectName={subjectName}
       onComplete={(entry, done) => complete(entry.item, done)}
+      isCompleting={isCompleting}
       onEdit={actions.edit}
       onDelete={actions.remove}
     />
@@ -312,6 +316,7 @@ export function BlueTodayScreen() {
                 rows={today.later}
                 subjectName={subjectName}
                 onComplete={(entry, done) => complete(entry.item, done)}
+                isCompleting={isCompleting}
                 onEdit={actions.edit}
                 onDelete={actions.remove}
               />

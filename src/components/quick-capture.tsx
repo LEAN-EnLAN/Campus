@@ -101,6 +101,8 @@ export function QuickCapture({
   const [submitted, setSubmitted] = useState(false)
   const dateRef = useRef<HTMLInputElement>(null)
   const timeRef = useRef<HTMLInputElement>(null)
+  // `isPending` arrives a render late; a double click lands before it does.
+  const submitting = useRef(false)
 
   // Primitives, not the item object: a background refetch hands over a new
   // object for the same item, and that must not wipe what the student typed.
@@ -164,7 +166,7 @@ export function QuickCapture({
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault()
-    if (isPending) return
+    if (isPending || submitting.current) return
     setTouched(true)
     setSubmitted(true)
     // First problem wins the focus, in the order the fields appear.
@@ -183,17 +185,22 @@ export function QuickCapture({
       return
     }
 
-    await onSubmit({
-      title: trimmed,
-      kind,
-      curriculumSubjectId: subjectId || null,
-      // A date with no time is DATE-ONLY, recorded as such; it is not due at 23:59.
-      // An edit that left the date alone keeps the stored instant exactly.
-      dueAt:
-        editing && dueDate === initialDue.date && dueTime === initialDue.time
-          ? editingDueAt
-          : combineDue(date, time),
-    })
+    submitting.current = true
+    try {
+      await onSubmit({
+        title: trimmed,
+        kind,
+        curriculumSubjectId: subjectId || null,
+        // A date with no time is DATE-ONLY, recorded as such; it is not due at 23:59.
+        // An edit that left the date alone keeps the stored instant exactly.
+        dueAt:
+          editing && dueDate === initialDue.date && dueTime === initialDue.time
+            ? editingDueAt
+            : combineDue(date, time),
+      })
+    } finally {
+      submitting.current = false
+    }
   }
 
   return (

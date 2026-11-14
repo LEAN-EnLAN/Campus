@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
+import { useToast } from '@/components/toast'
 import type { AcademicItem, Resource } from '@/domain/types'
 import { useBackend } from '@/lib/backends/context'
 import type {
@@ -21,14 +22,21 @@ export function useAcademicItems() {
   })
 }
 
+/**
+ * Every way of adding a date (quick capture, Hoy, a subject, Finales pendientes)
+ * says it worked in the same words. A failure is not toasted: the capture dialog
+ * stays open and shows it next to the draft, where the student can retry.
+ */
 export function useCreateAcademicItem() {
   const queryClient = useQueryClient()
   const backend = useBackend()
+  const toast = useToast()
 
   return useMutation({
     mutationFn: (input: CreateItemInput) => backend.items.create(input),
-    onSuccess: () => {
+    onSuccess: (_created, input) => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.academicItems })
+      toast.show({ message: `Guardado: ${input.title}` })
     },
   })
 }

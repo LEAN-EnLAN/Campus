@@ -17,11 +17,13 @@ import { cn } from '@/lib/utils'
 export function SubjectDateRow({
   item,
   onToggle,
+  togglePending = false,
   onEdit,
   onDelete,
 }: {
   item: AcademicItem
   onToggle: (done: boolean) => void
+  togglePending?: boolean
   onEdit?: () => void
   onDelete?: () => void
 }) {
@@ -36,8 +38,11 @@ export function SubjectDateRow({
         type="button"
         onClick={() => onToggle(!done)}
         aria-pressed={done}
+        disabled={togglePending}
+        aria-busy={togglePending}
         className={cn(
           'relative mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full border transition-colors duration-150',
+          'disabled:cursor-progress disabled:opacity-50',
           'before:absolute before:-inset-3',
           done
             ? 'border-success bg-success text-on-tint'

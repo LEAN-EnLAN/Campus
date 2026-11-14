@@ -71,7 +71,7 @@ export function LegacyTodayScreen() {
   const subjectName = (id: string | null) =>
     id ? (plan.subjectById.get(id)?.name ?? null) : null
 
-  const { complete, dialog } = useCompleteItem(subjectName)
+  const { complete, isPending, dialog } = useCompleteItem(subjectName)
 
   const renderRows = (entries: (AgendaEntry & { daysLeft?: number })[], overdue = false) =>
     entries.map((entry) => (
@@ -83,6 +83,7 @@ export function LegacyTodayScreen() {
         subjectName={subjectName(entry.item.curriculumSubjectId)}
         subjectId={entry.item.curriculumSubjectId}
         onToggle={(done) => complete(entry.item, done)}
+        togglePending={isPending(entry.item.id)}
       />
     ))
 

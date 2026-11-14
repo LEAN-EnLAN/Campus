@@ -14,9 +14,10 @@ import { renderRoute } from '../helpers/render-route'
 
 const state = vi.hoisted(() => ({
   items: [] as AcademicItem[],
+  itemsLoading: false,
   views: [] as { id: string; name: string; status: string; yearLevel: number }[],
-  toggle: vi.fn(),
-  setStatus: vi.fn(),
+  toggle: vi.fn<(input: { id: string; done: boolean }) => Promise<void>>(),
+  setStatus: vi.fn<(input: Record<string, unknown>) => Promise<void>>(),
   createAsync: vi.fn<(values: QuickCaptureValues) => Promise<void>>(),
   resetCreate: vi.fn(),
   updateAsync:
@@ -27,12 +28,12 @@ const state = vi.hoisted(() => ({
 
 vi.mock('@/features/items/queries', () => ({
   useAcademicItems: () => ({
-    data: state.items,
-    isLoading: false,
+    data: state.itemsLoading ? undefined : state.items,
+    isLoading: state.itemsLoading,
     error: null,
     refetch: vi.fn(),
   }),
-  useToggleAcademicItem: () => ({ mutate: state.toggle }),
+  useToggleAcademicItem: () => ({ mutateAsync: state.toggle }),
   useCreateAcademicItem: () => ({
     mutateAsync: state.createAsync,
     reset: state.resetCreate,
@@ -53,7 +54,7 @@ vi.mock('@/features/items/queries', () => ({
   }),
 }))
 vi.mock('@/features/academic/queries', () => ({
-  useSetSubjectStatus: () => ({ mutate: state.setStatus }),
+  useSetSubjectStatus: () => ({ mutateAsync: state.setStatus }),
   useAcademicPlan: () => ({
     views: state.views,
     subjectById: new Map(state.views.map((v) => [v.id, v])),
@@ -92,9 +93,10 @@ const mount = () =>
 
 beforeEach(() => {
   state.items = []
+  state.itemsLoading = false
   state.views = []
-  state.toggle = vi.fn()
-  state.setStatus = vi.fn()
+  state.toggle = vi.fn().mockResolvedValue(undefined)
+  state.setStatus = vi.fn().mockResolvedValue(undefined)
   state.createAsync = vi.fn().mockResolvedValue(undefined)
   state.resetCreate = vi.fn()
   state.updateAsync = vi.fn().mockResolvedValue(undefined)
@@ -103,6 +105,15 @@ beforeEach(() => {
 })
 
 describe('Hoy', () => {
+  it('shows a skeleton while the dates load, never "No hay tareas pendientes"', async () => {
+    state.itemsLoading = true
+    mount()
+
+    expect(await screen.findByText('Cargando…')).toBeInTheDocument()
+    expect(screen.queryByText('No hay tareas pendientes')).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Agregar mi primera entrega' })).toBeNull()
+  })
+
   it('lists the next 14 days under "Próximas", with the days left', async () => {
     state.items = [item('Parcial de Álgebra', { dueAt: at(10), kind: 'midterm' })]
     mount()
@@ -210,7 +221,7 @@ describe('Hoy', () => {
     expect(document.body.textContent).not.toContain('23:59')
   })
 
-  it('says "Hecho" with a way back when something is completed', async () => {
+  it('says "Marcada como hecha" with a way back when something is completed', async () => {
     const user = userEvent.setup()
     state.items = [item('Leer', { dueAt: at(0, 23) })]
     mount()
@@ -219,10 +230,45 @@ describe('Hoy', () => {
 
     expect(state.toggle).toHaveBeenCalledWith({ id: 'Leer', done: true })
     expect(await screen.findByRole('button', { name: 'Deshacer' })).toBeInTheDocument()
-    expect(screen.getByRole('status')).toHaveTextContent('Hecho')
+    expect(screen.getByRole('status')).toHaveTextContent('Marcada como hecha')
 
     await user.click(screen.getByRole('button', { name: 'Deshacer' }))
     expect(state.toggle).toHaveBeenLastCalledWith({ id: 'Leer', done: false })
+    await waitFor(() =>
+      expect(screen.getByRole('status')).toHaveTextContent('Marcada como pendiente'),
+    )
+  })
+
+  it('disables the circle while the change is in flight, so a double tap sends one', async () => {
+    const user = userEvent.setup()
+    let finish: () => void = () => {}
+    state.toggle.mockImplementation(() => new Promise<void>((resolve) => (finish = resolve)))
+    state.items = [item('Leer', { dueAt: at(0, 23) })]
+    mount()
+
+    const circle = await screen.findByRole('button', { name: 'Marcar Leer como hecho' })
+    await user.dblClick(circle)
+
+    expect(circle).toBeDisabled()
+    expect(state.toggle).toHaveBeenCalledOnce()
+    finish()
+    await waitFor(() => expect(circle).toBeEnabled())
+  })
+
+  it('says so in Spanish when marking fails, and offers no Deshacer', async () => {
+    const user = userEvent.setup()
+    state.toggle.mockRejectedValue(new Error('network down'))
+    state.items = [item('Leer', { dueAt: at(0, 23) })]
+    mount()
+
+    await user.click(await screen.findByRole('button', { name: 'Marcar Leer como hecho' }))
+
+    await waitFor(() =>
+      expect(screen.getByRole('status')).toHaveTextContent(
+        'No pudimos marcarla como hecha. Probá de nuevo.',
+      ),
+    )
+    expect(screen.queryByRole('button', { name: 'Deshacer' })).toBeNull()
   })
 
   it('files a Regularizada subject under "Final pendiente", not under "Cursando"', async () => {
@@ -331,6 +377,7 @@ describe('Hoy: completing a Final', () => {
     await user.click(screen.getByRole('button', { name: 'Guardar' }))
 
     expect(state.toggle).toHaveBeenCalledWith({ id: 'Final AM II', done: true })
+    await waitFor(() => expect(state.setStatus).toHaveBeenCalled())
     expect(state.setStatus).toHaveBeenCalledWith({
       curriculumSubjectId: 'am2',
       status: 'passed',

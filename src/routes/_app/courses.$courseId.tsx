@@ -23,8 +23,8 @@ import {
   useCreateResource,
   useDeleteResource,
   useResources,
-  useToggleAcademicItem,
 } from '@/features/items/queries'
+import { useCompleteItem } from '@/features/items/use-complete-item'
 import { useItemActions } from '@/features/items/use-item-actions'
 
 export const Route = createFileRoute('/_app/courses/$courseId')({
@@ -58,7 +58,10 @@ function CourseDetailScreen() {
   const resourcesQuery = useResources()
 
   const setStatus = useSetSubjectStatus()
-  const toggleItem = useToggleAcademicItem()
+  // Same "done" as Hoy and the calendar: feedback, Deshacer, and a Final asks how it went.
+  const completion = useCompleteItem((id) =>
+    id ? (plan.subjectById.get(id)?.name ?? null) : null,
+  )
   const createItem = useCreateAcademicItem()
   const createResource = useCreateResource()
   const deleteResource = useDeleteResource()
@@ -177,7 +180,7 @@ function CourseDetailScreen() {
                 {(setStatus.error as Error).message}
               </p>
             ) : null}
-            <MutationAlert error={toggleItem.error ?? deleteResource.error} />
+            <MutationAlert error={deleteResource.error} />
           </section>
 
           <section aria-labelledby="fechas" className="blue-panel flex flex-col gap-2">
@@ -210,7 +213,8 @@ function CourseDetailScreen() {
                   <SubjectDateRow
                     key={item.id}
                     item={item}
-                    onToggle={(done) => toggleItem.mutate({ id: item.id, done })}
+                    onToggle={(done) => completion.complete(item, done)}
+                    togglePending={completion.isPending(item.id)}
                     onEdit={() => itemActions.edit(item)}
                     onDelete={() => itemActions.remove(item)}
                   />
@@ -428,6 +432,7 @@ function CourseDetailScreen() {
         error={createItem.error ? (createItem.error as Error).message : null}
       />
       {itemActions.dialogs}
+      {completion.dialog}
     </div>
   )
 }

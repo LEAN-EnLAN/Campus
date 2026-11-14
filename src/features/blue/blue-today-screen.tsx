@@ -15,6 +15,7 @@ import { useAcademicPlan } from '@/features/academic/queries'
 import { useAcademicItems, useCreateAcademicItem } from '@/features/items/queries'
 import { useCompleteItem } from '@/features/items/use-complete-item'
 import { useItemActions } from '@/features/items/use-item-actions'
+import { useSharedCapture } from '@/features/items/use-shared-capture'
 import {
   buildToday,
   daysLeftLabel,
@@ -36,6 +37,8 @@ interface RowsProps {
   rows: (AgendaEntry & { daysLeft?: number })[]
   subjectName: (id: string | null) => string | null
   onComplete: (entry: AgendaEntry, done: boolean) => void
+  onShare: (item: AcademicItem) => void
+  onDownloadIcs: (item: AcademicItem) => void
   onEdit: (item: AcademicItem) => void
   onDelete: (item: AcademicItem) => void
   overdue?: boolean
@@ -45,6 +48,8 @@ function BlueRows({
   rows,
   subjectName,
   onComplete,
+  onShare,
+  onDownloadIcs,
   onEdit,
   onDelete,
   overdue = false,
@@ -60,6 +65,8 @@ function BlueRows({
           overdue={overdue}
           dayLabel={entry.daysLeft === undefined ? undefined : daysLeftLabel(entry.daysLeft)}
           onToggle={(done) => onComplete(entry, done)}
+          onShare={() => onShare(entry.item)}
+          onDownloadIcs={() => onDownloadIcs(entry.item)}
           onEdit={() => onEdit(entry.item)}
           onDelete={() => onDelete(entry.item)}
         />
@@ -165,6 +172,11 @@ export function BlueTodayScreen() {
     id ? (plan.subjectById.get(id)?.name ?? null) : null
   const { complete, dialog } = useCompleteItem(subjectName)
   const actions = useItemActions({ subjects: plan.views, items: itemsQuery.data ?? [] })
+  // A link someone shared (`/add`) opens the capture form here, prefilled.
+  const shared = useSharedCapture({
+    subjects: plan.views,
+    ready: !plan.isLoading && plan.hasContext,
+  })
   const cursando = plan.views.filter((subject) => subject.status === 'in_progress')
   const finales = plan.views.filter((subject) => subject.status === 'regularized')
   const dueCount = today.today.length + today.overdue.length
@@ -197,6 +209,7 @@ export function BlueTodayScreen() {
     try {
       await createItem.mutateAsync(values)
       setCaptureOpen(false)
+      if (shared.open) shared.saved()
     } catch {
       // Keep the student's draft open; the mutation error appears in the form.
     }
@@ -219,6 +232,8 @@ export function BlueTodayScreen() {
       overdue={overdue}
       subjectName={subjectName}
       onComplete={(entry, done) => complete(entry.item, done)}
+      onShare={(item) => void actions.share(item)}
+      onDownloadIcs={actions.downloadIcs}
       onEdit={actions.edit}
       onDelete={actions.remove}
     />
@@ -312,6 +327,8 @@ export function BlueTodayScreen() {
                 rows={today.later}
                 subjectName={subjectName}
                 onComplete={(entry, done) => complete(entry.item, done)}
+                onShare={(item) => void actions.share(item)}
+                onDownloadIcs={actions.downloadIcs}
                 onEdit={actions.edit}
                 onDelete={actions.remove}
               />
@@ -415,8 +432,12 @@ export function BlueTodayScreen() {
         </div>
       )}
       <QuickCapture
-        open={captureOpen}
-        onOpenChange={setCaptureOpen}
+        open={captureOpen || shared.open}
+        onOpenChange={(open) => {
+          setCaptureOpen(open)
+          if (!open) shared.dismiss()
+        }}
+        initialValues={shared.initialValues}
         subjects={plan.views}
         items={itemsQuery.data ?? []}
         onSubmit={handleCapture}

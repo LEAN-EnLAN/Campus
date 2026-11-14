@@ -31,6 +31,8 @@ export function AgendaList({
   now,
   subjectName,
   onToggle,
+  onShare,
+  onDownloadIcs,
   onEdit,
   onDelete,
 }: {
@@ -38,6 +40,8 @@ export function AgendaList({
   now: Date
   subjectName: (item: AcademicItem) => string | null
   onToggle?: (item: AcademicItem, done: boolean) => void
+  onShare?: (item: AcademicItem) => void
+  onDownloadIcs?: (item: AcademicItem) => void
   onEdit?: (item: AcademicItem) => void
   onDelete?: (item: AcademicItem) => void
 }) {
@@ -95,6 +99,8 @@ export function AgendaList({
                       ) : null}
                       <ItemRowActions
                         title={item.title}
+                        onShare={onShare ? () => onShare(item) : undefined}
+                        onDownloadIcs={onDownloadIcs ? () => onDownloadIcs(item) : undefined}
                         onEdit={onEdit ? () => onEdit(item) : undefined}
                         onDelete={onDelete ? () => onDelete(item) : undefined}
                       />

@@ -1,25 +1,16 @@
 import { Link } from '@tanstack/react-router'
 import { Check } from 'lucide-react'
 
-import type { AcademicItem, AcademicItemKind } from '@/domain/types'
+import type { AcademicItem } from '@/domain/types'
 import { dueTimeLabel } from '@/features/items/due'
+import { icsUnavailableReason } from '@/features/items/ics'
+import { itemKindLabel } from '@/features/items/kind-label'
 import { cn } from '@/lib/utils'
 
 import { ItemRowActions } from './item-row-actions'
 
-const KIND_LABEL: Record<AcademicItemKind, string> = {
-  task: 'Tarea',
-  assignment: 'Entrega',
-  midterm: 'Parcial',
-  final: 'Final',
-  registration: 'Inscripción',
-  class: 'Clase',
-  custom: 'Otro',
-}
-
-export function itemKindLabel(kind: AcademicItemKind): string {
-  return KIND_LABEL[kind]
-}
+// Re-exported: rows across the app import the label from here.
+export { itemKindLabel }
 
 /**
  * One obligation in the agenda.
@@ -32,6 +23,8 @@ export function DeadlineRow({
   subjectName,
   subjectId,
   onToggle,
+  onShare,
+  onDownloadIcs,
   onEdit,
   onDelete,
   overdue = false,
@@ -42,6 +35,8 @@ export function DeadlineRow({
   subjectName?: string | null
   subjectId?: string | null
   onToggle?: (done: boolean) => void
+  onShare?: () => void
+  onDownloadIcs?: () => void
   onEdit?: () => void
   onDelete?: () => void
   overdue?: boolean
@@ -112,7 +107,7 @@ export function DeadlineRow({
               <span aria-hidden="true">·</span>
             </>
           ) : null}
-          <span>{KIND_LABEL[item.kind]}</span>
+          <span>{itemKindLabel(item.kind)}</span>
           {subjectName ? (
             <>
               <span aria-hidden="true">·</span>
@@ -138,7 +133,14 @@ export function DeadlineRow({
         </span>
       </span>
 
-      <ItemRowActions title={item.title} onEdit={onEdit} onDelete={onDelete} />
+      <ItemRowActions
+        title={item.title}
+        onShare={onShare}
+        onDownloadIcs={onDownloadIcs}
+        icsDisabledReason={icsUnavailableReason(item)}
+        onEdit={onEdit}
+        onDelete={onDelete}
+      />
     </div>
   )
 }

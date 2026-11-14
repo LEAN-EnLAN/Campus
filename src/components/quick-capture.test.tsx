@@ -338,3 +338,66 @@ describe('editing an item', () => {
     expect(onSubmit).not.toHaveBeenCalled()
   })
 })
+
+describe('opened with initialValues (a shared link)', () => {
+  it('prefills every field it was given', () => {
+    mount({
+      initialValues: {
+        title: 'Primer parcial',
+        kind: 'midterm',
+        curriculumSubjectId: 'algebra',
+        dueAt: new Date(2026, 10, 18, 18, 30).toISOString(),
+      },
+    })
+
+    expect(screen.getByRole('dialog', { name: 'Agregar parcial' })).toBeInTheDocument()
+    expect(screen.getByRole('textbox', { name: '¿Qué es?' })).toHaveValue('Primer parcial')
+    expect(screen.getByLabelText('Materia')).toHaveValue('algebra')
+    expect(screen.getByLabelText('Fecha')).toHaveValue('18/11/2026')
+    expect(screen.getByLabelText('Hora')).toHaveValue('18:30')
+    expect(screen.getByRole('button', { name: 'Guardar' })).toBeInTheDocument()
+  })
+
+  it('falls back to the defaults for what it was not given', () => {
+    mount({ initialValues: { title: 'TP', kind: null }, defaultKind: 'task' })
+
+    expect(screen.getByRole('dialog', { name: 'Agregar tarea' })).toBeInTheDocument()
+    expect(screen.getByLabelText('Materia')).toHaveValue('')
+    expect(screen.getByLabelText('Fecha')).toHaveValue('')
+  })
+
+  it('saves nothing until the student confirms, then exactly what is shown', async () => {
+    const dueAt = dateOnlyDueAt(2026, 11, 18)
+    const { onSubmit, user } = mount({
+      initialValues: { title: 'Final', kind: 'final', curriculumSubjectId: null, dueAt },
+    })
+
+    expect(onSubmit).not.toHaveBeenCalled()
+    await user.click(screen.getByRole('button', { name: 'Guardar' }))
+
+    expect(onSubmit).toHaveBeenCalledWith({
+      title: 'Final',
+      kind: 'final',
+      curriculumSubjectId: null,
+      dueAt,
+    })
+  })
+
+  it('is ignored when editing an item', () => {
+    mount({
+      item: {
+        id: 'x',
+        curriculumSubjectId: null,
+        kind: 'task',
+        title: 'Guardado',
+        startsAt: null,
+        dueAt: null,
+        status: 'open',
+        notes: null,
+      },
+      initialValues: { title: 'Del link', kind: 'final' },
+    })
+
+    expect(screen.getByRole('textbox', { name: '¿Qué es?' })).toHaveValue('Guardado')
+  })
+})

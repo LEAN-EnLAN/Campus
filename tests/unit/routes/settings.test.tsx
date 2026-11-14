@@ -4,9 +4,9 @@ import userEvent from '@testing-library/user-event'
 import type { ReactNode } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { Route } from '@/routes/_app/settings'
 import { BackendProvider } from '@/lib/backends/context'
 import type { CampusBackend } from '@/lib/backends/types'
+import { Route } from '@/routes/_app/settings'
 import { RequiresAccountProvider } from '@/lib/runtime/identity'
 import { WorkspaceProvider, type WorkspaceValue } from '@/lib/runtime/workspace'
 import { ThemeProvider } from '@/lib/theme/theme-context'
@@ -106,6 +106,18 @@ describe('Ajustes with a local folder', () => {
     // Once, in its own row: the old card repeated it in a header block and a 'Nombre' row.
     expect(within(section).getByText('Campus', { exact: true })).toBeInTheDocument()
     expect(within(section).getByText('/home/estudiante/Campus')).toBeInTheDocument()
+  })
+
+  it('offers both exports under "Tus datos"', async () => {
+    mount(folder(), false)
+
+    const section = await screen.findByRole('region', { name: 'Tus datos' })
+    expect(
+      within(section).getByRole('button', { name: 'Descargar mis datos (JSON)' }),
+    ).toBeInTheDocument()
+    expect(
+      within(section).getByRole('button', { name: 'Mis fechas (.ics)' }),
+    ).toBeInTheDocument()
   })
 
   it('offers to change workspace and hands the student back to the picker', async () => {

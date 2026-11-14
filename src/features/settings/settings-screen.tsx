@@ -8,6 +8,7 @@ import type { IllustrationName } from '@/components/ui/illustrations'
 import { useAcademicPlan } from '@/features/academic/queries'
 import { useAuth } from '@/features/auth/auth-context'
 import { useSignOut } from '@/features/auth/use-sign-out'
+import { ExportSection } from '@/features/settings/export-section'
 import { useRequiresAccount } from '@/lib/runtime/identity'
 import { useWorkspace } from '@/lib/runtime/workspace'
 import { useTheme } from '@/lib/theme/theme-context'
@@ -294,6 +295,7 @@ export function SettingsScreen() {
           </SettingsCard>
 
           <PrivacySection />
+          <ExportSection />
         </div>
       </div>
     </div>

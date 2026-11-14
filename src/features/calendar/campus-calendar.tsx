@@ -11,7 +11,7 @@ import {
   type EventDetailContentProps,
   type Locale,
 } from '@dayflow/react'
-import { ChevronLeft, ChevronRight, Pencil, Trash2 } from 'lucide-react'
+import { CalendarPlus, ChevronLeft, ChevronRight, Pencil, Share2, Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { itemKindLabel } from '@/components/deadline-row'
@@ -19,6 +19,7 @@ import { Button } from '@/components/ui/button'
 import type { AcademicItem } from '@/domain/types'
 import { useAcademicPlan } from '@/features/academic/queries'
 import { dueTimeLabel } from '@/features/items/due'
+import { icsUnavailableReason } from '@/features/items/ics'
 import { useAcademicItems } from '@/features/items/queries'
 import { useCompleteItem } from '@/features/items/use-complete-item'
 import { useItemActions } from '@/features/items/use-item-actions'
@@ -285,6 +286,8 @@ export function CampusCalendar() {
           now={now}
           subjectName={subjectName}
           onToggle={complete}
+          onShare={(item) => void actions.share(item)}
+          onDownloadIcs={actions.downloadIcs}
           onEdit={actions.edit}
           onDelete={actions.remove}
         />
@@ -328,6 +331,8 @@ export function CampusCalendar() {
               args={args}
               subjectName={subjectName}
               onToggle={complete}
+              onShare={(item) => void actions.share(item)}
+              onDownloadIcs={actions.downloadIcs}
               onEdit={actions.edit}
               onDelete={actions.remove}
             />
@@ -529,12 +534,16 @@ export function EventDetail({
   args,
   subjectName,
   onToggle,
+  onShare,
+  onDownloadIcs,
   onEdit,
   onDelete,
 }: {
   args: Pick<EventDetailContentProps, 'event' | 'onClose'>
   subjectName: (item: AcademicItem) => string | null
   onToggle: (item: AcademicItem, done: boolean) => void
+  onShare?: (item: AcademicItem) => void
+  onDownloadIcs?: (item: AcademicItem) => void
   onEdit: (item: AcademicItem) => void
   onDelete: (item: AcademicItem) => void
 }) {
@@ -543,6 +552,7 @@ export function EventDetail({
   const subject = subjectName(item)
   const time = timeLabel(item)
   const done = item.status === 'done'
+  const icsBlocked = icsUnavailableReason(item)
 
   return (
     <div className="flex flex-col gap-3 p-4">
@@ -570,6 +580,29 @@ export function EventDetail({
       >
         {done ? 'Marcar como pendiente' : 'Marcar como hecho'}
       </Button>
+
+      {/* Copying and downloading keep the popover open: no dialog follows them. */}
+      {onShare || onDownloadIcs ? (
+        <div className="border-rule-soft flex flex-wrap gap-2 border-t pt-3">
+          {onShare ? (
+            <Button variant="ghost" size="sm" onClick={() => onShare(item)}>
+              <Share2 aria-hidden="true" /> Copiar para WhatsApp
+            </Button>
+          ) : null}
+          {onDownloadIcs ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              aria-disabled={icsBlocked ? true : undefined}
+              title={icsBlocked ?? undefined}
+              onClick={icsBlocked ? undefined : () => onDownloadIcs(item)}
+              className={cn(icsBlocked && 'cursor-not-allowed opacity-40')}
+            >
+              <CalendarPlus aria-hidden="true" /> Descargar .ics
+            </Button>
+          ) : null}
+        </div>
+      ) : null}
 
       {/* The popover closes first, so the dialog it opens owns the focus. */}
       <div className="border-rule-soft flex gap-2 border-t pt-3">

@@ -8,6 +8,8 @@ interface ImportMetaEnv {
   readonly VITE_CAMPUS_TESTER?: string
   /** Where Local students send "Contanos algo". Unset: Local offers no feedback link. */
   readonly VITE_CAMPUS_FEEDBACK_EMAIL?: string
+  /** Public address shared links point to (`https://…`); the page's origin when unset. */
+  readonly VITE_PUBLIC_APP_URL?: string
 }
 
 /** Build-time literal defined in `vite.config.ts` / `vitest.config.ts`. */

@@ -1,0 +1,58 @@
+name: Desktop build (Windows)
+
+# Builds the Tauri desktop app (Campus.exe + NSIS installer) on a clean Windows runner.
+# Triggered by pushing a release tag such as v0.1.0-tester.3. The Supabase URL and the
+# public anon key come from repository secrets; the service-role key is never used here.
+on:
+  push:
+    tags: ['v*-tester.*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    name: Build Campus for Windows
+    runs-on: windows-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.3.0
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: pnpm
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: 1.99.1
+      - uses: ilammy/msvc-dev-cmd@v1
+      - run: pnpm install --frozen-lockfile
+      - name: Write the build-time env file (public values only)
+        shell: bash
+        env:
+          SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          PUBLIC_APP_URL: ${{ vars.VITE_PUBLIC_APP_URL }}
+        run: |
+          {
+            echo "VITE_SUPABASE_URL=$SUPABASE_URL"
+            echo "VITE_SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY"
+            echo "VITE_CAMPUS_TESTER=0"
+            echo "VITE_PUBLIC_APP_URL=$PUBLIC_APP_URL"
+          } > "$RUNNER_TEMP/desktop.env"
+      - name: Build
+        shell: bash
+        run: node desktop/scripts/desktop.mjs build --env-file "$RUNNER_TEMP/desktop.env"
+      - name: Safety check of the bundled frontend
+        run: pnpm deploy:check
+      - uses: actions/upload-artifact@v4
+        with:
+          name: campus-windows
+          path: |
+            desktop/target/release/Campus.exe
+            desktop/target/release/bundle/nsis/*.exe
+          if-no-files-found: error

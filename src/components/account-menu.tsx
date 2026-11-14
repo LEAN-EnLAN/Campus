@@ -1,4 +1,4 @@
-import { ArrowLeftRight, Cloud, FolderOpen, Laptop, LogOut } from 'lucide-react'
+import { ArrowLeftRight, Cloud, FolderOpen, Laptop, LogOut, MessageSquare } from 'lucide-react'
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react'
 
 import { Illustration } from './ui/illustration'
@@ -10,6 +10,8 @@ export type AccountIdentity =
 export interface AccountMenuProps {
   identity: AccountIdentity
   onChangeWorkspace: () => void
+  /** "Contanos algo". Absent when this workspace has no way to reach the team. */
+  onFeedback?: () => void
   /** Only when there is a session to end. Absent in Local: there is no account. */
   onSignOut?: () => void
   signingOut?: boolean
@@ -44,6 +46,7 @@ function initialOf(text: string | null): string | null {
 export function AccountMenu({
   identity,
   onChangeWorkspace,
+  onFeedback,
   onSignOut,
   signingOut = false,
   tone = 'paper',
@@ -178,6 +181,18 @@ export function AccountMenu({
               <ArrowLeftRight aria-hidden="true" className="size-4" />
               Cambiar de espacio de trabajo
             </button>
+            {onFeedback ? (
+              <button
+                type="button"
+                role="menuitem"
+                tabIndex={-1}
+                className="campus-account-item"
+                onClick={() => select(onFeedback)}
+              >
+                <MessageSquare aria-hidden="true" className="size-4" />
+                Contanos algo
+              </button>
+            ) : null}
             {onSignOut ? (
               <>
                 <div role="separator" className="campus-account-separator" />

@@ -6,6 +6,8 @@ interface ImportMetaEnv {
   readonly VITE_CAMPUS_VAULT?: string
   /** `1` enables the tester tooling on a non-hosted build. */
   readonly VITE_CAMPUS_TESTER?: string
+  /** Where Local students send "Contanos algo". Unset: Local offers no feedback link. */
+  readonly VITE_CAMPUS_FEEDBACK_EMAIL?: string
 }
 
 /** Build-time literal defined in `vite.config.ts` / `vitest.config.ts`. */

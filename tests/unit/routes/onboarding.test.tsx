@@ -148,6 +148,72 @@ describe('onboarding: the stepper only says what happened', () => {
   })
 })
 
+describe('onboarding: "Siguiente"', () => {
+  const next = () => screen.queryByRole('button', { name: 'Siguiente' })
+
+  it('continues from a step that pre-selected its only option, without the stepper', async () => {
+    const user = userEvent.setup()
+    state.singleUnit = true
+    mount()
+
+    await user.click(
+      await screen.findByRole('radio', { name: /Universidad Nacional de Rosario/ }),
+    )
+    expect(await screen.findByRole('radio', { name: 'Facultad A' })).toBeChecked()
+
+    await user.click(next()!)
+    expect(await screen.findByRole('radio', { name: 'Carrera' })).toBeInTheDocument()
+    expect(stepButtons()[2]).toHaveAttribute('aria-current', 'step')
+  })
+
+  it('is disabled until the step has a selection', async () => {
+    mount()
+    await screen.findByRole('radio', { name: /Universidad Nacional de Rosario/ })
+
+    expect(next()).toBeDisabled()
+  })
+
+  it('is on every step but the last, which keeps "Guardar y continuar"', async () => {
+    const user = userEvent.setup()
+    mount()
+
+    await user.click(
+      await screen.findByRole('radio', { name: /Universidad Nacional de Rosario/ }),
+    )
+    await user.click(await screen.findByRole('radio', { name: 'Facultad A' }))
+    expect(next()).toBeInTheDocument()
+    await user.click(await screen.findByRole('radio', { name: 'Carrera' }))
+
+    expect(stepButtons()[3]).toHaveAttribute('aria-current', 'step')
+    expect(next()).toBeNull()
+    expect(screen.getByRole('button', { name: 'Guardar y continuar' })).toBeInTheDocument()
+  })
+
+  it('goes back and forward over choices already made', async () => {
+    const user = userEvent.setup()
+    mount()
+
+    await user.click(
+      await screen.findByRole('radio', { name: /Universidad Nacional de Rosario/ }),
+    )
+    await user.click(screen.getByRole('button', { name: /Anterior/ }))
+    expect(stepButtons()[0]).toHaveAttribute('aria-current', 'step')
+
+    await user.click(next()!)
+    expect(stepButtons()[1]).toHaveAttribute('aria-current', 'step')
+    // Facultad not chosen yet: nothing to continue with.
+    expect(next()).toBeDisabled()
+  })
+
+  it('is not offered on the free-text path', async () => {
+    const user = userEvent.setup()
+    mount()
+
+    await user.click(await screen.findByRole('button', { name: 'No encuentro mi carrera' }))
+    expect(next()).toBeNull()
+  })
+})
+
 describe('onboarding: the free-text path is honest about where it goes', () => {
   it('says the request is stored only in their folder', async () => {
     const user = userEvent.setup()

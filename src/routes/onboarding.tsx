@@ -443,6 +443,22 @@ function OnboardingScreen() {
                       <ArrowLeft size={16} aria-hidden="true" /> Anterior
                     </Button>
                   ) : null}
+                  {/* A step that pre-selected its only option (one facultad,
+                      one plan) left the student nothing to press but the
+                      stepper. Every step but the last says how to go on. */}
+                  {!manual && activeStep < STEPS.length - 1 ? (
+                    <Button
+                      variant="primary"
+                      size="lg"
+                      type="button"
+                      disabled={!stepDone[activeStep]}
+                      onClick={() =>
+                        setActiveStep((step) => Math.min(STEPS.length - 1, step + 1))
+                      }
+                    >
+                      Siguiente <ArrowRight size={17} aria-hidden="true" />
+                    </Button>
+                  ) : null}
                   {(manual || activeStep === 3) && (
                     <Button
                       variant="primary"

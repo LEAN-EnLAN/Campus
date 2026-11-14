@@ -1,4 +1,6 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
+import { FlaskConical } from 'lucide-react'
+import { useRef, useState } from 'react'
 
 import { EmptyState, ErrorState, LoadingRows } from '@/components/empty-state'
 import { AcademicYearDisclosure } from '@/components/academic-year-disclosure'
@@ -13,6 +15,8 @@ import {
 } from '@/features/academic/manual-subjects'
 import { useAcademicPlan } from '@/features/academic/queries'
 import { SubjectStatusControl } from '@/features/academic/subject-status-control'
+import { PendingFinalsSection } from '@/features/plan/pending-finals-section'
+import { PlanSimulation } from '@/features/plan/plan-simulation'
 import { cn } from '@/lib/utils'
 
 export const Route = createFileRoute('/_app/plan')({
@@ -27,6 +31,8 @@ export const Route = createFileRoute('/_app/plan')({
  */
 function PlanScreen() {
   const plan = useAcademicPlan()
+  const [simulating, setSimulating] = useState(false)
+  const simulateRef = useRef<HTMLButtonElement>(null)
 
   if (plan.isLoading) {
     return (
@@ -152,6 +158,13 @@ function PlanScreen() {
   }
 
   const earned = plan.progress.passed + plan.progress.equivalent
+  const canSimulate =
+    plan.prerequisitesKnown && plan.availabilityInput !== null && plan.views.length > 0
+
+  function exitSimulation() {
+    setSimulating(false)
+    simulateRef.current?.focus()
+  }
 
   return (
     <div className="blue-screen">
@@ -160,9 +173,27 @@ function PlanScreen() {
         title="Plan académico"
         description={plan.programName ?? 'Tu carrera'}
         actions={
-          <Link to="/plan/progress" className={cn(buttonVariants({ variant: 'secondary' }))}>
-            Cargar mi avance
-          </Link>
+          <span className="flex flex-wrap gap-2">
+            {/* Simulating needs the plan's correlativas: without them there is nothing to
+                recompute, and "no se te abre nada" would be a claim we cannot make. */}
+            {canSimulate ? (
+              <button
+                ref={simulateRef}
+                type="button"
+                aria-pressed={simulating}
+                onClick={() => (simulating ? exitSimulation() : setSimulating(true))}
+                className={cn(
+                  buttonVariants({ variant: simulating ? 'primary' : 'secondary' }),
+                )}
+              >
+                <FlaskConical aria-hidden="true" />
+                Simular
+              </button>
+            ) : null}
+            <Link to="/plan/progress" className={cn(buttonVariants({ variant: 'secondary' }))}>
+              Cargar mi avance
+            </Link>
+          </span>
         }
       />
 
@@ -188,7 +219,11 @@ function PlanScreen() {
       ) : null}
 
       <div className="blue-layout">
-        <div className="grid min-w-0 gap-5">
+        {simulating && canSimulate ? (
+          <PlanSimulation plan={plan} onExit={exitSimulation} />
+        ) : null}
+        {/* Hidden, not unmounted, while simulating: the real plan is untouched underneath. */}
+        <div className="grid min-w-0 gap-5" hidden={simulating && canSimulate}>
           <div className="blue-panel-soft">
             <div className="blue-panel-head">
               <h2>Tu progreso en la carrera</h2>
@@ -231,6 +266,8 @@ function PlanScreen() {
               <span className="text-ink">No las inventamos.</span>
             </p>
           ) : null}
+
+          <PendingFinalsSection plan={plan} />
 
           {plan.byYear.map((group) => (
             <AcademicYearDisclosure

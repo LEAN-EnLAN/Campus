@@ -25,12 +25,15 @@ export function StatusControl({
   status,
   onChange,
   variant = 'full',
+  savedLabel = 'Guardado',
   className,
 }: {
   subjectName: string
   status: SubjectStatus
   onChange: (value: StoredSubjectStatus | null) => Promise<unknown> | void
   variant?: 'full' | 'compact'
+  /** What the live region says after a change. The simulator does not save. */
+  savedLabel?: string
   className?: string
 }) {
   const current = entryValueOf(status)
@@ -191,7 +194,7 @@ export function StatusControl({
         </button>
       </div>
       <span role="status" aria-live="polite" className="sr-only">
-        {saved ? 'Guardado' : null}
+        {saved ? savedLabel : null}
       </span>
       {error ? (
         <p role="alert" className="text-danger max-w-60 text-right text-xs font-medium">

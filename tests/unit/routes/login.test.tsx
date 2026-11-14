@@ -213,4 +213,13 @@ describe('/login', () => {
       metricsConsent: true,
     })
   })
+
+  it('confirms a deleted account once, on arrival', async () => {
+    sessionStorage.setItem('campus.accountDeleted', '1')
+    mount()
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      'Tu cuenta y tus datos fueron borrados',
+    )
+    expect(sessionStorage.getItem('campus.accountDeleted')).toBeNull()
+  })
 })

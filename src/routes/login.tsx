@@ -14,6 +14,10 @@ import { Button } from '@/components/ui/button'
 import { Illustration } from '@/components/ui/illustration'
 import type { IllustrationName } from '@/components/ui/illustrations'
 import { TextField } from '@/components/ui/field'
+import {
+  ACCOUNT_DELETED_MESSAGE,
+  takeAccountDeleted,
+} from '@/features/account/account-deleted-notice'
 import { MetricsConsentCheckbox } from '@/features/account/metrics-consent-checkbox'
 import { useAuth } from '@/features/auth/auth-context'
 import { isCloudUnreachable } from '@/features/auth/auth-errors'
@@ -52,6 +56,12 @@ function LoginScreen() {
   // Unticked by default: consent is something the student gives, not something
   // they have to find and take back.
   const [metricsConsent, setMetricsConsent] = useState(false)
+  const [farewell, setFarewell] = useState<string | null>(null)
+
+  // Arriving here right after "Borrar mi cuenta": say it worked, once.
+  useEffect(() => {
+    if (takeAccountDeleted()) setFarewell(ACCOUNT_DELETED_MESSAGE)
+  }, [])
 
   useEffect(() => {
     if (recovering) setMode('new-password')
@@ -259,6 +269,12 @@ function LoginScreen() {
 
               {mode === 'signup' ? (
                 <MetricsConsentCheckbox checked={metricsConsent} onChange={setMetricsConsent} />
+              ) : null}
+
+              {farewell ? (
+                <p role="status" className="blue-login-message">
+                  {farewell}
+                </p>
               ) : null}
 
               {notice ? (

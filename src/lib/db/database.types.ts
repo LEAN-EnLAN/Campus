@@ -145,6 +145,8 @@ export type Database = {
           id: string
           is_default: boolean
           name: string
+          prerequisites_known: boolean
+          prerequisites_note: string | null
           program_id: string
           source_fetched_at: string | null
           source_kind: string | null
@@ -158,6 +160,8 @@ export type Database = {
           id?: string
           is_default?: boolean
           name: string
+          prerequisites_known?: boolean
+          prerequisites_note?: string | null
           program_id: string
           source_fetched_at?: string | null
           source_kind?: string | null
@@ -171,6 +175,8 @@ export type Database = {
           id?: string
           is_default?: boolean
           name?: string
+          prerequisites_known?: boolean
+          prerequisites_note?: string | null
           program_id?: string
           source_fetched_at?: string | null
           source_kind?: string | null
@@ -239,6 +245,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      feedback: {
+        Row: {
+          app_version: string | null
+          body: string
+          created_at: string
+          id: string
+          route: string | null
+          user_id: string
+        }
+        Insert: {
+          app_version?: string | null
+          body: string
+          created_at?: string
+          id?: string
+          route?: string | null
+          user_id?: string
+        }
+        Update: {
+          app_version?: string | null
+          body?: string
+          created_at?: string
+          id?: string
+          route?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       institutions: {
         Row: {
@@ -309,23 +342,53 @@ export type Database = {
           },
         ]
       }
+      product_events: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          ref: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          ref?: string | null
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          ref?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
           display_name: string | null
           id: string
+          metrics_consent: boolean
+          metrics_consent_at: string | null
           updated_at: string
         }
         Insert: {
           created_at?: string
           display_name?: string | null
           id: string
+          metrics_consent?: boolean
+          metrics_consent_at?: string | null
           updated_at?: string
         }
         Update: {
           created_at?: string
           display_name?: string | null
           id?: string
+          metrics_consent?: boolean
+          metrics_consent_at?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -605,7 +668,25 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      delete_my_account: { Args: never; Returns: undefined }
+      funnel_counts: {
+        Args: { since: string }
+        Returns: {
+          active_this_week: number
+          onboarded: number
+          signups: number
+          with_item: number
+        }[]
+      }
       normalize_academic_name: { Args: { value: string }; Returns: string }
+      weekly_activity: {
+        Args: never
+        Returns: {
+          active_users: number
+          item_users: number
+          subject_state_users: number
+        }[]
+      }
     }
     Enums: {
       academic_item_kind:

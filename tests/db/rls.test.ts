@@ -267,3 +267,221 @@ describe('anon role', () => {
     expect(error !== null || (data ?? []).length === 0).toBe(true)
   })
 })
+
+// --------------------------------------------------------------------------
+// Account, privacy and metrics (20261114000100_account_privacy_metrics.sql)
+// --------------------------------------------------------------------------
+
+describe('product_events — consent-gated, write-only', () => {
+  const ref = 'abcd1234EFGH'
+
+  it('rejects an event while the profile has no consent', async () => {
+    const { error } = await userA.client
+      .from('product_events')
+      .insert({ name: 'share_copied', ref })
+    expect(error).not.toBeNull()
+    expect(error?.code).toBe('42501')
+  })
+
+  it('accepts an event once the student consents', async () => {
+    const { error: consentError } = await userA.client
+      .from('profiles')
+      .update({ metrics_consent: true, metrics_consent_at: new Date().toISOString() })
+      .eq('id', userA.id)
+    expect(consentError).toBeNull()
+
+    const { error } = await userA.client
+      .from('product_events')
+      .insert({ name: 'share_copied', ref })
+    expect(error).toBeNull()
+
+    // user_id defaults to the caller: the row is A's, read back with service role.
+    const { data } = await admin
+      .from('product_events')
+      .select('user_id, name, ref')
+      .eq('ref', ref)
+    expect(data).toEqual([{ user_id: userA.id, name: 'share_copied', ref }])
+  })
+
+  it("rejects an event carrying another user's id", async () => {
+    const { error } = await userA.client
+      .from('product_events')
+      .insert({ user_id: userB.id, name: 'share_copied', ref })
+    expect(error).not.toBeNull()
+  })
+
+  it('rejects an event name outside the allowed set', async () => {
+    const { error } = await userA.client
+      .from('product_events')
+      .insert({ name: 'note_opened', ref })
+    expect(error).not.toBeNull()
+    expect(error?.code).toBe('23514') // check_violation
+  })
+
+  it('rejects a malformed ref', async () => {
+    const { error } = await userA.client
+      .from('product_events')
+      .insert({ name: 'share_saved', ref: 'mail@x' })
+    expect(error).not.toBeNull()
+  })
+
+  it('stops accepting events as soon as consent is withdrawn', async () => {
+    const off = await userA.client
+      .from('profiles')
+      .update({ metrics_consent: false })
+      .eq('id', userA.id)
+    expect(off.error).toBeNull()
+    const { error } = await userA.client
+      .from('product_events')
+      .insert({ name: 'share_saved', ref })
+    expect(error).not.toBeNull()
+  })
+
+  it('cannot be read back by an authenticated user, not even their own rows', async () => {
+    const { data, error } = await userA.client.from('product_events').select('id')
+    expect(error).not.toBeNull()
+    expect(error?.code).toBe('42501')
+    expect(data).toBeNull()
+  })
+})
+
+describe('feedback — write-only', () => {
+  it('accepts feedback from its author', async () => {
+    const { error } = await userB.client.from('feedback').insert({
+      body: 'Me gustaría ver los parciales en rojo',
+      route: '/today',
+      app_version: '0.1.0',
+    })
+    expect(error).toBeNull()
+  })
+
+  it('rejects an empty body and a body over 2000 characters', async () => {
+    const blank = await userB.client.from('feedback').insert({ body: '   ' })
+    expect(blank.error).not.toBeNull()
+    const long = await userB.client.from('feedback').insert({ body: 'a'.repeat(2001) })
+    expect(long.error).not.toBeNull()
+  })
+
+  it("rejects feedback carrying another user's id", async () => {
+    const { error } = await userB.client
+      .from('feedback')
+      .insert({ user_id: userA.id, body: 'suplantado' })
+    expect(error).not.toBeNull()
+  })
+
+  it('cannot be read by an authenticated user', async () => {
+    const { data, error } = await userB.client.from('feedback').select('id')
+    expect(error).not.toBeNull()
+    expect(error?.code).toBe('42501')
+    expect(data).toBeNull()
+  })
+
+  it('is not reachable for anon at all', async () => {
+    const { error } = await anonClient().from('feedback').insert({ body: 'anónimo' })
+    expect(error).not.toBeNull()
+  })
+})
+
+describe('aggregate metrics — service role only', () => {
+  it('refuses weekly_activity() and funnel_counts() to authenticated', async () => {
+    const weekly = await userA.client.rpc('weekly_activity')
+    expect(weekly.error).not.toBeNull()
+    expect(weekly.error?.code).toBe('42501')
+    const funnel = await userA.client.rpc('funnel_counts', { since: '2026-01-01T00:00:00Z' })
+    expect(funnel.error).not.toBeNull()
+    expect(funnel.error?.code).toBe('42501')
+  })
+
+  it('refuses weekly_activity() and funnel_counts() to anon', async () => {
+    const anon = anonClient()
+    const weekly = await anon.rpc('weekly_activity')
+    expect(weekly.error).not.toBeNull()
+    const funnel = await anon.rpc('funnel_counts', { since: '2026-01-01T00:00:00Z' })
+    expect(funnel.error).not.toBeNull()
+  })
+
+  it('answers the service role with one row of counts', async () => {
+    const weekly = await admin.rpc('weekly_activity')
+    expect(weekly.error).toBeNull()
+    expect(weekly.data).toHaveLength(1)
+    // A created items and a subject state earlier in this file.
+    expect(Number(weekly.data?.[0]?.active_users)).toBeGreaterThanOrEqual(1)
+
+    const funnel = await admin.rpc('funnel_counts', { since: '2000-01-01T00:00:00Z' })
+    expect(funnel.error).toBeNull()
+    expect(funnel.data).toHaveLength(1)
+    expect(Number(funnel.data?.[0]?.signups)).toBeGreaterThanOrEqual(2)
+    expect(Number(funnel.data?.[0]?.onboarded)).toBeGreaterThanOrEqual(1)
+    expect(Number(funnel.data?.[0]?.with_item)).toBeGreaterThanOrEqual(1)
+  })
+})
+
+describe('delete_my_account()', () => {
+  it('is refused to anon', async () => {
+    const { error } = await anonClient().rpc('delete_my_account')
+    expect(error).not.toBeNull()
+  })
+
+  it('deletes only the caller and cascades their items, states and resources', async () => {
+    const userC = await createUser('c')
+    try {
+      const item = await userC.client
+        .from('academic_items')
+        .insert({ user_id: userC.id, kind: 'midterm', title: 'Parcial de C' })
+      expect(item.error).toBeNull()
+      const state = await userC.client.from('user_subject_states').insert({
+        user_id: userC.id,
+        curriculum_subject_id: curriculumSubjectId,
+        status: 'in_progress',
+      })
+      expect(state.error).toBeNull()
+      const resource = await userC.client.from('resources').insert({
+        user_id: userC.id,
+        kind: 'note',
+        title: 'Apunte de C',
+        body: 'texto',
+      })
+      expect(resource.error).toBeNull()
+
+      const { count: aItemsBefore } = await admin
+        .from('academic_items')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', userA.id)
+      expect(aItemsBefore).toBeGreaterThan(0)
+
+      const { error } = await userC.client.rpc('delete_my_account')
+      expect(error).toBeNull()
+
+      const { data: gone } = await admin.auth.admin.getUserById(userC.id)
+      expect(gone.user).toBeNull()
+      for (const table of ['academic_items', 'user_subject_states', 'resources'] as const) {
+        const { count } = await admin
+          .from(table)
+          .select('id', { count: 'exact', head: true })
+          .eq('user_id', userC.id)
+        expect(count, table).toBe(0)
+      }
+      const { count: profileCount } = await admin
+        .from('profiles')
+        .select('id', { count: 'exact', head: true })
+        .eq('id', userC.id)
+      expect(profileCount).toBe(0)
+
+      // The other students are untouched.
+      const { data: other } = await admin.auth.admin.getUserById(userA.id)
+      expect(other.user?.id).toBe(userA.id)
+      const { count: aItemsAfter } = await admin
+        .from('academic_items')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', userA.id)
+      expect(aItemsAfter).toBe(aItemsBefore)
+      const { count: aResources } = await admin
+        .from('resources')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', userA.id)
+      expect(aResources).toBe(1)
+    } finally {
+      await admin.auth.admin.deleteUser(userC.id).catch(() => undefined)
+    }
+  })
+})

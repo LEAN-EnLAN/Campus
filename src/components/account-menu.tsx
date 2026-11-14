@@ -71,7 +71,8 @@ export function AccountMenu({
     ;(openOn.current === 'last' ? list.at(-1) : list[0])?.focus()
 
     const onPointerDown = (event: PointerEvent) => {
-      if (!rootRef.current?.contains(event.target as Node)) setOpen(false)
+      const target = event.target
+      if (!(target instanceof Node) || !rootRef.current?.contains(target)) setOpen(false)
     }
     document.addEventListener('pointerdown', onPointerDown)
     return () => document.removeEventListener('pointerdown', onPointerDown)

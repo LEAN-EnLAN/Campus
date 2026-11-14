@@ -147,6 +147,47 @@ describe('StatusControl', () => {
     expect(onChange).not.toHaveBeenCalled()
   })
 
+  // QA: the first click on a toggle that had to scroll into view did not open
+  // the menu — the scroll event arrived a frame late and closed it — and a
+  // resize threw "Failed to execute 'contains' on 'Node'" (its target is window).
+  it('stays open on a late scroll that did not move the trigger, and closes once it moves', async () => {
+    renderControl('in_progress')
+    const trigger = screen.getByRole('button', { name: /Estado de Álgebra/ })
+    let top = 100
+    vi.spyOn(trigger, 'getBoundingClientRect').mockImplementation(
+      () =>
+        ({ top, left: 20, right: 164, bottom: top + 32, width: 144, height: 32 }) as DOMRect,
+    )
+    await openChoices()
+
+    act(() => {
+      document.dispatchEvent(new Event('scroll'))
+    })
+    expect(screen.getByRole('group', { name: 'Elegir estado de Álgebra' })).toBeInTheDocument()
+
+    top = 40
+    act(() => {
+      document.dispatchEvent(new Event('scroll'))
+    })
+    expect(screen.queryByRole('group', { name: 'Elegir estado de Álgebra' })).toBeNull()
+  })
+
+  it('closes on resize without throwing on a window target', async () => {
+    renderControl('in_progress')
+    await openChoices()
+    const errors: unknown[] = []
+    const onError = (event: ErrorEvent) => errors.push(event.error)
+    window.addEventListener('error', onError)
+
+    act(() => {
+      window.dispatchEvent(new Event('resize'))
+    })
+
+    window.removeEventListener('error', onError)
+    expect(errors).toEqual([])
+    expect(screen.queryByRole('group', { name: 'Elegir estado de Álgebra' })).toBeNull()
+  })
+
   it('works in compact rows with full accessible labels', async () => {
     renderControl('regularized', undefined, 'compact')
     expect(

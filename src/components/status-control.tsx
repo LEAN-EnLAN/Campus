@@ -56,10 +56,9 @@ export function StatusControl({
     // Focus a visible option after the portal exists, without writing a value.
     menuRef.current?.querySelector<HTMLButtonElement>('[aria-pressed="true"]')?.focus()
     function onPointer(event: PointerEvent) {
-      const target = event.target as Node
-      if (!menuRef.current?.contains(target) && !triggerRef.current?.contains(target)) {
-        setOpen(false)
-      }
+      const target = event.target
+      if (isInside(menuRef.current, target) || isInside(triggerRef.current, target)) return
+      setOpen(false)
     }
     function onKey(event: globalThis.KeyboardEvent) {
       if (event.key !== 'Escape') return
@@ -69,18 +68,28 @@ export function StatusControl({
     }
     // Scrolling/re-sizing changes the anchor's geometry: close rather than
     // leave a disconnected menu floating over a different subject.
+    //
+    // Only when the anchor actually MOVED. Scroll events are delivered a frame
+    // late, so the scroll that brought the trigger into view (a tap right after
+    // a fling, or a test driver's scroll-into-view) arrived after the menu had
+    // opened and shut it again: the first click "did nothing".
+    const anchoredAt = triggerRef.current?.getBoundingClientRect()
     const dismissOnScroll = (event: Event) => {
-      if (menuRef.current?.contains(event.target as Node)) return
+      if (isInside(menuRef.current, event.target)) return
+      const now = triggerRef.current?.getBoundingClientRect()
+      if (anchoredAt && now && !moved(anchoredAt, now)) return
       setOpen(false)
     }
+    // A resize re-flows the page; the menu's place was computed for the old one.
+    const dismissOnResize = () => setOpen(false)
     document.addEventListener('pointerdown', onPointer)
     document.addEventListener('keydown', onKey)
-    window.addEventListener('resize', dismissOnScroll)
+    window.addEventListener('resize', dismissOnResize)
     window.addEventListener('scroll', dismissOnScroll, true)
     return () => {
       document.removeEventListener('pointerdown', onPointer)
       document.removeEventListener('keydown', onKey)
-      window.removeEventListener('resize', dismissOnScroll)
+      window.removeEventListener('resize', dismissOnResize)
       window.removeEventListener('scroll', dismissOnScroll, true)
     }
   }, [open])
@@ -234,6 +243,19 @@ export function StatusControl({
         )}
     </div>
   )
+}
+
+/**
+ * `contains` with a type guard. An event's target is not always a Node — a
+ * `resize` is dispatched on `window` — and `Node.contains(window)` throws
+ * ("parameter 1 is not of type 'Node'").
+ */
+function isInside(root: Node | null, target: EventTarget | null): boolean {
+  return root !== null && target instanceof Node && root.contains(target)
+}
+
+function moved(before: DOMRect, after: DOMRect): boolean {
+  return Math.abs(before.top - after.top) > 1 || Math.abs(before.left - after.left) > 1
 }
 
 /**

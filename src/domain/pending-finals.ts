@@ -71,9 +71,13 @@ export function pendingFinals(views: readonly SubjectView[]): PendingFinal[] {
     .sort((a, b) => b.opens.length - a.opens.length || comparePlanOrder(a.subject, b.subject))
 }
 
-/** "Habilita 3 materias" / "Habilita 1 materia". */
+/**
+ * "Habilita el final de 3 materias" / "… de 1 materia". It names the FINAL on
+ * purpose: "Habilita 3 materias" read as three subjects you could start taking,
+ * while the simulator (which lists newly cursables) showed none opening.
+ */
 export function opensLabel(count: number): string {
-  return `Habilita ${count} ${count === 1 ? 'materia' : 'materias'}`
+  return `Habilita el final de ${count} ${count === 1 ? 'materia' : 'materias'}`
 }
 
 /** One dependent as a line: its name, and what else its final waits on. */

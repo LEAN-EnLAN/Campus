@@ -206,8 +206,8 @@ describe('Plan: finales pendientes', () => {
       'Agendar final de Física I',
       'Agendar final de Análisis Matemático II',
     ])
-    expect(within(section).getByText('Habilita 2 materias')).toBeInTheDocument()
-    expect(within(section).getAllByText('Habilita 1 materia')).toHaveLength(3)
+    expect(within(section).getByText('Habilita el final de 2 materias')).toBeInTheDocument()
+    expect(within(section).getAllByText('Habilita el final de 1 materia')).toHaveLength(3)
 
     // The booked date shows, and am2's final warns that am1 and alg are not aprobadas.
     expect(await within(section).findByText(/Final agendado:/)).toBeInTheDocument()
@@ -221,7 +221,7 @@ describe('Plan: finales pendientes', () => {
     const section = await screen.findByRole('region', { name: 'Finales pendientes' })
     const user = userEvent.setup()
 
-    await user.click(within(section).getByText('Habilita 2 materias'))
+    await user.click(within(section).getByText('Habilita el final de 2 materias'))
     expect(
       within(section).getByText('Análisis Matemático II (también pide Análisis Matemático I)'),
     ).toBeVisible()

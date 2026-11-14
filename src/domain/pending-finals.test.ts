@@ -100,7 +100,7 @@ describe('pendingFinals', () => {
 
 describe('opensLabel', () => {
   it('agrees in number', () => {
-    expect(opensLabel(1)).toBe('Habilita 1 materia')
-    expect(opensLabel(3)).toBe('Habilita 3 materias')
+    expect(opensLabel(1)).toBe('Habilita el final de 1 materia')
+    expect(opensLabel(3)).toBe('Habilita el final de 3 materias')
   })
 })

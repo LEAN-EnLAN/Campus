@@ -82,7 +82,7 @@ export function PendingFinalsSection({
         <>
           <p className="text-ink-muted mb-2 text-sm">
             {plan.prerequisitesKnown
-              ? 'Tus regularizadas, primero las que más materias te habilitan al aprobar el final.'
+              ? 'Tus regularizadas, primero las que habilitan el final de más materias.'
               : 'Tus regularizadas, en el orden del plan. Esta facultad no publicó las correlatividades, así que no podemos decirte qué te habilita cada final.'}
           </p>
           <ol className="blue-list">

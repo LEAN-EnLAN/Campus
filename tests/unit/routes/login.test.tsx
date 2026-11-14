@@ -136,7 +136,9 @@ describe('/login', () => {
     await user.click(await submit())
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Campus Cloud no responde ahora')
-    expect(auth.signUp).toHaveBeenCalledWith('a@b.com', 'secreto1', '')
+    expect(auth.signUp).toHaveBeenCalledWith('a@b.com', 'secreto1', '', {
+      metricsConsent: false,
+    })
   })
 
   it('switches between register and sign in without misrouting credentials', async () => {
@@ -175,11 +177,49 @@ describe('/login', () => {
     await user.type(screen.getByLabelText(/Contraseña/), 'segura123')
     await user.click(await submit())
 
-    expect(auth.signUp).toHaveBeenCalledWith('ana@example.com', 'segura123', 'Ana')
+    expect(auth.signUp).toHaveBeenCalledWith('ana@example.com', 'segura123', 'Ana', {
+      metricsConsent: false,
+    })
     expect(await screen.findByRole('status')).toHaveTextContent('Confirmalo')
     expect(
       within(modeButtons()).getByRole('button', { name: 'Iniciar sesión' }),
     ).toHaveAttribute('aria-pressed', 'true')
     expect(screen.getByLabelText(/Contraseña/)).toHaveValue('')
+  })
+
+  it('offers the metrics box on signup only, unticked', async () => {
+    const user = userEvent.setup()
+    mount()
+    const box = await screen.findByRole('checkbox', {
+      name: 'Ayudanos a mejorar: contamos clics, nunca lo que escribís',
+    })
+    expect(box).not.toBeChecked()
+
+    await user.click(within(modeButtons()).getByRole('button', { name: 'Iniciar sesión' }))
+    expect(screen.queryByRole('checkbox')).toBeNull()
+  })
+
+  it('sends the consent with the signup when the box is ticked', async () => {
+    const user = userEvent.setup()
+    auth.signUp = vi.fn(async () => ({ error: null, needsConfirmation: true }))
+    mount()
+
+    await user.type(await screen.findByLabelText(/Email/), 'a@b.com')
+    await user.type(screen.getByLabelText(/Contraseña/), 'secreto1')
+    await user.click(screen.getByRole('checkbox', { name: /Ayudanos a mejorar/ }))
+    await user.click(await submit())
+
+    expect(auth.signUp).toHaveBeenCalledWith('a@b.com', 'secreto1', '', {
+      metricsConsent: true,
+    })
+  })
+
+  it('confirms a deleted account once, on arrival', async () => {
+    sessionStorage.setItem('campus.accountDeleted', '1')
+    mount()
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      'Tu cuenta y tus datos fueron borrados',
+    )
+    expect(sessionStorage.getItem('campus.accountDeleted')).toBeNull()
   })
 })

@@ -39,6 +39,7 @@ import {
 } from './normalize'
 import {
   backendError,
+  FEEDBACK_MAX,
   type CampusBackend,
   type CurriculumBundle,
   type SetSubjectStatusInput,
@@ -501,6 +502,66 @@ export function createSupabaseBackend(client?: SupabaseClient): CampusBackend {
       async remove(id) {
         const { error } = await supabase.from('resources').delete().eq('id', id)
         if (error) backendError('No pudimos borrar el material', error.message)
+      },
+    },
+
+    profile: {
+      async get() {
+        const userId = await requireUserId(supabase)
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('metrics_consent, metrics_consent_at')
+          .eq('id', userId)
+          .single()
+        if (error) backendError('No pudimos cargar tu perfil', error.message)
+        const row = data as { metrics_consent: boolean; metrics_consent_at: string | null }
+        return { metricsConsent: row.metrics_consent, metricsConsentAt: row.metrics_consent_at }
+      },
+
+      async setMetricsConsent(consent) {
+        const userId = await requireUserId(supabase)
+        const { error } = await supabase
+          .from('profiles')
+          .update({
+            metrics_consent: consent,
+            metrics_consent_at: consent ? new Date().toISOString() : null,
+          })
+          .eq('id', userId)
+        if (error) backendError('No pudimos guardar tu preferencia', error.message)
+      },
+    },
+
+    account: {
+      async delete() {
+        const { error } = await supabase.rpc('delete_my_account')
+        if (error) backendError('No pudimos borrar tu cuenta', error.message)
+      },
+    },
+
+    feedback: {
+      async send(input) {
+        const body = input.body.trim()
+        if (body.length === 0) backendError('No pudimos enviar tu mensaje', 'está vacío')
+        if (body.length > FEEDBACK_MAX) {
+          backendError(
+            'No pudimos enviar tu mensaje',
+            `tiene más de ${FEEDBACK_MAX} caracteres`,
+          )
+        }
+        // No `.select()`: the table is write-only, there is nothing to read back.
+        const { error } = await supabase.from('feedback').insert({
+          body,
+          route: input.route?.slice(0, 500) ?? null,
+          app_version: input.appVersion?.slice(0, 50) ?? null,
+        })
+        if (error) backendError('No pudimos enviar tu mensaje', error.message)
+      },
+    },
+
+    telemetry: {
+      async record(name, ref) {
+        const { error } = await supabase.from('product_events').insert({ name, ref })
+        if (error) backendError('No pudimos registrar el evento', error.message)
       },
     },
   }

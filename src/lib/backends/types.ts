@@ -16,6 +16,7 @@ import type {
   Term,
   UserSubjectState,
 } from '@/domain/types'
+import type { EventName } from '@/lib/telemetry/track'
 
 /**
  * The one seam between the app and wherever its data actually lives.
@@ -80,6 +81,50 @@ export interface CampusBackend {
     create(input: CreateResourceInput): Promise<Resource>
     remove(id: string): Promise<void>
   }
+
+  /*
+   * Account-level capabilities exist only where there is an account (Cloud).
+   * A Local workspace has no profile, nothing to delete — the data is the
+   * student's own files — and measures nothing, so it leaves these out and the
+   * UI does not offer them. Check for the capability, never for the mode.
+   */
+
+  /** The account's own settings. */
+  profile?: {
+    get(): Promise<AccountProfile>
+    /** `true` stamps the moment of consent; `false` stops future events at once. */
+    setMetricsConsent(consent: boolean): Promise<void>
+  }
+
+  /** Permanently delete the signed-in account and every row it owns. */
+  account?: {
+    delete(): Promise<void>
+  }
+
+  /** "Contanos algo": free text the student chose to send. */
+  feedback?: {
+    send(input: SendFeedbackInput): Promise<void>
+  }
+
+  /** Click counters behind `track()`. Never content. Rejected by the database without consent. */
+  telemetry?: {
+    record(name: EventName, ref: string | null): Promise<void>
+  }
+}
+
+export interface AccountProfile {
+  metricsConsent: boolean
+  metricsConsentAt: string | null
+}
+
+/** Mirrors the `feedback.body` check in the database. */
+export const FEEDBACK_MAX = 2000
+
+export interface SendFeedbackInput {
+  body: string
+  /** Where the student was, e.g. `/today`. */
+  route: string | null
+  appVersion: string | null
 }
 
 /**

@@ -12,6 +12,8 @@ import { useRequiresAccount } from '@/lib/runtime/identity'
 import { useWorkspace } from '@/lib/runtime/workspace'
 import { useTheme } from '@/lib/theme/theme-context'
 
+import { PrivacySection } from './privacy-section'
+
 /** Blue is the only available accent in Proposal 2. ThemeProvider owns persistence. */
 export const CAMPUS_BLUE_HUE = 225
 
@@ -291,34 +293,7 @@ export function SettingsScreen() {
             )}
           </SettingsCard>
 
-          <SettingsCard
-            id="settings-privacy"
-            title="Privacidad"
-            description="Qué información utiliza Campus."
-            illustration="settings-privacy"
-          >
-            <div className="blue-settings-prose">
-              <p>
-                Campus nunca te pide las credenciales de tu autogestión universitaria ni se
-                conecta con los sistemas de tu facultad.
-              </p>
-              {workspace.folder ? (
-                <p>
-                  Tus materias, entregas y notas quedan en archivos de tu carpeta, en esta
-                  computadora. Campus no los envía a ningún servidor.
-                </p>
-              ) : (
-                <p>
-                  Tu información de Campus Cloud se protege mediante controles de acceso de la
-                  base de datos y políticas por usuario.
-                </p>
-              )}
-              <p>
-                Los planes de estudio provienen de documentos oficiales. Si falta información
-                verificada, Campus lo indica.
-              </p>
-            </div>
-          </SettingsCard>
+          <PrivacySection />
         </div>
       </div>
     </div>

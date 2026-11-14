@@ -44,6 +44,21 @@ describe('AccountMenu', () => {
     expect(screen.queryByRole('menu')).not.toBeInTheDocument()
   })
 
+  it('offers "Contanos algo" only when there is a way to send it', async () => {
+    const onFeedback = vi.fn()
+    const { unmount } = render(
+      <AccountMenu identity={cloud} onChangeWorkspace={() => {}} onFeedback={onFeedback} />,
+    )
+    await userEvent.click(screen.getByRole('button', { name: /Cuenta/ }))
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Contanos algo' }))
+    expect(onFeedback).toHaveBeenCalledTimes(1)
+    unmount()
+
+    render(<AccountMenu identity={cloud} onChangeWorkspace={() => {}} />)
+    await userEvent.click(screen.getByRole('button', { name: /Cuenta/ }))
+    expect(screen.queryByRole('menuitem', { name: 'Contanos algo' })).toBeNull()
+  })
+
   it('follows the menu-button keyboard contract', async () => {
     const onChangeWorkspace = vi.fn()
     render(

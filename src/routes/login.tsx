@@ -14,6 +14,11 @@ import { Button } from '@/components/ui/button'
 import { Illustration } from '@/components/ui/illustration'
 import type { IllustrationName } from '@/components/ui/illustrations'
 import { TextField } from '@/components/ui/field'
+import {
+  ACCOUNT_DELETED_MESSAGE,
+  takeAccountDeleted,
+} from '@/features/account/account-deleted-notice'
+import { MetricsConsentCheckbox } from '@/features/account/metrics-consent-checkbox'
 import { useAuth } from '@/features/auth/auth-context'
 import { isCloudUnreachable } from '@/features/auth/auth-errors'
 import { useDocumentTitle } from '@/lib/hooks/use-document-title'
@@ -48,6 +53,15 @@ function LoginScreen() {
   const [notice, setNotice] = useState<string | null>(null)
   const [pending, setPending] = useState(false)
   const [submitted, setSubmitted] = useState(false)
+  // Unticked by default: consent is something the student gives, not something
+  // they have to find and take back.
+  const [metricsConsent, setMetricsConsent] = useState(false)
+  const [farewell, setFarewell] = useState<string | null>(null)
+
+  // Arriving here right after "Borrar mi cuenta": say it worked, once.
+  useEffect(() => {
+    if (takeAccountDeleted()) setFarewell(ACCOUNT_DELETED_MESSAGE)
+  }, [])
 
   useEffect(() => {
     if (recovering) setMode('new-password')
@@ -99,7 +113,7 @@ function LoginScreen() {
     const result =
       mode === 'signin'
         ? { ...(await signIn(email.trim(), password)), needsConfirmation: false }
-        : await signUp(email.trim(), password, displayName.trim())
+        : await signUp(email.trim(), password, displayName.trim(), { metricsConsent })
 
     setPending(false)
     if (result.error) {
@@ -251,6 +265,16 @@ function LoginScreen() {
                 >
                   Volver a iniciar sesión
                 </button>
+              ) : null}
+
+              {mode === 'signup' ? (
+                <MetricsConsentCheckbox checked={metricsConsent} onChange={setMetricsConsent} />
+              ) : null}
+
+              {farewell ? (
+                <p role="status" className="blue-login-message">
+                  {farewell}
+                </p>
               ) : null}
 
               {notice ? (

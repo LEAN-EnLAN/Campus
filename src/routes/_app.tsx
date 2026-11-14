@@ -6,9 +6,12 @@ import type { AccountIdentity } from '@/components/account-menu'
 import { QuickCapture, type QuickCaptureValues } from '@/components/quick-capture'
 import { titleForPath } from '@/components/nav-model'
 import { ToastProvider, useToast } from '@/components/toast'
+import { FeedbackDialog } from '@/features/account/feedback-dialog'
+import { feedbackAvailable } from '@/features/account/feedback-channel'
 import { SearchPalette } from '@/features/search/search-palette'
 import { useAcademicPlan } from '@/features/academic/queries'
 import { useRequiresAccount } from '@/lib/runtime/identity'
+import { useBackend } from '@/lib/backends/context'
 import { useAuth } from '@/features/auth/auth-context'
 import { useSignOut } from '@/features/auth/use-sign-out'
 import { useWorkspace } from '@/lib/runtime/workspace'
@@ -52,6 +55,8 @@ function AppFrame() {
 
   const [captureOpen, setCaptureOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
+  const [feedbackOpen, setFeedbackOpen] = useState(false)
+  const backend = useBackend()
 
   const plan = useAcademicPlan()
   const courseId = courseIdOf(pathname)
@@ -159,6 +164,7 @@ function AppFrame() {
         account={{
           identity,
           onChangeWorkspace: workspace.change,
+          onFeedback: feedbackAvailable(backend) ? () => setFeedbackOpen(true) : undefined,
           onSignOut: requiresAccount && session ? () => void handleSignOut() : undefined,
           signingOut: signOut.pending,
         }}
@@ -180,6 +186,8 @@ function AppFrame() {
         isPending={createItem.isPending}
         error={createItem.error ? (createItem.error as Error).message : null}
       />
+
+      <FeedbackDialog open={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
 
       <SearchPalette
         open={searchOpen}

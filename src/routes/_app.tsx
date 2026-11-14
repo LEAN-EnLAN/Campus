@@ -9,6 +9,7 @@ import { ToastProvider, useToast } from '@/components/toast'
 import { FeedbackDialog } from '@/features/account/feedback-dialog'
 import { feedbackAvailable } from '@/features/account/feedback-channel'
 import { SearchPalette } from '@/features/search/search-palette'
+import { InstallOfferBanner } from '@/features/install/install-offer-banner'
 import { useAcademicPlan } from '@/features/academic/queries'
 import { useRequiresAccount } from '@/lib/runtime/identity'
 import { useBackend } from '@/lib/backends/context'
@@ -141,8 +142,8 @@ function AppFrame() {
         curriculumSubjectId: values.curriculumSubjectId,
         dueAt: values.dueAt,
       })
+      // "Guardado: …" comes from the mutation itself, wherever an item is created.
       setCaptureOpen(false)
-      toast.show({ message: `Guardado: ${values.title}` })
     } catch {
       /* surfaced through createItem.error */
     }
@@ -172,6 +173,9 @@ function AppFrame() {
         onQuickCapture={() => setCaptureOpen(true)}
         onSearch={() => setSearchOpen(true)}
       >
+        {/* On Hoy only, the screen a visit starts on; from the second visit on,
+            when the browser can install. See install-offer.ts. */}
+        {pathname === '/today' ? <InstallOfferBanner /> : null}
         <Outlet />
       </AcademicShell>
 

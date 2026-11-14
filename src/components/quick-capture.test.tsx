@@ -74,6 +74,24 @@ describe('saving', () => {
     expect(screen.getByRole('textbox', { name: '¿Qué es?' })).toHaveValue('TP pendiente')
   })
 
+  it('a double click on Guardar saves once, even before isPending arrives', async () => {
+    // The parent never re-renders with isPending: only the dialog's own guard can stop it.
+    const onSubmit = vi.fn(() => new Promise<void>(() => {}))
+    const { user } = mount({ onSubmit })
+
+    await user.type(screen.getByRole('textbox', { name: '¿Qué es?' }), 'TP 1')
+    await user.dblClick(screen.getByRole('button', { name: 'Guardar' }))
+    await user.click(screen.getByRole('button', { name: 'Guardar' }))
+
+    expect(onSubmit).toHaveBeenCalledOnce()
+  })
+
+  it('shows the save button disabled and saying "Guardando…" while pending', () => {
+    mount({ isPending: true })
+
+    expect(screen.getByRole('button', { name: 'Guardando…' })).toBeDisabled()
+  })
+
   it('stores a date with no time as date-only, not as 23:59', async () => {
     const { user, onSubmit } = mount()
 

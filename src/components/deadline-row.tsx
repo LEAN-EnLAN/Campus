@@ -25,6 +25,7 @@ export function DeadlineRow({
   onToggle,
   onShare,
   onDownloadIcs,
+  togglePending = false,
   onEdit,
   onDelete,
   overdue = false,
@@ -37,6 +38,8 @@ export function DeadlineRow({
   onToggle?: (done: boolean) => void
   onShare?: () => void
   onDownloadIcs?: () => void
+  /** The change is in flight: the circle waits instead of taking a second tap. */
+  togglePending?: boolean
   onEdit?: () => void
   onDelete?: () => void
   overdue?: boolean
@@ -61,8 +64,11 @@ export function DeadlineRow({
           type="button"
           onClick={() => onToggle(!done)}
           aria-pressed={done}
+          disabled={togglePending}
+          aria-busy={togglePending}
           className={cn(
             'relative mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full border transition-colors duration-150',
+            'disabled:cursor-progress disabled:opacity-50',
             // The circle stays 20px because a 44px ring would wreck the row rhythm,
             // but the HIT AREA is expanded to 44px with a pseudo-element. This is the
             // most-tapped control in the app and it is used with a thumb.

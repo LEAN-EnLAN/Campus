@@ -39,6 +39,7 @@ interface RowsProps {
   onComplete: (entry: AgendaEntry, done: boolean) => void
   onShare: (item: AcademicItem) => void
   onDownloadIcs: (item: AcademicItem) => void
+  isCompleting: (id: string) => boolean
   onEdit: (item: AcademicItem) => void
   onDelete: (item: AcademicItem) => void
   overdue?: boolean
@@ -50,6 +51,7 @@ function BlueRows({
   onComplete,
   onShare,
   onDownloadIcs,
+  isCompleting,
   onEdit,
   onDelete,
   overdue = false,
@@ -67,6 +69,7 @@ function BlueRows({
           onToggle={(done) => onComplete(entry, done)}
           onShare={() => onShare(entry.item)}
           onDownloadIcs={() => onDownloadIcs(entry.item)}
+          togglePending={isCompleting(entry.item.id)}
           onEdit={() => onEdit(entry.item)}
           onDelete={() => onDelete(entry.item)}
         />
@@ -170,7 +173,7 @@ export function BlueTodayScreen() {
   const today = useMemo(() => buildToday(itemsQuery.data ?? [], now), [itemsQuery.data, now])
   const subjectName = (id: string | null) =>
     id ? (plan.subjectById.get(id)?.name ?? null) : null
-  const { complete, dialog } = useCompleteItem(subjectName)
+  const { complete, isPending: isCompleting, dialog } = useCompleteItem(subjectName)
   const actions = useItemActions({ subjects: plan.views, items: itemsQuery.data ?? [] })
   // A link someone shared (`/add`) opens the capture form here, prefilled.
   const shared = useSharedCapture({
@@ -234,6 +237,7 @@ export function BlueTodayScreen() {
       onComplete={(entry, done) => complete(entry.item, done)}
       onShare={(item) => void actions.share(item)}
       onDownloadIcs={actions.downloadIcs}
+      isCompleting={isCompleting}
       onEdit={actions.edit}
       onDelete={actions.remove}
     />
@@ -306,12 +310,13 @@ export function BlueTodayScreen() {
               )}
               {/* One spot per screen: with nothing pending the empty state below carries it. */}
               {nothingPending ? null : (
+                // Below 400px the drawing squeezed the sentence into a 4-word column.
                 <Illustration
                   name="today-study"
                   decorative
                   eager
                   size="xs"
-                  className="ml-auto w-24 shrink-0 sm:w-28"
+                  className="ml-auto w-24 shrink-0 max-[399px]:hidden sm:w-28"
                 />
               )}
             </div>
@@ -329,6 +334,7 @@ export function BlueTodayScreen() {
                 onComplete={(entry, done) => complete(entry.item, done)}
                 onShare={(item) => void actions.share(item)}
                 onDownloadIcs={actions.downloadIcs}
+                isCompleting={isCompleting}
                 onEdit={actions.edit}
                 onDelete={actions.remove}
               />

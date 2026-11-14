@@ -11,26 +11,30 @@
  * the UNR plan whose correlativas the university has not published.
  *
  * Gated on `VITE_CAMPUS_TESTER`, and forced off on a hosted build. Without the
- * flag it renders a refusal, so an accidental production build exposes nothing.
+ * flag the route does not exist: `/dev` is the same "No encontramos esta página"
+ * as any other wrong address, so a build without the flag does not even say
+ * there is something here.
  */
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { createFileRoute, notFound, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 
-import { EmptyState } from '@/components/empty-state'
 import { PageHeader, SectionHeading } from '@/components/page-header'
 import { Button } from '@/components/ui/button'
 import scenarios from '@/features/dev/scenarios.generated.json'
 import { useAuth } from '@/features/auth/auth-context'
 import { supabaseUrl } from '@/lib/supabase'
 
-export const Route = createFileRoute('/dev')({
-  component: DevScreen,
-})
-
 // A build-time literal injected by vite.config.ts from `isTesterEnabled`: off on
 // a hosted build (`VITE_CAMPUS_VAULT=off`) whatever the tester flag says, and
 // folded away so the scenarios JSON and its password are not bundled.
 const ENABLED = __CAMPUS_TESTER__
+
+export const Route = createFileRoute('/dev')({
+  beforeLoad: () => {
+    if (!ENABLED) throw notFound()
+  },
+  component: DevScreen,
+})
 
 function DevScreen() {
   const { signIn, signOut, session } = useAuth()
@@ -38,16 +42,10 @@ function DevScreen() {
   const [busy, setBusy] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  if (!ENABLED) {
-    return (
-      <main className="mx-auto max-w-lg px-5 py-16">
-        <EmptyState
-          title="Las herramientas de tester están apagadas"
-          description="Poné VITE_CAMPUS_TESTER=1 en .env y reiniciá el dev server."
-        />
-      </main>
-    )
-  }
+  // Unreachable without the flag (`beforeLoad` refuses first). It stays so the
+  // literal `false` folds everything below, scenarios and password included, out
+  // of the bundle.
+  if (!ENABLED) return null
 
   async function enter(email: string) {
     setBusy(email)

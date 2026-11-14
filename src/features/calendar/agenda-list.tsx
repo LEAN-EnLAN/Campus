@@ -33,6 +33,7 @@ export function AgendaList({
   onToggle,
   onShare,
   onDownloadIcs,
+  isToggling,
   onEdit,
   onDelete,
 }: {
@@ -42,6 +43,8 @@ export function AgendaList({
   onToggle?: (item: AcademicItem, done: boolean) => void
   onShare?: (item: AcademicItem) => void
   onDownloadIcs?: (item: AcademicItem) => void
+  /** That item's change is in flight: its button waits instead of taking a second tap. */
+  isToggling?: (id: string) => boolean
   onEdit?: (item: AcademicItem) => void
   onDelete?: (item: AcademicItem) => void
 }) {
@@ -92,7 +95,9 @@ export function AgendaList({
                         <button
                           type="button"
                           onClick={() => onToggle(item, !done)}
-                          className="text-accent-ink min-h-8 shrink-0 text-xs font-medium underline-offset-4 hover:underline"
+                          disabled={isToggling?.(item.id)}
+                          aria-busy={isToggling?.(item.id)}
+                          className="text-accent-ink min-h-8 shrink-0 text-xs font-medium underline-offset-4 hover:underline disabled:cursor-progress disabled:opacity-50"
                         >
                           {done ? 'Marcar pendiente' : 'Marcar hecho'}
                         </button>

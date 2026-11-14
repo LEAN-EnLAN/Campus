@@ -52,12 +52,21 @@ export function EmptyState({
   )
 }
 
-/** Skeleton rows for a loading list — same rhythm as the real rows. */
+/**
+ * Skeleton rows for a loading list — same rhythm as the real rows. The bars are
+ * decoration; a screen reader hears "Cargando…" instead of nothing (or, worse,
+ * the empty state of a list that has not arrived yet).
+ */
 export function LoadingRows({ rows = 3, className }: { rows?: number; className?: string }) {
   return (
-    <div className={cn('flex flex-col', className)} aria-hidden="true">
+    <div className={cn('flex flex-col', className)}>
+      <span className="sr-only">Cargando…</span>
       {Array.from({ length: rows }, (_, i) => (
-        <div key={i} className="border-rule-soft flex items-center gap-3 border-b py-3.5">
+        <div
+          key={i}
+          aria-hidden="true"
+          className="border-rule-soft flex items-center gap-3 border-b py-3.5"
+        >
           <span className="bg-rule-soft size-3 shrink-0 rounded-full" />
           <span
             className="bg-rule-soft h-3.5 rounded"

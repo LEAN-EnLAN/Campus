@@ -295,12 +295,13 @@ export function BlueTodayScreen() {
               )}
               {/* One spot per screen: with nothing pending the empty state below carries it. */}
               {nothingPending ? null : (
+                // Below 400px the drawing squeezed the sentence into a 4-word column.
                 <Illustration
                   name="today-study"
                   decorative
                   eager
                   size="xs"
-                  className="ml-auto w-24 shrink-0 sm:w-28"
+                  className="ml-auto w-24 shrink-0 max-[399px]:hidden sm:w-28"
                 />
               )}
             </div>

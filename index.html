@@ -2,7 +2,16 @@
 <html lang="es-AR">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!--
+      `interactive-widget=resizes-content`: on Android the virtual keyboard shrinks
+      the layout viewport (and `dvh`) instead of sliding over it, so the capture
+      sheet sits above the keyboard and its "Guardar" stays reachable by scrolling
+      inside the dialog. Browsers that do not know the key ignore it.
+    -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content"
+    />
     <meta name="color-scheme" content="light" />
     <meta name="theme-color" content="#10224a" />
 

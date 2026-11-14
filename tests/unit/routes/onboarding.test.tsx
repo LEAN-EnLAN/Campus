@@ -58,14 +58,18 @@ const Onboarding = Route.options.component as () => ReactNode
 
 function mount(
   workspace: WorkspaceValue = { folder: { name: 'Campus', path: '/c' }, change: vi.fn() },
+  path = '/',
 ) {
-  return renderRoute(() => (
-    <RequiresAccountProvider value={false}>
-      <WorkspaceProvider value={workspace}>
-        <Onboarding />
-      </WorkspaceProvider>
-    </RequiresAccountProvider>
-  ))
+  return renderRoute(
+    () => (
+      <RequiresAccountProvider value={false}>
+        <WorkspaceProvider value={workspace}>
+          <Onboarding />
+        </WorkspaceProvider>
+      </RequiresAccountProvider>
+    ),
+    path,
+  )
 }
 
 const steps = () => screen.getByRole('navigation', { name: 'Pasos de configuración' })
@@ -272,12 +276,21 @@ describe('onboarding: revisiting', () => {
     expect(screen.getByRole('radio', { name: 'TO 2024' })).toBeChecked()
   })
 
-  it('offers a way back that does not change anything', async () => {
+  it('offers a way back to Ajustes when it was opened from Ajustes', async () => {
     state.existing = existing
-    mount()
+    mount(undefined, '/?from=settings')
 
     const back = await screen.findByRole('link', { name: 'Volver a ajustes' })
     expect(back).toHaveAttribute('href', '/settings')
+  })
+
+  it('offers Hoy, not Ajustes, when it was opened from anywhere else', async () => {
+    state.existing = existing
+    mount()
+
+    const out = await screen.findByRole('link', { name: 'Ir a Hoy' })
+    expect(out).toHaveAttribute('href', '/today')
+    expect(screen.queryByRole('link', { name: 'Volver a ajustes' })).toBeNull()
   })
 
   it('opens the free-text path with what was typed when the carrera was unmapped', async () => {
@@ -292,6 +305,24 @@ describe('onboarding: revisiting', () => {
     expect(await screen.findByRole('textbox', { name: /Carrera y universidad/ })).toHaveValue(
       'Psicología — UBA',
     )
+  })
+
+  // QA: a brand-new student who had never seen Ajustes was offered "Volver a ajustes".
+  it('sends a first-run student who just saved their plan to Hoy, never "back" to Ajustes', async () => {
+    const user = userEvent.setup()
+    mount()
+
+    await user.click(
+      await screen.findByRole('radio', { name: /Universidad Nacional de Rosario/ }),
+    )
+    await user.click(await screen.findByRole('radio', { name: 'Facultad A' }))
+    await user.click(await screen.findByRole('radio', { name: 'Carrera' }))
+    await user.click(await screen.findByRole('radio', { name: 'TO 2024' }))
+    await user.click(screen.getByRole('button', { name: 'Guardar y continuar' }))
+
+    expect(await screen.findByText('Tu plan ya está en Campus.')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Ir a Hoy' })).toHaveAttribute('href', '/today')
+    expect(screen.queryByRole('link', { name: 'Volver a ajustes' })).toBeNull()
   })
 
   it('does not offer "Volver" on the first run: there is nowhere to go back to', async () => {

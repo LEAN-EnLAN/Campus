@@ -256,7 +256,11 @@ export function SettingsScreen() {
             illustration="settings-career"
             actions={
               <>
-                <Link to="/onboarding" className={buttonVariants({ variant: 'secondary' })}>
+                <Link
+                  to="/onboarding"
+                  search={{ from: 'settings' }}
+                  className={buttonVariants({ variant: 'secondary' })}
+                >
                   Cambiar mi carrera
                 </Link>
                 {plan.hasContext && plan.curriculum?.sourceUrl ? (

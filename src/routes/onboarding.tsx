@@ -16,6 +16,7 @@ import {
   usePrograms,
   useSaveAcademicContext,
 } from '@/features/academic/queries'
+import { onboardingExit, parseOnboardingSearch } from '@/features/academic/onboarding-exit'
 import { useDocumentTitle } from '@/lib/hooks/use-document-title'
 import { useRequiresAccount } from '@/lib/runtime/identity'
 import { useWorkspace } from '@/lib/runtime/workspace'
@@ -23,6 +24,8 @@ import { useAuth } from '@/features/auth/auth-context'
 import { cn } from '@/lib/utils'
 
 export const Route = createFileRoute('/onboarding')({
+  // `?from=settings` — set by Ajustes, so only that visit offers "Volver a ajustes".
+  validateSearch: parseOnboardingSearch,
   component: OnboardingScreen,
 })
 
@@ -49,6 +52,7 @@ function OnboardingScreen() {
   const workspace = useWorkspace()
   useDocumentTitle('Tu carrera · Campus')
   const navigate = useNavigate()
+  const { from } = Route.useSearch()
 
   const [institutionId, setInstitutionId] = useState<string | null>(null)
   const [unitId, setUnitId] = useState<string | null>(null)
@@ -131,6 +135,7 @@ function OnboardingScreen() {
     selectedCurriculum?.version,
   ]
   const canVisit = [true, Boolean(institutionId), Boolean(unitId), Boolean(programId)]
+  const exit = onboardingExit({ from, hasContext: Boolean(existing.data) || confirmed })
   const workspaceName = workspace.folder ? 'En esta computadora' : 'Campus Cloud'
   const workspaceDetail = workspace.folder
     ? workspace.folder.name
@@ -160,9 +165,9 @@ function OnboardingScreen() {
       <div className="blue-onboarding-container">
         <header className="blue-onboarding-top">
           <CampusLogo wordmark className="blue-onboarding-brand" />
-          {existing.data ? (
-            <Link to="/settings" className="blue-onboarding-text-link">
-              <ArrowLeft size={16} aria-hidden="true" /> Volver a ajustes
+          {exit ? (
+            <Link to={exit.to} className="blue-onboarding-text-link">
+              <ArrowLeft size={16} aria-hidden="true" /> {exit.label}
             </Link>
           ) : (
             <span className="blue-onboarding-top-note">Tu espacio de estudio</span>

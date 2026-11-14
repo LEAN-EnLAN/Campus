@@ -61,6 +61,14 @@ export interface QuickCaptureValues {
   dueAt: string | null
 }
 
+/** Any subset of a new item's fields; a null kind means "the default kind". */
+export interface QuickCaptureInitialValues {
+  title?: string
+  kind?: AcademicItemKind | null
+  curriculumSubjectId?: string | null
+  dueAt?: string | null
+}
+
 export function QuickCapture({
   open,
   onOpenChange,
@@ -72,6 +80,7 @@ export function QuickCapture({
   isPending = false,
   error = null,
   item = null,
+  initialValues = null,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -86,6 +95,11 @@ export function QuickCapture({
   error?: string | null
   /** The item being edited. Absent, the dialog adds a new one. */
   item?: AcademicItem | null
+  /**
+   * A new item's fields filled in advance (a shared link). Nothing is saved
+   * until the student presses Guardar. Ignored when editing.
+   */
+  initialValues?: QuickCaptureInitialValues | null
 }) {
   const titleId = useId()
   const firstFieldRef = useRef<HTMLInputElement>(null)
@@ -105,10 +119,15 @@ export function QuickCapture({
   // Primitives, not the item object: a background refetch hands over a new
   // object for the same item, and that must not wipe what the student typed.
   const editingId = item?.id ?? null
-  const editingTitle = item?.title ?? ''
-  const editingKind = item?.kind ?? defaultKind
-  const editingSubject = item ? (item.curriculumSubjectId ?? '') : (defaultSubjectId ?? '')
-  const editingDueAt = item?.dueAt ?? null
+  const prefill = item ? null : initialValues
+  const editingTitle = item?.title ?? prefill?.title ?? ''
+  const editingKind = item?.kind ?? prefill?.kind ?? defaultKind
+  const editingSubject = item
+    ? (item.curriculumSubjectId ?? '')
+    : prefill
+      ? (prefill.curriculumSubjectId ?? '')
+      : (defaultSubjectId ?? '')
+  const editingDueAt = item ? item.dueAt : (prefill?.dueAt ?? null)
   const initialDue = dueToInputs(editingDueAt)
 
   // Reset on open so a previous capture never leaks into the next one; editing,

@@ -211,6 +211,8 @@ function CourseDetailScreen() {
                     key={item.id}
                     item={item}
                     onToggle={(done) => toggleItem.mutate({ id: item.id, done })}
+                    onShare={() => void itemActions.share(item)}
+                    onDownloadIcs={() => itemActions.downloadIcs(item)}
                     onEdit={() => itemActions.edit(item)}
                     onDelete={() => itemActions.remove(item)}
                   />

@@ -5,6 +5,7 @@ import { ItemRowActions } from '@/components/item-row-actions'
 import { describeItemDate } from '@/domain/item-dates'
 import type { AcademicItem } from '@/domain/types'
 import { dueTimeLabel } from '@/features/items/due'
+import { icsUnavailableReason } from '@/features/items/ics'
 import { cn } from '@/lib/utils'
 
 /**
@@ -17,11 +18,15 @@ import { cn } from '@/lib/utils'
 export function SubjectDateRow({
   item,
   onToggle,
+  onShare,
+  onDownloadIcs,
   onEdit,
   onDelete,
 }: {
   item: AcademicItem
   onToggle: (done: boolean) => void
+  onShare?: () => void
+  onDownloadIcs?: () => void
   onEdit?: () => void
   onDelete?: () => void
 }) {
@@ -67,7 +72,14 @@ export function SubjectDateRow({
         <span className="text-ink-muted mt-0.5 block text-xs">{itemKindLabel(item.kind)}</span>
       </span>
 
-      <ItemRowActions title={item.title} onEdit={onEdit} onDelete={onDelete} />
+      <ItemRowActions
+        title={item.title}
+        onShare={onShare}
+        onDownloadIcs={onDownloadIcs}
+        icsDisabledReason={icsUnavailableReason(item)}
+        onEdit={onEdit}
+        onDelete={onDelete}
+      />
     </div>
   )
 }

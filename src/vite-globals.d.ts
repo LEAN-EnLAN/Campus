@@ -6,6 +6,8 @@ interface ImportMetaEnv {
   readonly VITE_CAMPUS_VAULT?: string
   /** `1` enables the tester tooling on a non-hosted build. */
   readonly VITE_CAMPUS_TESTER?: string
+  /** Public address shared links point to (`https://…`); the page's origin when unset. */
+  readonly VITE_PUBLIC_APP_URL?: string
 }
 
 /** Build-time literal defined in `vite.config.ts` / `vitest.config.ts`. */

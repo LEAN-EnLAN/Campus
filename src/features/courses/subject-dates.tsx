@@ -1,6 +1,7 @@
 import { Check } from 'lucide-react'
 
 import { itemKindLabel } from '@/components/deadline-row'
+import { ItemRowActions } from '@/components/item-row-actions'
 import { describeItemDate } from '@/domain/item-dates'
 import type { AcademicItem } from '@/domain/types'
 import { dueTimeLabel } from '@/features/items/due'
@@ -16,9 +17,13 @@ import { cn } from '@/lib/utils'
 export function SubjectDateRow({
   item,
   onToggle,
+  onEdit,
+  onDelete,
 }: {
   item: AcademicItem
   onToggle: (done: boolean) => void
+  onEdit?: () => void
+  onDelete?: () => void
 }) {
   const date = describeItemDate(item)
   const time = dueTimeLabel(item)
@@ -61,6 +66,8 @@ export function SubjectDateRow({
         </span>
         <span className="text-ink-muted mt-0.5 block text-xs">{itemKindLabel(item.kind)}</span>
       </span>
+
+      <ItemRowActions title={item.title} onEdit={onEdit} onDelete={onDelete} />
     </div>
   )
 }

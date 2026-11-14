@@ -157,6 +157,88 @@ export function describeSharedBackendBehaviour(fixture: SharedFixture): void {
       })
     })
 
+    describe('items.update', () => {
+      const create = () =>
+        backend.items.create({
+          title: 'TP 1',
+          kind: 'assignment',
+          curriculumSubjectId: null,
+          dueAt: null,
+          notes: 'en grupo',
+        })
+      const reread = async (id: string) =>
+        (await (await reopen()).items.list()).find((i) => i.id === id)
+
+      it('changes only the keys it is given, trimmed, and returns the stored item', async () => {
+        const item = await create()
+        const returned = await backend.items.update(item.id, {
+          title: '  Parcial de Álgebra  ',
+          kind: 'midterm',
+        })
+        expect(await reread(item.id)).toMatchObject({
+          title: 'Parcial de Álgebra',
+          kind: 'midterm',
+          notes: 'en grupo',
+          status: 'open',
+          dueAt: null,
+          curriculumSubjectId: null,
+        })
+        expect(returned).toMatchObject({ id: item.id, title: 'Parcial de Álgebra' })
+      })
+
+      it('moves an item to a catalog subject, to a manual one, and back to none', async () => {
+        const item = await create()
+        await backend.items.update(item.id, { curriculumSubjectId: fixture.subjectId })
+        expect((await reread(item.id))?.curriculumSubjectId).toBe(fixture.subjectId)
+
+        const manual = await backend.academic.addManualSubject({
+          name: 'Taller',
+          yearLevel: 1,
+          term: 'anual',
+        })
+        await backend.items.update(item.id, { curriculumSubjectId: manual.id })
+        expect((await reread(item.id))?.curriculumSubjectId).toBe(manual.id)
+
+        await backend.items.update(item.id, { curriculumSubjectId: null })
+        expect((await reread(item.id))?.curriculumSubjectId).toBeNull()
+      })
+
+      it('stores dates exactly, so a date-only item stays date-only', async () => {
+        const item = await create()
+        const dateOnly = new Date(2026, 9, 23, 23, 59, 59, 999).toISOString()
+        await backend.items.update(item.id, { dueAt: dateOnly })
+        expect(new Date((await reread(item.id))!.dueAt!).toISOString()).toBe(dateOnly)
+
+        const withTime = new Date(2026, 9, 23, 18, 30).toISOString()
+        const starts = new Date(2026, 9, 23, 16, 0).toISOString()
+        await backend.items.update(item.id, { dueAt: withTime, startsAt: starts })
+        const stored = await reread(item.id)
+        expect(new Date(stored!.dueAt!).toISOString()).toBe(withTime)
+        expect(new Date(stored!.startsAt!).toISOString()).toBe(starts)
+
+        await backend.items.update(item.id, { dueAt: null, startsAt: null })
+        expect(await reread(item.id)).toMatchObject({ dueAt: null, startsAt: null })
+      })
+
+      it('clears blank notes and sets the status', async () => {
+        const item = await create()
+        await backend.items.update(item.id, { notes: '   ', status: 'done' })
+        expect(await reread(item.id)).toMatchObject({ notes: null, status: 'done' })
+      })
+
+      it('refuses an empty title and leaves the item as it was', async () => {
+        const item = await create()
+        await expect(backend.items.update(item.id, { title: '   ' })).rejects.toThrow(/título/)
+        expect((await reread(item.id))?.title).toBe('TP 1')
+      })
+
+      it('refuses an unknown id instead of quietly matching nothing', async () => {
+        await expect(backend.items.update('no-such-item', { title: 'x' })).rejects.toThrow(
+          /No encontramos esa fecha/,
+        )
+      })
+    })
+
     describe('saveContext', () => {
       const ctx = (curriculumId: string | null, unmappedLabel: string | null = null) => ({
         institutionId: null,

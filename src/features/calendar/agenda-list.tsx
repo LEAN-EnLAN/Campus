@@ -1,5 +1,6 @@
 import { itemKindLabel } from '@/components/deadline-row'
 import { EmptyState } from '@/components/empty-state'
+import { ItemRowActions } from '@/components/item-row-actions'
 import type { AcademicItem } from '@/domain/types'
 import { dueTimeLabel } from '@/features/items/due'
 import { cn } from '@/lib/utils'
@@ -30,11 +31,15 @@ export function AgendaList({
   now,
   subjectName,
   onToggle,
+  onEdit,
+  onDelete,
 }: {
   items: readonly AcademicItem[]
   now: Date
   subjectName: (item: AcademicItem) => string | null
   onToggle?: (item: AcademicItem, done: boolean) => void
+  onEdit?: (item: AcademicItem) => void
+  onDelete?: (item: AcademicItem) => void
 }) {
   const days = buildAgendaDays(items, now)
 
@@ -61,7 +66,7 @@ export function AgendaList({
                   return (
                     <li
                       key={item.id}
-                      className="border-rule-soft flex items-baseline gap-3 border-b py-2.5"
+                      className="group border-rule-soft flex items-baseline gap-3 border-b py-2.5"
                     >
                       <span data-numeric className="text-ink-muted w-16 shrink-0 text-xs">
                         {time ?? 'Todo el día'}
@@ -88,6 +93,11 @@ export function AgendaList({
                           {done ? 'Marcar pendiente' : 'Marcar hecho'}
                         </button>
                       ) : null}
+                      <ItemRowActions
+                        title={item.title}
+                        onEdit={onEdit ? () => onEdit(item) : undefined}
+                        onDelete={onDelete ? () => onDelete(item) : undefined}
+                      />
                     </li>
                   )
                 })}

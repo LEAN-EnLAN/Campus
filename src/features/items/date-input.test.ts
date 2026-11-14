@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import { combineDue, parseDateInput, parseTimeInput } from './date-input'
-import { hasUserTime } from './due'
+import { combineDue, dueToInputs, parseDateInput, parseTimeInput } from './date-input'
+import { dateOnlyDueAt, hasUserTime } from './due'
 
 describe('parseDateInput (dd/mm/aaaa, whatever the browser locale)', () => {
   it('reads day first', () => {
@@ -62,5 +62,37 @@ describe('combineDue', () => {
     expect(hasUserTime(iso)).toBe(true)
     const date = new Date(iso)
     expect([date.getHours(), date.getMinutes(), date.getSeconds()]).toEqual([23, 59, 0])
+  })
+})
+
+describe('dueToInputs (what the edit form shows)', () => {
+  it('shows a typed time', () => {
+    expect(dueToInputs(new Date(2026, 9, 3, 18, 30).toISOString())).toEqual({
+      date: '03/10/2026',
+      time: '18:30',
+    })
+  })
+
+  it('shows no time for a date-only item, never the 23:59 that stands in for it', () => {
+    expect(dueToInputs(dateOnlyDueAt(2026, 10, 23))).toEqual({ date: '23/10/2026', time: '' })
+  })
+
+  it('keeps a real 23:59 deadline as a time', () => {
+    expect(dueToInputs(new Date(2026, 9, 23, 23, 59).toISOString()).time).toBe('23:59')
+  })
+
+  it('is blank for no date or a broken one', () => {
+    expect(dueToInputs(null)).toEqual({ date: '', time: '' })
+    expect(dueToInputs('not a date')).toEqual({ date: '', time: '' })
+  })
+
+  it('round-trips through the parser: an untouched edit stores the same instant', () => {
+    for (const iso of [
+      dateOnlyDueAt(2026, 10, 23),
+      new Date(2026, 9, 23, 9, 5).toISOString(),
+    ]) {
+      const { date, time } = dueToInputs(iso)
+      expect(combineDue(parseDateInput(date), time ? parseTimeInput(time) : null)).toBe(iso)
+    }
   })
 })

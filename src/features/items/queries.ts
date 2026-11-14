@@ -2,10 +2,14 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import type { AcademicItem, Resource } from '@/domain/types'
 import { useBackend } from '@/lib/backends/context'
-import type { CreateItemInput, CreateResourceInput } from '@/lib/backends/types'
+import type {
+  CreateItemInput,
+  CreateResourceInput,
+  UpdateItemPatch,
+} from '@/lib/backends/types'
 import { queryKeys } from '@/lib/query-keys'
 
-export type { CreateItemInput, CreateResourceInput }
+export type { CreateItemInput, CreateResourceInput, UpdateItemPatch }
 
 // --- Academic items ----------------------------------------------------------
 
@@ -23,6 +27,19 @@ export function useCreateAcademicItem() {
 
   return useMutation({
     mutationFn: (input: CreateItemInput) => backend.items.create(input),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.academicItems })
+    },
+  })
+}
+
+export function useUpdateAcademicItem() {
+  const queryClient = useQueryClient()
+  const backend = useBackend()
+
+  return useMutation({
+    mutationFn: ({ id, patch }: { id: string; patch: UpdateItemPatch }) =>
+      backend.items.update(id, patch),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.academicItems })
     },

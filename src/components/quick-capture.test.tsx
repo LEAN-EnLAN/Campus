@@ -2,8 +2,8 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
-import type { SubjectView } from '@/domain/types'
-import { hasUserTime } from '@/features/items/due'
+import type { AcademicItem, SubjectView } from '@/domain/types'
+import { dateOnlyDueAt, hasUserTime } from '@/features/items/due'
 
 import { QuickCapture } from './quick-capture'
 
@@ -223,5 +223,118 @@ describe('scheduling a Final', () => {
     await user.type(screen.getByLabelText('Fecha'), '10/12/2026')
 
     expect(screen.queryByText(/El plan pide tener aprobada/)).toBeNull()
+  })
+})
+
+describe('editing an item', () => {
+  const parcial = (over: Partial<AcademicItem> = {}): AcademicItem => ({
+    id: 'p1',
+    curriculumSubjectId: 'algebra',
+    kind: 'midterm',
+    title: 'Parcial 1',
+    startsAt: null,
+    dueAt: new Date(2026, 9, 23, 18, 30).toISOString(),
+    status: 'open',
+    notes: null,
+    ...over,
+  })
+
+  it('opens prefilled, titled after the item, with "Guardar cambios"', () => {
+    mount({ item: parcial() })
+
+    expect(screen.getByRole('dialog', { name: 'Editar parcial' })).toBeInTheDocument()
+    expect(screen.getByRole('textbox', { name: '¿Qué es?' })).toHaveValue('Parcial 1')
+    expect(screen.getByLabelText('Tipo')).toHaveValue('midterm')
+    expect(screen.getByLabelText('Materia')).toHaveValue('algebra')
+    expect(screen.getByLabelText('Fecha')).toHaveValue('23/10/2026')
+    expect(screen.getByLabelText('Hora')).toHaveValue('18:30')
+    expect(screen.getByRole('button', { name: 'Guardar cambios' })).toBeInTheDocument()
+  })
+
+  it('opens a date-only item with the time empty, never 23:59', () => {
+    mount({ item: parcial({ dueAt: dateOnlyDueAt(2026, 10, 23) }) })
+
+    expect(screen.getByLabelText('Fecha')).toHaveValue('23/10/2026')
+    expect(screen.getByLabelText('Hora')).toHaveValue('')
+  })
+
+  it('keeps the stored instant exactly when the date was not touched', async () => {
+    const dueAt = dateOnlyDueAt(2026, 10, 23)
+    const { user, onSubmit } = mount({ item: parcial({ dueAt }) })
+
+    const title = screen.getByRole('textbox', { name: '¿Qué es?' })
+    await user.clear(title)
+    await user.type(title, 'Parcial 1 (recuperatorio)')
+    await user.click(screen.getByRole('button', { name: 'Guardar cambios' }))
+
+    expect(onSubmit).toHaveBeenCalledWith({
+      title: 'Parcial 1 (recuperatorio)',
+      kind: 'midterm',
+      curriculumSubjectId: 'algebra',
+      dueAt,
+    })
+  })
+
+  it('saves a changed date, time and subject', async () => {
+    const { user, onSubmit } = mount({ item: parcial() })
+
+    const date = screen.getByLabelText('Fecha')
+    await user.clear(date)
+    await user.type(date, '30/10/2026')
+    await user.clear(screen.getByLabelText('Hora'))
+    await user.selectOptions(screen.getByLabelText('Materia'), 'paradigmas')
+    await user.click(screen.getByRole('button', { name: 'Guardar cambios' }))
+
+    const values = onSubmit.mock.calls[0]![0] as { dueAt: string; curriculumSubjectId: string }
+    expect(values.curriculumSubjectId).toBe('paradigmas')
+    // Time cleared: the item becomes date-only, not "due at 23:59".
+    expect(values.dueAt).toBe(dateOnlyDueAt(2026, 10, 30))
+    expect(hasUserTime(values.dueAt)).toBe(false)
+  })
+
+  it('keeps the same validation: an impossible date is refused and nothing is saved', async () => {
+    const { user, onSubmit } = mount({ item: parcial() })
+
+    const date = screen.getByLabelText('Fecha')
+    await user.clear(date)
+    await user.type(date, '31/02/2026')
+    await user.click(screen.getByRole('button', { name: 'Guardar cambios' }))
+
+    expect(onSubmit).not.toHaveBeenCalled()
+    expect(date).toHaveAttribute('aria-invalid', 'true')
+    expect(
+      screen.getByText('Escribí la fecha como dd/mm/aaaa, por ejemplo 23/10/2026.'),
+    ).toHaveAttribute('role', 'alert')
+  })
+
+  it('refuses a time with no day, and an emptied title', async () => {
+    const { user, onSubmit } = mount({ item: parcial() })
+
+    await user.clear(screen.getByLabelText('Fecha'))
+    await user.click(screen.getByRole('button', { name: 'Guardar cambios' }))
+    expect(screen.getByText('Elegí también el día.')).toBeInTheDocument()
+
+    await user.clear(screen.getByRole('textbox', { name: '¿Qué es?' }))
+    await user.click(screen.getByRole('button', { name: 'Guardar cambios' }))
+    expect(screen.getByText('Poné un título.')).toBeInTheDocument()
+    expect(onSubmit).not.toHaveBeenCalled()
+  })
+
+  it('keeps a subject that is no longer in the plan instead of clearing it', async () => {
+    const { user, onSubmit } = mount({ item: parcial({ curriculumSubjectId: 'gone' }) })
+
+    expect(screen.getByLabelText('Materia')).toHaveValue('gone')
+    await user.click(screen.getByRole('button', { name: 'Guardar cambios' }))
+    expect(onSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({ curriculumSubjectId: 'gone' }),
+    )
+  })
+
+  it('says "Guardando…" and blocks a second save while pending', async () => {
+    const { user, onSubmit } = mount({ item: parcial(), isPending: true })
+
+    expect(screen.getByRole('button', { name: 'Guardando…' })).toBeDisabled()
+    await user.type(screen.getByRole('textbox', { name: '¿Qué es?' }), '{Enter}')
+    expect(onSubmit).not.toHaveBeenCalled()
   })
 })

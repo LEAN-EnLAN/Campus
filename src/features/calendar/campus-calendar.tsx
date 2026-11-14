@@ -11,7 +11,7 @@ import {
   type EventDetailContentProps,
   type Locale,
 } from '@dayflow/react'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Pencil, Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { itemKindLabel } from '@/components/deadline-row'
@@ -21,6 +21,7 @@ import { useAcademicPlan } from '@/features/academic/queries'
 import { dueTimeLabel } from '@/features/items/due'
 import { useAcademicItems } from '@/features/items/queries'
 import { useCompleteItem } from '@/features/items/use-complete-item'
+import { useItemActions } from '@/features/items/use-item-actions'
 import type { PaletteTheme } from '@/lib/design/palette'
 import { useTheme } from '@/lib/theme/theme-context'
 import { cn } from '@/lib/utils'
@@ -234,6 +235,7 @@ export function CampusCalendar() {
   const { complete, dialog } = useCompleteItem((id) =>
     id ? (plan.subjectById.get(id)?.name ?? null) : null,
   )
+  const actions = useItemActions({ subjects: plan.views, items: itemsQuery.data ?? [] })
 
   const [agendaOpen, setAgendaOpen] = useState(false)
   const mode: Mode = agendaOpen
@@ -265,6 +267,7 @@ export function CampusCalendar() {
   return (
     <div className="blue-calendar flex min-h-0 flex-1 flex-col">
       {dialog}
+      {actions.dialogs}
       <CalendarChrome
         // The agenda names its own period in its own header; a month title
         // above it would say something else.
@@ -282,6 +285,8 @@ export function CampusCalendar() {
           now={now}
           subjectName={subjectName}
           onToggle={complete}
+          onEdit={actions.edit}
+          onDelete={actions.remove}
         />
       ) : null}
 
@@ -319,7 +324,13 @@ export function CampusCalendar() {
             <GridChip args={args} subjectName={subjectName} paintFor={paintFor} />
           )}
           eventDetailContent={(args) => (
-            <EventDetail args={args} subjectName={subjectName} onToggle={complete} />
+            <EventDetail
+              args={args}
+              subjectName={subjectName}
+              onToggle={complete}
+              onEdit={actions.edit}
+              onDelete={actions.remove}
+            />
           )}
         />
       </div>
@@ -509,16 +520,21 @@ function GridChip({
 
 /**
  * The detail panel — the one place the calendar becomes useful rather than
- * decorative, because it is where a student marks something done.
+ * decorative, because it is where a student marks something done, fixes it,
+ * or removes it.
  */
-function EventDetail({
+export function EventDetail({
   args,
   subjectName,
   onToggle,
+  onEdit,
+  onDelete,
 }: {
-  args: EventDetailContentProps
+  args: Pick<EventDetailContentProps, 'event' | 'onClose'>
   subjectName: (item: AcademicItem) => string | null
   onToggle: (item: AcademicItem, done: boolean) => void
+  onEdit: (item: AcademicItem) => void
+  onDelete: (item: AcademicItem) => void
 }) {
   const item = itemOf(args.event.meta)
   if (!item) return null
@@ -552,6 +568,31 @@ function EventDetail({
       >
         {done ? 'Marcar como pendiente' : 'Marcar como hecho'}
       </Button>
+
+      {/* The popover closes first, so the dialog it opens owns the focus. */}
+      <div className="border-rule-soft flex gap-2 border-t pt-3">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => {
+            args.onClose?.()
+            onEdit(item)
+          }}
+        >
+          <Pencil aria-hidden="true" /> Editar
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="hover:text-danger"
+          onClick={() => {
+            args.onClose?.()
+            onDelete(item)
+          }}
+        >
+          <Trash2 aria-hidden="true" /> Eliminar
+        </Button>
+      </div>
     </div>
   )
 }

@@ -113,7 +113,7 @@ describe('A-10 — both adapters answer the same contract', () => {
     ]
   }, 60_000)
 
-  it('both expose exactly the twenty documented methods', async () => {
+  it('both expose exactly the twenty-one documented methods', async () => {
     const contract = {
       catalog: ['institutions', 'academicUnits', 'programs', 'curricula', 'curriculumBundle'],
       academic: [
@@ -126,7 +126,7 @@ describe('A-10 — both adapters answer the same contract', () => {
         'addManualSubject',
         'removeManualSubject',
       ],
-      items: ['list', 'create', 'setDone', 'remove'],
+      items: ['list', 'create', 'update', 'setDone', 'remove'],
       resources: ['list', 'create', 'remove'],
     } as const
     for (const fixture of fixtures) {
@@ -304,7 +304,7 @@ describe('A-10 — both adapters answer the same contract', () => {
     }
   })
 
-  // --- items: 4 methods -----------------------------------------------------
+  // --- items: 5 methods -----------------------------------------------------
 
   it('items.create / list round-trip a deadline through a NEW instance', async () => {
     for (const fixture of fixtures) {
@@ -353,6 +353,35 @@ describe('A-10 — both adapters answer the same contract', () => {
       await b.items.remove(created.id)
       found = (await (await fixture.reopen()).items.list()).find((i) => i.id === created.id)
       expect(found, `${fixture.name} remove`).toBeUndefined()
+    }
+  })
+
+  it('items.update edits title, subject and date through a NEW instance', async () => {
+    for (const fixture of fixtures) {
+      const b = await fixture.backend()
+      const created = await b.items.create({
+        title: 'to edit',
+        kind: 'task',
+        curriculumSubjectId: null,
+        dueAt: null,
+      })
+      const dueAt = '2026-09-01T21:30:00.000Z'
+
+      await b.items.update(created.id, {
+        title: '  Parcial editado ',
+        kind: 'midterm',
+        curriculumSubjectId: fixture.subjectId,
+        dueAt,
+      })
+      const found = (await (await fixture.reopen()).items.list()).find(
+        (i) => i.id === created.id,
+      )
+      expect(found!.title, fixture.name).toBe('Parcial editado')
+      expect(found!.kind, fixture.name).toBe('midterm')
+      expect(found!.curriculumSubjectId, fixture.name).toBe(fixture.subjectId)
+      expect(new Date(found!.dueAt!).toISOString(), `${fixture.name} dueAt`).toBe(dueAt)
+
+      await b.items.remove(created.id)
     }
   })
 

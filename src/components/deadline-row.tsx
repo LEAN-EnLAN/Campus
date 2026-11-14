@@ -5,6 +5,8 @@ import type { AcademicItem, AcademicItemKind } from '@/domain/types'
 import { dueTimeLabel } from '@/features/items/due'
 import { cn } from '@/lib/utils'
 
+import { ItemRowActions } from './item-row-actions'
+
 const KIND_LABEL: Record<AcademicItemKind, string> = {
   task: 'Tarea',
   assignment: 'Entrega',
@@ -30,6 +32,8 @@ export function DeadlineRow({
   subjectName,
   subjectId,
   onToggle,
+  onEdit,
+  onDelete,
   overdue = false,
   dayLabel,
   className,
@@ -38,6 +42,8 @@ export function DeadlineRow({
   subjectName?: string | null
   subjectId?: string | null
   onToggle?: (done: boolean) => void
+  onEdit?: () => void
+  onDelete?: () => void
   overdue?: boolean
   /**
    * Which day this falls on. Required outside a section that already states the
@@ -131,6 +137,8 @@ export function DeadlineRow({
           ) : null}
         </span>
       </span>
+
+      <ItemRowActions title={item.title} onEdit={onEdit} onDelete={onDelete} />
     </div>
   )
 }

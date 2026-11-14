@@ -15,6 +15,7 @@ import {
   assertUniformBatch,
   normalizeContextInput,
   normalizeItemInput,
+  normalizeItemPatch,
   normalizeManualSubjectInput,
   normalizeResourceInput,
   unknownManualIds,
@@ -28,6 +29,7 @@ import type {
   CurriculumBundle,
   SaveContextInput,
   SetSubjectStatusInput,
+  UpdateItemPatch,
 } from '@/lib/backends/types'
 import type { VaultAccess } from '@/lib/vault/vault-access'
 
@@ -266,6 +268,19 @@ export class LocalBackend implements CampusBackend {
         item,
       ])
       return item
+    },
+
+    update: async (id: string, patch: UpdateItemPatch): Promise<AcademicItem> => {
+      const clean = normalizeItemPatch(patch)
+      const box: { updated?: AcademicItem } = {}
+      await store.update<AcademicItem[]>(this.vault, 'items', 'items', [], (items) => {
+        const current = items.find((i) => i.id === id)
+        if (!current) backendError('No encontramos esa fecha', `unknown item ${id}`)
+        const next: AcademicItem = { ...current, ...clean }
+        box.updated = next
+        return items.map((i) => (i.id === id ? next : i))
+      })
+      return box.updated!
     },
 
     setDone: async (id: string, done: boolean): Promise<void> => {

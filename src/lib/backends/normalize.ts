@@ -8,6 +8,7 @@ import {
   type CreateResourceInput,
   type SaveContextInput,
   type SetSubjectStatusInput,
+  type UpdateItemPatch,
 } from './types'
 
 /**
@@ -68,6 +69,28 @@ export function normalizeItemInput(input: CreateItemInput) {
     dueAt: input.dueAt,
     notes: blankToNull(input.notes),
   }
+}
+
+/**
+ * The same rules as `normalizeItemInput`, for an edit: only the keys present
+ * survive, and a title can be changed but never emptied.
+ */
+export function normalizeItemPatch(patch: UpdateItemPatch): UpdateItemPatch {
+  const clean: UpdateItemPatch = {}
+  if (patch.title !== undefined) {
+    const title = patch.title.trim()
+    if (!title)
+      backendError('No pudimos guardar los cambios', 'el título no puede quedar vacío')
+    clean.title = title
+  }
+  if (patch.kind !== undefined) clean.kind = patch.kind
+  if (patch.curriculumSubjectId !== undefined)
+    clean.curriculumSubjectId = patch.curriculumSubjectId
+  if (patch.startsAt !== undefined) clean.startsAt = patch.startsAt
+  if (patch.dueAt !== undefined) clean.dueAt = patch.dueAt
+  if (patch.notes !== undefined) clean.notes = blankToNull(patch.notes)
+  if (patch.status !== undefined) clean.status = patch.status
+  return clean
 }
 
 /** A link keeps only its url, a note only its body — whatever the caller also sent. */

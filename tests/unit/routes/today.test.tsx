@@ -19,6 +19,10 @@ const state = vi.hoisted(() => ({
   setStatus: vi.fn(),
   createAsync: vi.fn<(values: QuickCaptureValues) => Promise<void>>(),
   resetCreate: vi.fn(),
+  updateAsync:
+    vi.fn<(input: { id: string; patch: Record<string, unknown> }) => Promise<void>>(),
+  deleteAsync: vi.fn<(id: string) => Promise<void>>(),
+  deleteError: null as Error | null,
 }))
 
 vi.mock('@/features/items/queries', () => ({
@@ -34,6 +38,18 @@ vi.mock('@/features/items/queries', () => ({
     reset: state.resetCreate,
     isPending: false,
     error: null,
+  }),
+  useUpdateAcademicItem: () => ({
+    mutateAsync: state.updateAsync,
+    reset: vi.fn(),
+    isPending: false,
+    error: null,
+  }),
+  useDeleteAcademicItem: () => ({
+    mutateAsync: state.deleteAsync,
+    reset: vi.fn(),
+    isPending: false,
+    error: state.deleteError,
   }),
 }))
 vi.mock('@/features/academic/queries', () => ({
@@ -81,6 +97,9 @@ beforeEach(() => {
   state.setStatus = vi.fn()
   state.createAsync = vi.fn().mockResolvedValue(undefined)
   state.resetCreate = vi.fn()
+  state.updateAsync = vi.fn().mockResolvedValue(undefined)
+  state.deleteAsync = vi.fn().mockResolvedValue(undefined)
+  state.deleteError = null
 })
 
 describe('Hoy', () => {
@@ -288,5 +307,92 @@ describe('Hoy: completing a Final', () => {
 
     expect(state.toggle).not.toHaveBeenCalled()
     expect(state.setStatus).not.toHaveBeenCalled()
+  })
+})
+
+describe('Hoy: editing and deleting an item', () => {
+  it('keeps the toggle named "Marcar X como hecho" next to the new actions', async () => {
+    state.items = [item('Leer', { dueAt: at(0, 23) })]
+    mount()
+
+    expect(
+      await screen.findByRole('button', { name: 'Marcar Leer como hecho' }),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Editar Leer' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Eliminar Leer' })).toBeInTheDocument()
+  })
+
+  it('edits in the capture dialog, prefilled, and says "Guardado"', async () => {
+    const user = userEvent.setup()
+    state.items = [item('Parcial 1', { kind: 'midterm', dueAt: at(2, 18) })]
+    mount()
+
+    await user.click(await screen.findByRole('button', { name: 'Editar Parcial 1' }))
+    const dialog = screen.getByRole('dialog', { name: 'Editar parcial' })
+    const title = within(dialog).getByRole('textbox', { name: '¿Qué es?' })
+    expect(title).toHaveValue('Parcial 1')
+    expect(within(dialog).getByLabelText('Hora')).toHaveValue('18:00')
+
+    await user.clear(title)
+    await user.type(title, 'Parcial 1 de Álgebra')
+    await user.click(within(dialog).getByRole('button', { name: 'Guardar cambios' }))
+
+    expect(state.updateAsync).toHaveBeenCalledWith({
+      id: 'Parcial 1',
+      patch: {
+        title: 'Parcial 1 de Álgebra',
+        kind: 'midterm',
+        curriculumSubjectId: null,
+        dueAt: at(2, 18),
+      },
+    })
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+    expect(screen.getByRole('status')).toHaveTextContent('Guardado: Parcial 1 de Álgebra')
+  })
+
+  it('asks before deleting, and deletes on "Eliminar"', async () => {
+    const user = userEvent.setup()
+    state.items = [item('TP 2', { dueAt: at(1) })]
+    mount()
+
+    await user.click(await screen.findByRole('button', { name: 'Eliminar TP 2' }))
+    const confirm = screen.getByRole('alertdialog', { name: '¿Eliminar «TP 2»?' })
+    expect(confirm).toHaveAccessibleDescription(/No se puede deshacer/)
+    await waitFor(() =>
+      expect(within(confirm).getByRole('button', { name: 'Cancelar' })).toHaveFocus(),
+    )
+    expect(state.deleteAsync).not.toHaveBeenCalled()
+
+    await user.click(within(confirm).getByRole('button', { name: 'Eliminar' }))
+
+    expect(state.deleteAsync).toHaveBeenCalledWith('TP 2')
+    await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull())
+    expect(screen.getByRole('status')).toHaveTextContent('Eliminado: TP 2')
+  })
+
+  it('deletes nothing when the student cancels', async () => {
+    const user = userEvent.setup()
+    state.items = [item('TP 2', { dueAt: at(1) })]
+    mount()
+
+    await user.click(await screen.findByRole('button', { name: 'Eliminar TP 2' }))
+    await user.click(screen.getByRole('button', { name: 'Cancelar' }))
+
+    expect(screen.queryByRole('alertdialog')).toBeNull()
+    expect(state.deleteAsync).not.toHaveBeenCalled()
+  })
+
+  it('keeps the confirmation open with the reason when deleting fails', async () => {
+    const user = userEvent.setup()
+    state.items = [item('TP 2', { dueAt: at(1) })]
+    state.deleteAsync = vi.fn().mockRejectedValue(new Error('No pudimos borrar la entrega'))
+    state.deleteError = new Error('No pudimos borrar la entrega')
+    mount()
+
+    await user.click(await screen.findByRole('button', { name: 'Eliminar TP 2' }))
+    await user.click(screen.getByRole('button', { name: 'Eliminar' }))
+
+    expect(screen.getByRole('alertdialog')).toBeInTheDocument()
+    expect(screen.getByRole('alert')).toHaveTextContent('No pudimos borrar la entrega')
   })
 })

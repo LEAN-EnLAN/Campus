@@ -109,7 +109,7 @@ All run unchanged in the WebView; Rust owner = "unchanged (WebView)". File: `src
 | academic.manualSubjects | manual-subjects.json | local-backend.ts:203-211 |
 | academic.addManualSubject | manual-subjects.json | local-backend.ts:213-231 |
 | academic.removeManualSubject | manual-subjects.json | local-backend.ts:233-241 |
-| items.list / create / setDone / remove | items.json | local-backend.ts:246-285 |
+| items.list / create / update / setDone / remove | items.json | local-backend.ts:246-285 |
 | resources.list / create / remove | resources.json | local-backend.ts:287-319 |
 
 ## 6. CLI commands and MCP tools

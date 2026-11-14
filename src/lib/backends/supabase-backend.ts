@@ -33,6 +33,7 @@ import {
   nextManualStatus,
   normalizeContextInput,
   normalizeItemInput,
+  normalizeItemPatch,
   normalizeManualSubjectInput,
   normalizeResourceInput,
 } from './normalize'
@@ -427,6 +428,30 @@ export function createSupabaseBackend(client?: SupabaseClient): CampusBackend {
           .select(ITEM_COLUMNS)
           .single()
         if (error) backendError('No pudimos guardar la entrega', error.message)
+        return toAcademicItem(data as AcademicItemRow)
+      },
+
+      async update(id, patch) {
+        const clean = normalizeItemPatch(patch)
+        const row: Record<string, unknown> = {}
+        if (clean.title !== undefined) row.title = clean.title
+        if (clean.kind !== undefined) row.kind = clean.kind
+        if (clean.startsAt !== undefined) row.starts_at = clean.startsAt
+        if (clean.dueAt !== undefined) row.due_at = clean.dueAt
+        if (clean.notes !== undefined) row.notes = clean.notes
+        if (clean.status !== undefined) row.status = clean.status
+        // Both subject columns are written together, so the one-subject check
+        // and the (manual_subject_id, user_id) owner key hold after a move.
+        if (clean.curriculumSubjectId !== undefined)
+          Object.assign(row, await subjectColumns(supabase, clean.curriculumSubjectId))
+
+        const query =
+          Object.keys(row).length === 0
+            ? supabase.from('academic_items').select(ITEM_COLUMNS).eq('id', id)
+            : supabase.from('academic_items').update(row).eq('id', id).select(ITEM_COLUMNS)
+        const { data, error } = await query.maybeSingle()
+        if (error) backendError('No pudimos guardar los cambios', error.message)
+        if (!data) backendError('No encontramos esa fecha', `unknown item ${id}`)
         return toAcademicItem(data as AcademicItemRow)
       },
 

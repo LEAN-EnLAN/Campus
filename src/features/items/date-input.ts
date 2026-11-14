@@ -1,4 +1,4 @@
-import { dateOnlyDueAt } from './due'
+import { dateOnlyDueAt, hasUserTime } from './due'
 
 /**
  * Dates and times as a student types them.
@@ -39,6 +39,23 @@ export function parseTimeInput(text: string): TimeParts | null {
   if (!match) return null
   const [hours, minutes] = [Number(match[1]), Number(match[2])]
   return hours <= 23 && minutes <= 59 ? { hours, minutes } : null
+}
+
+const pad = (n: number) => String(n).padStart(2, '0')
+
+/**
+ * The text the form shows for a stored instant — the inverse of `combineDue`.
+ *
+ * `dd/mm/aaaa` always; `hh:mm` only when the student typed a time. A date-only
+ * item opens with the time EMPTY, never with the 23:59 that stands in for it.
+ */
+export function dueToInputs(iso: string | null): { date: string; time: string } {
+  const date = iso ? new Date(iso) : null
+  if (!date || Number.isNaN(date.getTime())) return { date: '', time: '' }
+  return {
+    date: `${pad(date.getDate())}/${pad(date.getMonth() + 1)}/${date.getFullYear()}`,
+    time: hasUserTime(iso) ? `${pad(date.getHours())}:${pad(date.getMinutes())}` : '',
+  }
 }
 
 /**

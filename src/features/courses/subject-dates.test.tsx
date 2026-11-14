@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import userEvent from '@testing-library/user-event'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { AcademicItem } from '@/domain/types'
 import { dateOnlyDueAt } from '@/features/items/due'
@@ -50,5 +51,35 @@ describe('the Fechas row of a course', () => {
   it('says Sin fecha for an undated item', () => {
     mount(null)
     expect(screen.getByText('Sin fecha')).toBeInTheDocument()
+  })
+})
+
+describe('editing and deleting from a course', () => {
+  it('names each action after the item, beside the toggle', async () => {
+    const user = userEvent.setup()
+    const onEdit = vi.fn()
+    const onDelete = vi.fn()
+    render(
+      <SubjectDateRow
+        item={item(null)}
+        onToggle={() => {}}
+        onEdit={onEdit}
+        onDelete={onDelete}
+      />,
+    )
+
+    expect(
+      screen.getByRole('button', { name: 'Marcar Entrega como hecho' }),
+    ).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Editar Entrega' }))
+    await user.click(screen.getByRole('button', { name: 'Eliminar Entrega' }))
+
+    expect(onEdit).toHaveBeenCalledOnce()
+    expect(onDelete).toHaveBeenCalledOnce()
+  })
+
+  it('shows no actions where the screen offers none', () => {
+    mount(null)
+    expect(screen.queryByRole('button', { name: /Editar|Eliminar/ })).toBeNull()
   })
 })

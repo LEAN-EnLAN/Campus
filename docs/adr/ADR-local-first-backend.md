@@ -84,6 +84,7 @@ export interface CampusBackend {
   items: {
     list(): Promise<AcademicItem[]>
     create(input: CreateItemInput): Promise<AcademicItem>
+    update(id: string, patch: UpdateItemPatch): Promise<AcademicItem>
     setDone(id: string, done: boolean): Promise<void>
     remove(id: string): Promise<void>
   }

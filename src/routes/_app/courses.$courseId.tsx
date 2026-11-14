@@ -25,6 +25,7 @@ import {
   useResources,
   useToggleAcademicItem,
 } from '@/features/items/queries'
+import { useItemActions } from '@/features/items/use-item-actions'
 
 export const Route = createFileRoute('/_app/courses/$courseId')({
   component: CourseDetailScreen,
@@ -61,6 +62,7 @@ function CourseDetailScreen() {
   const createItem = useCreateAcademicItem()
   const createResource = useCreateResource()
   const deleteResource = useDeleteResource()
+  const itemActions = useItemActions({ subjects: plan.views, items: itemsQuery.data ?? [] })
 
   const [captureOpen, setCaptureOpen] = useState(false)
   const [resourceDialogOpen, setResourceDialogOpen] = useState(false)
@@ -209,6 +211,8 @@ function CourseDetailScreen() {
                     key={item.id}
                     item={item}
                     onToggle={(done) => toggleItem.mutate({ id: item.id, done })}
+                    onEdit={() => itemActions.edit(item)}
+                    onDelete={() => itemActions.remove(item)}
                   />
                 ))}
               </div>
@@ -423,6 +427,7 @@ function CourseDetailScreen() {
         isPending={createItem.isPending}
         error={createItem.error ? (createItem.error as Error).message : null}
       />
+      {itemActions.dialogs}
     </div>
   )
 }

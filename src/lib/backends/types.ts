@@ -2,6 +2,7 @@ import type {
   AcademicContext,
   AcademicItem,
   AcademicItemKind,
+  AcademicItemStatus,
   AcademicUnit,
   Curriculum,
   CurriculumSubject,
@@ -65,6 +66,11 @@ export interface CampusBackend {
   items: {
     list(): Promise<AcademicItem[]>
     create(input: CreateItemInput): Promise<AcademicItem>
+    /**
+     * Change what the student wrote about an item. Only the keys present in
+     * `patch` change; an unknown id is an error, never a quiet no-op.
+     */
+    update(id: string, patch: UpdateItemPatch): Promise<AcademicItem>
     setDone(id: string, done: boolean): Promise<void>
     remove(id: string): Promise<void>
   }
@@ -137,6 +143,24 @@ export interface CreateItemInput {
   curriculumSubjectId: string | null
   dueAt: string | null
   notes?: string | null
+}
+
+/**
+ * An edit to an item. Absent keys are left as they are; `null` clears.
+ *
+ * `dueAt` / `startsAt` are stored exactly as given: the date-only marker
+ * (`features/items/due.ts`) travels inside the instant, so a backend must never
+ * re-derive or round it.
+ */
+export interface UpdateItemPatch {
+  title?: string
+  kind?: AcademicItemKind
+  /** A catalog subject or one the student typed in; `null` for none. */
+  curriculumSubjectId?: string | null
+  startsAt?: string | null
+  dueAt?: string | null
+  notes?: string | null
+  status?: AcademicItemStatus
 }
 
 export interface CreateResourceInput {

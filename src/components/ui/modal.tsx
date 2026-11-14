@@ -24,6 +24,8 @@ export function Modal({
   initialFocus,
   children,
   className,
+  role = 'dialog',
+  describedBy,
 }: {
   open: boolean
   onClose: () => void
@@ -33,6 +35,10 @@ export function Modal({
   initialFocus?: RefObject<HTMLElement | null>
   children: ReactNode
   className?: string
+  /** `alertdialog` for a confirmation that interrupts, like deleting something. */
+  role?: 'dialog' | 'alertdialog'
+  /** Id of the element that explains it — what an alert dialog is asking. */
+  describedBy?: string
 }) {
   const panelRef = useRef<HTMLDivElement>(null)
   const restoreFocusTo = useRef<HTMLElement | null>(null)
@@ -97,9 +103,10 @@ export function Modal({
 
       <div
         ref={panelRef}
-        role="dialog"
+        role={role}
         aria-modal="true"
         aria-labelledby={labelledBy}
+        aria-describedby={describedBy}
         className={cn(
           'border-rule bg-paper-elevated relative w-full max-w-lg border shadow-lg',
           'rounded-t-xl sm:rounded-xl',

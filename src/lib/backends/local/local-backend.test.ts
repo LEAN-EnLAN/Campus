@@ -69,11 +69,11 @@ describe('the seam', () => {
         'addManualSubject',
         'removeManualSubject',
       ].sort(),
-      items: ['create', 'list', 'remove', 'setDone'],
+      items: ['create', 'list', 'remove', 'setDone', 'update'],
       resources: ['create', 'list', 'remove'],
     })
     const count = Object.values(shape).reduce((n, k) => n + k.length, 0)
-    expect(count).toBe(20)
+    expect(count).toBe(21)
   })
 })
 

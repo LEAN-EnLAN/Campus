@@ -2,7 +2,12 @@ import { useEffect, useId, useRef, useState } from 'react'
 
 import type { AcademicItem, AcademicItemKind, SubjectView } from '@/domain/types'
 import { finalNoteSentence, finalPrerequisiteNote } from '@/features/items/final-check'
-import { combineDue, parseDateInput, parseTimeInput } from '@/features/items/date-input'
+import {
+  combineDue,
+  dueToInputs,
+  parseDateInput,
+  parseTimeInput,
+} from '@/features/items/date-input'
 import { Button } from './ui/button'
 import { Modal } from './ui/modal'
 import { SelectField, TextField } from './ui/field'
@@ -38,6 +43,17 @@ const TITLE_BY_KIND: Record<AcademicItemKind, string> = {
   custom: 'Agregar fecha',
 }
 
+/** The same dialog, editing: "Editar parcial", never a second form. */
+const EDIT_TITLE_BY_KIND: Record<AcademicItemKind, string> = {
+  assignment: 'Editar entrega',
+  midterm: 'Editar parcial',
+  final: 'Editar final',
+  task: 'Editar tarea',
+  registration: 'Editar inscripción',
+  class: 'Editar clase',
+  custom: 'Editar fecha',
+}
+
 export interface QuickCaptureValues {
   title: string
   kind: AcademicItemKind
@@ -54,6 +70,7 @@ export function QuickCapture({
   onSubmit,
   isPending = false,
   error = null,
+  item = null,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -64,6 +81,8 @@ export function QuickCapture({
   onSubmit: (values: QuickCaptureValues) => Promise<void> | void
   isPending?: boolean
   error?: string | null
+  /** The item being edited. Absent, the dialog adds a new one. */
+  item?: AcademicItem | null
 }) {
   const titleId = useId()
   const firstFieldRef = useRef<HTMLInputElement>(null)
@@ -80,21 +99,33 @@ export function QuickCapture({
   const dateRef = useRef<HTMLInputElement>(null)
   const timeRef = useRef<HTMLInputElement>(null)
 
-  // Reset on open so a previous capture never leaks into the next one.
+  // Primitives, not the item object: a background refetch hands over a new
+  // object for the same item, and that must not wipe what the student typed.
+  const editingId = item?.id ?? null
+  const editingTitle = item?.title ?? ''
+  const editingKind = item?.kind ?? 'assignment'
+  const editingSubject = item ? (item.curriculumSubjectId ?? '') : (defaultSubjectId ?? '')
+  const editingDueAt = item?.dueAt ?? null
+  const initialDue = dueToInputs(editingDueAt)
+
+  // Reset on open so a previous capture never leaks into the next one; editing,
+  // start from what is stored.
   useEffect(() => {
     if (!open) return
-    setTitle('')
-    setKind('assignment')
-    setSubjectId(defaultSubjectId ?? '')
-    setDueDate('')
-    setDueTime('')
+    const due = dueToInputs(editingDueAt)
+    setTitle(editingTitle)
+    setKind(editingKind)
+    setSubjectId(editingSubject)
+    setDueDate(due.date)
+    setDueTime(due.time)
     setTouched(false)
     setSubmitted(false)
     const timer = window.setTimeout(() => firstFieldRef.current?.focus(), 20)
     return () => window.clearTimeout(timer)
-  }, [open, defaultSubjectId])
+  }, [open, editingId, editingTitle, editingKind, editingSubject, editingDueAt])
 
   if (!open) return null
+  const editing = editingId !== null
 
   const trimmed = title.trim()
   const titleError = touched && trimmed.length === 0 ? 'Poné un título.' : null
@@ -124,7 +155,8 @@ export function QuickCapture({
       startsAt: null,
     },
     subjects,
-    items,
+    // The stored copy of the item being edited is stale by definition.
+    editing ? items.filter((other) => other.id !== editingId) : items,
   )
 
   async function handleSubmit(event: React.FormEvent) {
@@ -153,7 +185,11 @@ export function QuickCapture({
       kind,
       curriculumSubjectId: subjectId || null,
       // A date with no time is DATE-ONLY, recorded as such; it is not due at 23:59.
-      dueAt: combineDue(date, time),
+      // An edit that left the date alone keeps the stored instant exactly.
+      dueAt:
+        editing && dueDate === initialDue.date && dueTime === initialDue.time
+          ? editingDueAt
+          : combineDue(date, time),
     })
   }
 
@@ -173,10 +209,12 @@ export function QuickCapture({
         className="flex flex-col gap-4 p-4 sm:p-6"
       >
         <h2 id={titleId} className="text-ink font-serif text-lg">
-          {TITLE_BY_KIND[kind]}
+          {(editing ? EDIT_TITLE_BY_KIND : TITLE_BY_KIND)[kind]}
         </h2>
         <p className="text-ink-muted -mt-2 text-sm">
-          Anotá lo importante. La materia y la fecha son opcionales.
+          {editing
+            ? 'Cambiá lo que necesites. La materia y la fecha son opcionales.'
+            : 'Anotá lo importante. La materia y la fecha son opcionales.'}
         </p>
 
         <TextField
@@ -211,6 +249,11 @@ export function QuickCapture({
             hint={subjects.length === 0 ? 'Todavía no tenés materias cargadas.' : undefined}
           >
             <option value="">Sin materia</option>
+            {/* An item whose subject is no longer in the plan keeps it unless
+                the student picks another: an edit never clears it silently. */}
+            {subjectId && !subjects.some((s) => s.id === subjectId) ? (
+              <option value={subjectId}>Materia actual</option>
+            ) : null}
             {subjects.map((s) => (
               <option key={s.id} value={s.id}>
                 {s.name}
@@ -262,7 +305,7 @@ export function QuickCapture({
             Cancelar
           </Button>
           <Button type="submit" variant="primary" disabled={isPending}>
-            {isPending ? 'Guardando…' : 'Guardar'}
+            {isPending ? 'Guardando…' : editing ? 'Guardar cambios' : 'Guardar'}
           </Button>
         </div>
       </form>

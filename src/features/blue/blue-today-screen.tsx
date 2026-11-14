@@ -10,10 +10,11 @@ import { QuickCapture, type QuickCaptureValues } from '@/components/quick-captur
 import { Button } from '@/components/ui/button'
 import { Illustration } from '@/components/ui/illustration'
 import type { AgendaEntry } from '@/domain/agenda'
-import type { SubjectView } from '@/domain/types'
+import type { AcademicItem, SubjectView } from '@/domain/types'
 import { useAcademicPlan } from '@/features/academic/queries'
 import { useAcademicItems, useCreateAcademicItem } from '@/features/items/queries'
 import { useCompleteItem } from '@/features/items/use-complete-item'
+import { useItemActions } from '@/features/items/use-item-actions'
 import { buildToday, daysLeftLabel } from '@/features/items/today-model'
 import { dueTimeLabel } from '@/features/items/due'
 
@@ -30,6 +31,8 @@ function BlueSection({
   rows,
   subjectName,
   onComplete,
+  onEdit,
+  onDelete,
   overdue = false,
 }: {
   id: string
@@ -37,6 +40,8 @@ function BlueSection({
   rows: (AgendaEntry & { daysLeft?: number })[]
   subjectName: (id: string | null) => string | null
   onComplete: (entry: AgendaEntry, done: boolean) => void
+  onEdit: (item: AcademicItem) => void
+  onDelete: (item: AcademicItem) => void
   overdue?: boolean
 }) {
   if (rows.length === 0) return null
@@ -56,6 +61,8 @@ function BlueSection({
             overdue={overdue}
             dayLabel={entry.daysLeft === undefined ? undefined : daysLeftLabel(entry.daysLeft)}
             onToggle={(done) => onComplete(entry, done)}
+            onEdit={() => onEdit(entry.item)}
+            onDelete={() => onDelete(entry.item)}
           />
         ))}
       </div>
@@ -109,6 +116,7 @@ export function BlueTodayScreen() {
   const subjectName = (id: string | null) =>
     id ? (plan.subjectById.get(id)?.name ?? null) : null
   const { complete, dialog } = useCompleteItem(subjectName)
+  const actions = useItemActions({ subjects: plan.views, items: itemsQuery.data ?? [] })
   const cursando = plan.views.filter((subject) => subject.status === 'in_progress')
   const finales = plan.views.filter((subject) => subject.status === 'regularized')
   const dueCount = today.today.length + today.overdue.length
@@ -141,12 +149,15 @@ export function BlueTodayScreen() {
       overdue={overdue}
       subjectName={subjectName}
       onComplete={(entry, done) => complete(entry.item, done)}
+      onEdit={actions.edit}
+      onDelete={actions.remove}
     />
   )
 
   return (
     <div className="blue-screen">
       {dialog}
+      {actions.dialogs}
       <header className="blue-screen-head">
         <div>
           <h1 className="blue-screen-title">Hoy</h1>

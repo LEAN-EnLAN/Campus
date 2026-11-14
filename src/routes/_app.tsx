@@ -7,6 +7,7 @@ import { QuickCapture, type QuickCaptureValues } from '@/components/quick-captur
 import { titleForPath } from '@/components/nav-model'
 import { ToastProvider, useToast } from '@/components/toast'
 import { SearchPalette } from '@/features/search/search-palette'
+import { InstallOfferBanner } from '@/features/install/install-offer-banner'
 import { useAcademicPlan } from '@/features/academic/queries'
 import { useRequiresAccount } from '@/lib/runtime/identity'
 import { useAuth } from '@/features/auth/auth-context'
@@ -166,6 +167,9 @@ function AppFrame() {
         onQuickCapture={() => setCaptureOpen(true)}
         onSearch={() => setSearchOpen(true)}
       >
+        {/* On Hoy only, the screen a visit starts on; from the second visit on,
+            when the browser can install. See install-offer.ts. */}
+        {pathname === '/today' ? <InstallOfferBanner /> : null}
         <Outlet />
       </AcademicShell>
 

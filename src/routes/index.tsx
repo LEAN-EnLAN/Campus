@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 
-import { IndexScreen } from '@/features/landing/index-screen'
+import { IndexScreen } from '@/app/index-screen'
 
 /**
  * `/` is Today (P-01) for anyone who uses Campus: the desktop app, a local

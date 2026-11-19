@@ -11,6 +11,7 @@ import { AssistantSettingsSection } from '@/features/assistant/assistant-setting
 import { useAuth } from '@/features/auth/auth-context'
 import { useSignOut } from '@/features/auth/use-sign-out'
 import { ExportSection } from '@/features/settings/export-section'
+import { LocalCopySection } from '@/features/settings/local-copy-section'
 import { useRequiresAccount } from '@/lib/runtime/identity'
 import { useWorkspace } from '@/lib/runtime/workspace'
 import {
@@ -305,6 +306,7 @@ export function SettingsScreen() {
           <PrivacySection />
           <AssistantSettingsSection />
           <ExportSection />
+          <LocalCopySection />
         </div>
       </div>
     </div>

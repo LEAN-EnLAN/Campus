@@ -4,11 +4,11 @@ import { lazy, Suspense } from 'react'
 import { useAuth } from '@/features/auth/auth-context'
 import { useRuntime } from '@/lib/runtime/context'
 
-import { indexDestination } from './index-destination'
+import { indexDestination } from '@/features/landing/index-destination'
 
 /** Lazy: the desktop app and signed-in students never download the landing. */
 const LandingPage = lazy(() =>
-  import('./landing-page').then((module) => ({ default: module.LandingPage })),
+  import('@/features/landing/landing-page').then((module) => ({ default: module.LandingPage })),
 )
 
 export function LandingLazy() {

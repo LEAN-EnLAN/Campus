@@ -1,6 +1,6 @@
 import { useAuth } from '@/features/auth/auth-context'
 import { indexDestination } from '@/features/landing/index-destination'
-import { LandingLazy } from '@/features/landing/index-screen'
+import { LandingLazy } from '@/app/index-screen'
 import { useRuntime } from '@/lib/runtime/context'
 
 import { Startup } from './startup'

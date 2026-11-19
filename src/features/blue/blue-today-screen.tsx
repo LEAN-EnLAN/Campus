@@ -31,6 +31,7 @@ import {
   type AgendaSection,
 } from '@/features/radar/radar-cards'
 import { useRadar } from '@/features/radar/use-radar'
+import { BriefingCard } from '@/features/assistant/briefing-card'
 
 /** Stable empty list, so the Radar does not recompute on every render while loading. */
 const NO_ITEMS: readonly AcademicItem[] = []
@@ -345,7 +346,7 @@ export function BlueTodayScreen() {
                 )}
               </div>
             )}
-            {/* assistant-briefing */}
+            <BriefingCard />
             <RadarCards insights={radar.insights} nav={radarNav} />
             {renderSection('blue-overdue', 'Atrasadas', today.overdue, true)}
             {renderSection('blue-today', 'Hoy', today.today)}

@@ -23,6 +23,13 @@ import { useAssistantSettings } from './storage'
 
 export function BriefingCard({ className }: { className?: string }) {
   const settings = useAssistantSettings()
+  // No key, no card: skip every query hook so screens without a key stay untouched.
+  if (!settings) return null
+  return <BriefingCardBody className={className} />
+}
+
+function BriefingCardBody({ className }: { className?: string }) {
+  const settings = useAssistantSettings()
   const { data } = useAssistantData()
   const queryClient = useQueryClient()
   const day = today()

@@ -338,3 +338,25 @@ describe('resolveCampusRuntime — a hosted build has no Vault API', () => {
     expect(state.status).toBe('ready')
   })
 })
+
+describe('resolveCampusRuntime — the demo', () => {
+  const demoRuntime = { mode: 'demo', backend: localBackend } as CampusRuntime
+
+  it('opens the demo when it was asked for, over a remembered vault', async () => {
+    const store = memoryStore(rememberVault({ recentVaults: [], lastRuntime: null }, VAULT))
+    const before = store.get()
+    const state = await resolveCampusRuntime(
+      caps({ store, demoRequested: true, openDemo: async () => demoRuntime }),
+    )
+    expect(state).toEqual({ status: 'ready', runtime: demoRuntime })
+    // The demo never becomes what this device reopens.
+    expect(store.get()).toBe(before)
+  })
+
+  it('is not opened unless asked for', async () => {
+    const openDemo = vi.fn(async () => demoRuntime)
+    const state = await resolveCampusRuntime(caps({ store: memoryStore(), openDemo }))
+    expect(state.status).toBe('needs-choice')
+    expect(openDemo).not.toHaveBeenCalled()
+  })
+})

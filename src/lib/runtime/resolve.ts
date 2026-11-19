@@ -44,6 +44,17 @@ export interface RuntimeCapabilities {
   cloudSession(): Promise<boolean>
   /** Build the cloud runtime. */
   openCloud(): Promise<CampusRuntime>
+  /**
+   * Did the student ask for the demo (`/demo`, or a reload inside it)? Read
+   * once at the composition root, like the build flag.
+   */
+  demoRequested?: boolean
+  /** Build a fresh demo runtime: in memory, seeded, no account. */
+  openDemo?(): Promise<CampusRuntime>
+  /** Forget the demo for this tab, so the next load resolves as usual. */
+  closeDemo?(): void
+  /** Leave the demo for good: forget it and reload at `/`. */
+  leaveDemo?(): void
 }
 
 /**
@@ -54,6 +65,13 @@ export interface RuntimeCapabilities {
  * a token was still fresh would silently move someone off their own files.
  */
 export async function resolveCampusRuntime(caps: RuntimeCapabilities): Promise<StartupState> {
+  // The demo outranks whatever this device remembers: whoever opened `/demo`
+  // asked for exactly that, and the demo never touches the device config, so
+  // their real workspace is still there when they leave.
+  if (caps.demoRequested && caps.openDemo) {
+    return { status: 'ready', runtime: await caps.openDemo() }
+  }
+
   const config = readDeviceConfig(caps.store)
   const last = config.lastRuntime
 

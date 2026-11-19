@@ -9,6 +9,7 @@ import { createRoot } from 'react-dom/client'
 import { TelemetryBridge } from '@/features/account/telemetry-bridge'
 import { AuthProvider } from '@/features/auth/auth-context'
 import { WorkspaceQueryProvider } from '@/features/auth/workspace-query-provider'
+import { DemoBanner } from '@/features/demo/demo-banner'
 import { RuntimeProvider } from '@/lib/runtime/context'
 import { ThemeProvider } from '@/lib/theme/theme-context'
 
@@ -60,6 +61,8 @@ createRoot(rootElement).render(
         >
           <WorkspaceQueryProvider>
             <TelemetryBridge />
+            {/* Above the router: the demo notice belongs to every screen. */}
+            <DemoBanner />
             <RouterProvider router={router} />
           </WorkspaceQueryProvider>
         </RuntimeProvider>

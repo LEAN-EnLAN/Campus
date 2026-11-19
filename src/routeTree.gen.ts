@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as AddRouteImport } from './routes/add'
+import { Route as DemoRouteImport } from './routes/demo'
 import { Route as DevRouteImport } from './routes/dev'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
@@ -37,6 +38,11 @@ const AppRoute = AppRouteImport.update({
 const AddRoute = AddRouteImport.update({
   id: '/add',
   path: '/add',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DemoRoute = DemoRouteImport.update({
+  id: '/demo',
+  path: '/demo',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DevRoute = DevRouteImport.update({
@@ -103,6 +109,7 @@ const AppPlanProgressRoute = AppPlanProgressRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/add': typeof AddRoute
+  '/demo': typeof DemoRoute
   '/dev': typeof DevRoute
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
@@ -119,6 +126,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/add': typeof AddRoute
+  '/demo': typeof DemoRoute
   '/dev': typeof DevRoute
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
@@ -137,6 +145,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_app': typeof AppRouteWithChildren
   '/add': typeof AddRoute
+  '/demo': typeof DemoRoute
   '/dev': typeof DevRoute
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
@@ -155,6 +164,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/add'
+    | '/demo'
     | '/dev'
     | '/login'
     | '/onboarding'
@@ -171,6 +181,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/add'
+    | '/demo'
     | '/dev'
     | '/login'
     | '/onboarding'
@@ -188,6 +199,7 @@ export interface FileRouteTypes {
     | '/'
     | '/_app'
     | '/add'
+    | '/demo'
     | '/dev'
     | '/login'
     | '/onboarding'
@@ -206,6 +218,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AppRoute: typeof AppRouteWithChildren
   AddRoute: typeof AddRoute
+  DemoRoute: typeof DemoRoute
   DevRoute: typeof DevRoute
   LoginRoute: typeof LoginRoute
   OnboardingRoute: typeof OnboardingRoute
@@ -232,6 +245,13 @@ declare module '@tanstack/react-router' {
       path: '/add'
       fullPath: '/add'
       preLoaderRoute: typeof AddRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/demo': {
+      id: '/demo'
+      path: '/demo'
+      fullPath: '/demo'
+      preLoaderRoute: typeof DemoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dev': {
@@ -351,6 +371,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AppRoute: AppRouteWithChildren,
   AddRoute: AddRoute,
+  DemoRoute: DemoRoute,
   DevRoute: DevRoute,
   LoginRoute: LoginRoute,
   OnboardingRoute: OnboardingRoute,

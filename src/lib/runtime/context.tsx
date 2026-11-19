@@ -67,6 +67,15 @@ interface RuntimeValue {
    * a mode, so it says nothing about which runtime is active.
    */
   vaultAvailable: boolean
+  /** Open the free demo in place (in memory, seeded). */
+  startDemo(): Promise<void>
+  /** Leave the demo: nothing of it is kept, and Campus starts again at `/`. */
+  leaveDemo(): void
+  /**
+   * Leave the demo for Campus Cloud, where the account is created. Rejects
+   * when this build cannot reach the cloud; the caller then just leaves.
+   */
+  demoToCloud(): Promise<void>
 }
 
 const RuntimeContext = createContext<RuntimeValue | null>(null)
@@ -140,6 +149,24 @@ export function RuntimeProvider({
     setState({ status: 'ready', runtime })
   }, [capabilities])
 
+  const startDemo = useCallback(async () => {
+    if (!capabilities.openDemo) throw new Error('Esta versión de Campus no trae la demo.')
+    const runtime = await capabilities.openDemo()
+    // Deliberately NOT written to the device config: the demo is never what
+    // this device reopens, and the student's real workspace stays remembered.
+    setState({ status: 'ready', runtime })
+  }, [capabilities])
+
+  const leaveDemo = useCallback(() => {
+    if (capabilities.leaveDemo) capabilities.leaveDemo()
+    else setState({ status: 'needs-choice' })
+  }, [capabilities])
+
+  const demoToCloud = useCallback(async () => {
+    capabilities.closeDemo?.()
+    await chooseCloud()
+  }, [capabilities, chooseCloud])
+
   const changeWorkspace = useCallback(() => {
     writeDeviceConfig(capabilities.store, leaveRuntime(readDeviceConfig(capabilities.store)))
     setState({ status: 'needs-choice' })
@@ -183,6 +210,9 @@ export function RuntimeProvider({
     forget,
     recent,
     vaultAvailable: capabilities.vaultAvailable,
+    startDemo,
+    leaveDemo,
+    demoToCloud,
     listFolders: capabilities.vaultAvailable ? capabilities.listFolders : undefined,
   }
 
@@ -190,23 +220,25 @@ export function RuntimeProvider({
     return <RuntimeContext value={value}>{fallback(value)}</RuntimeContext>
   }
 
+  const runtime = state.runtime
+  const demo = runtime.mode === 'demo'
+
   return (
     <RuntimeContext value={value}>
       {/* The only fact about the runtime that reaches routes, and it is a
           capability rather than an identity: LOCAL needs no account. */}
-      <RequiresAccountProvider value={state.runtime.mode === 'cloud'}>
+      <RequiresAccountProvider value={runtime.mode === 'cloud'}>
         <WorkspaceProvider
           value={{
-            folder: state.runtime.mode === 'local' ? state.runtime.vault : null,
-            change: changeWorkspace,
+            folder: runtime.mode === 'local' ? runtime.vault : null,
+            // "Cambiar de espacio" in the demo is leaving it.
+            change: demo ? leaveDemo : changeWorkspace,
           }}
         >
-          <BackendProvider backend={state.runtime.backend}>
+          <BackendProvider backend={runtime.backend}>
             {/* Files are a capability, not a mode: cloud simply has none, and
               every file surface renders its no-vault state from that null. */}
-            <FilesProvider
-              access={state.runtime.mode === 'local' ? state.runtime.access : null}
-            >
+            <FilesProvider access={runtime.mode === 'cloud' ? null : runtime.access}>
               {children}
             </FilesProvider>
           </BackendProvider>

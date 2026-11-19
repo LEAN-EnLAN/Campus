@@ -1,9 +1,12 @@
 import { createContext, use, useCallback, useEffect, useState, type ReactNode } from 'react'
 
-import { clampToHarmony, harmonic, toCss } from '@/lib/design/palette'
-
 import {
+  ACCENT_ATTRIBUTE,
   ACCENT_STORAGE_KEY,
+  accentIdForHue,
+  DEFAULT_ACCENT_HUE,
+  readAccentHue,
+  readThemePreference,
   resolveTheme,
   SYSTEM_DARK_QUERY,
   THEME_ATTRIBUTE,
@@ -18,38 +21,28 @@ interface ThemeValue {
   /** What that resolves to right now. */
   theme: Theme
   setPreference: (preference: ThemePreference) => void
-  /** The chosen accent hue, or null while the palette's own teal is in use. */
+  /** The chosen accent hue (an id into ACCENTS); null means Azul Campus. */
   accentHue: number | null
-  /** Pass null to go back to Tropical Teal. */
+  /** Pass null to go back to Azul Campus. */
   setAccentHue: (hue: number | null) => void
 }
 
 /**
- * Repaint the accent from one hue.
- *
- * The accent is four tokens, not one — the fill, its soft surface, the ink on
- * that surface, and the ink that goes ON the fill. Deriving all four from the
- * hue through `harmonic` is what makes a chosen colour a member of the palette
- * rather than a stain on it: the lightness and chroma come from the envelope,
- * and only the hue comes from the student.
+ * Paint the accent: one attribute on <html>. The colours themselves live in
+ * tokens.css, per accent AND per theme, for the root and every blue scope —
+ * an inline custom property on <html> would be overridden by `.campus-blue`,
+ * which is exactly why the old picker did nothing.
  */
-function applyAccent(hue: number | null, theme: Theme) {
-  const root = document.documentElement
-  const vars = ['--color-accent', '--color-accent-soft', '--color-accent-ink', '--color-focus']
+function applyAccent(hue: number | null) {
+  document.documentElement.setAttribute(ACCENT_ATTRIBUTE, accentIdForHue(hue))
+}
 
-  if (hue === null) {
-    // Remove rather than write the default back: the stylesheet already holds
-    // it, and two sources for one value is how they drift.
-    for (const name of vars) root.style.removeProperty(name)
-    return
+function readStored(key: string): string | null {
+  try {
+    return localStorage.getItem(key)
+  } catch {
+    return null
   }
-
-  const safe = clampToHarmony({ l: 0, c: 0, h: hue }).h
-  root.style.setProperty('--color-accent', toCss(harmonic(safe, 'subject', theme)))
-  root.style.setProperty('--color-accent-soft', toCss(harmonic(safe, 'soft', theme)))
-  root.style.setProperty('--color-accent-ink', toCss(harmonic(safe, 'ink', theme)))
-  // The ring follows the accent's hue at the ink lightness, which clears 3:1.
-  root.style.setProperty('--color-focus', toCss(harmonic(safe, 'ink', theme)))
 }
 
 const ThemeContext = createContext<ThemeValue | null>(null)
@@ -62,18 +55,14 @@ const ThemeContext = createContext<ThemeValue | null>(null)
  * dark room and a desktop under a window are allowed to disagree.
  */
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  // Proposal 2 has a single supported light/blue visual identity. Migrate old
-  // device preferences on first load instead of showing dark for one frame.
-  const [preference, setPreferenceState] = useState<ThemePreference>('light')
-  const [accentHue, setAccentHueState] = useState<number | null>(225)
-  useEffect(() => {
-    try {
-      localStorage.setItem(THEME_STORAGE_KEY, 'light')
-      localStorage.setItem(ACCENT_STORAGE_KEY, '225')
-    } catch {
-      // Read-only storage must not prevent using the app.
-    }
-  }, [])
+  // Read once from the device. The boot script in index.html has already put
+  // the same answer on <html>, so the first paint and this state agree.
+  const [preference, setPreferenceState] = useState<ThemePreference>(() =>
+    readThemePreference(readStored(THEME_STORAGE_KEY)),
+  )
+  const [accentHue, setAccentHueState] = useState<number | null>(
+    () => readAccentHue(readStored(ACCENT_STORAGE_KEY)) ?? DEFAULT_ACCENT_HUE,
+  )
   useEffect(() => {
     const refresh = () => {
       const hour = new Date().getHours()
@@ -113,11 +102,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     document.documentElement.setAttribute(THEME_ATTRIBUTE, theme)
   }, [theme])
 
-  // Re-derived on every theme change too: the same hue needs a different
-  // lightness to read on Linen and on Shadow Grey.
   useEffect(() => {
-    applyAccent(accentHue, theme)
-  }, [accentHue, theme])
+    applyAccent(accentHue)
+  }, [accentHue])
 
   const setAccentHue = useCallback((hue: number | null) => {
     setAccentHueState(hue)

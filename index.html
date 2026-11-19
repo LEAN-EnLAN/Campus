@@ -12,7 +12,7 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content"
     />
-    <meta name="color-scheme" content="light" />
+    <meta name="color-scheme" content="light dark" />
     <meta name="theme-color" content="#10224a" />
 
     <!--
@@ -26,12 +26,28 @@
     -->
     <script>
       ;(function () {
+        var root = document.documentElement
+        // Hue -> accent id. Repeats ACCENTS in theme.ts (pinned by theme.test.ts).
+        var accents = { 225: 'azul', 250: 'indigo', 150: 'verde', 30: 'coral', 290: 'violeta' }
+        var theme = 'light'
+        var accent = 'azul'
         try {
-          document.documentElement.setAttribute('data-theme', 'light')
+          var stored = localStorage.getItem('campus.theme')
+          var preference =
+            stored === 'light' || stored === 'dark' || stored === 'system' ? stored : 'system'
+          theme =
+            preference === 'system'
+              ? window.matchMedia('(prefers-color-scheme: dark)').matches
+                ? 'dark'
+                : 'light'
+              : preference
+          accent = accents[localStorage.getItem('campus.accent-hue')] || 'azul'
         } catch (_) {
-          // No storage, no matchMedia, a locked-down browser. Light is the
-          // documented default and the stylesheet already renders it.
+          // No storage, no matchMedia, a locked-down browser: light + Azul Campus,
+          // the documented defaults the stylesheet already renders.
         }
+        root.setAttribute('data-theme', theme)
+        root.setAttribute('data-accent', accent)
       })()
     </script>
     <meta

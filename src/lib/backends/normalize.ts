@@ -1,4 +1,5 @@
 import { manualProblem } from '@/domain/manual-subjects'
+import { materialFileProblem } from '@/domain/material-file'
 import type { ManualSubject, StoredSubjectStatus, UserSubjectState } from '@/domain/types'
 
 import {
@@ -95,6 +96,10 @@ export function normalizeItemPatch(patch: UpdateItemPatch): UpdateItemPatch {
 
 /** A link keeps only its url, a note only its body — whatever the caller also sent. */
 export function normalizeResourceInput(input: CreateResourceInput) {
+  if (input.kind === 'file') {
+    const problem = materialFileProblem(input.file)
+    if (problem) backendError('No pudimos subir el archivo', problem)
+  }
   return {
     title: input.title.trim(),
     kind: input.kind,

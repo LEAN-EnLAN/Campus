@@ -30,9 +30,9 @@ function backendWithResources(resources: Resource[] = []) {
           curriculumSubjectId: input.curriculumSubjectId,
           kind: input.kind,
           title: input.title,
-          url: input.url,
-          storagePath: null,
-          body: input.body,
+          url: input.kind === 'file' ? null : input.url,
+          storagePath: input.kind === 'file' ? `u/${input.file.name}` : null,
+          body: input.kind === 'file' ? null : input.body,
           createdAt: '2026-11-03T12:00:00Z',
         }
         resources.push(created)

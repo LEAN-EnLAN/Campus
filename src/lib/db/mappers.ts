@@ -119,6 +119,8 @@ export interface ResourceRow {
   storage_path: string | null
   body: string | null
   created_at: string
+  mime_type?: string | null
+  size_bytes?: number | null
 }
 
 export interface AcademicContextRow {
@@ -251,6 +253,8 @@ export function toResource(row: ResourceRow): Resource {
     storagePath: row.storage_path,
     body: row.body,
     createdAt: row.created_at,
+    mimeType: row.mime_type ?? null,
+    sizeBytes: row.size_bytes ?? null,
   }
 }
 

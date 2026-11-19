@@ -20,7 +20,7 @@ function rows(text: string): RawImportRow[] {
 describe('parsePlanImport — CSV', () => {
   it('reads an Excel es-AR export: BOM, ; separator, header, CRLF, quoted fields', () => {
     const text =
-      '﻿nombre;año;cuatrimestre;estado\r\n' +
+      '\uFEFFnombre;año;cuatrimestre;estado\r\n' +
       'Materia A;1;1c;aprobada\r\n' +
       '"Materia; con punto y coma";2;2°;Cursando\r\n'
     expect(rows(text)).toEqual([
@@ -95,7 +95,14 @@ describe('parsePlanImport — JSON', () => {
     ])
     expect(rows(text)).toEqual([
       { line: 1, name: 'Materia A', yearLevel: 1, term: null, status: null, problem: null },
-      { line: 2, name: 'Materia B', yearLevel: 2, term: '1c', status: 'regularized', problem: null },
+      {
+        line: 2,
+        name: 'Materia B',
+        yearLevel: 2,
+        term: '1c',
+        status: 'regularized',
+        problem: null,
+      },
     ])
   })
 
@@ -165,7 +172,10 @@ describe('resolveImport', () => {
   })
 
   it('fills a missing term with the chosen default', () => {
-    expect(resolveImport([raw({})], [], '2c')[0]).toMatchObject({ term: '2c', outcome: 'ready' })
+    expect(resolveImport([raw({})], [], '2c')[0]).toMatchObject({
+      term: '2c',
+      outcome: 'ready',
+    })
   })
 
   it('reuses the manual form validation for name and year', () => {
@@ -174,7 +184,10 @@ describe('resolveImport', () => {
       [],
       'anual',
     )
-    expect(blank).toMatchObject({ outcome: 'invalid', reason: 'Escribí el nombre de la materia.' })
+    expect(blank).toMatchObject({
+      outcome: 'invalid',
+      reason: 'Escribí el nombre de la materia.',
+    })
     expect(year).toMatchObject({ outcome: 'invalid', reason: 'Elegí un año entre 1 y 10.' })
   })
 

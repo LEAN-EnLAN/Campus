@@ -15,8 +15,7 @@ import type { StoredSubjectStatus, Term } from './types'
 export const IMPORT_MAX_ROWS = 300
 
 export const IMPORT_TEMPLATE_CSV =
-  'nombre;año;cuatrimestre;estado\r\n' +
-  'Nombre de la materia;1;1c;cursando\r\n'
+  'nombre;año;cuatrimestre;estado\r\n' + 'Nombre de la materia;1;1c;cursando\r\n'
 
 export interface RawImportRow {
   /** 1-based line (CSV) or position (JSON) in what the student gave us. */
@@ -32,17 +31,11 @@ export interface RawImportRow {
 }
 
 export type ParseImportResult =
-  | { ok: true; rows: RawImportRow[] }
-  | { ok: false; error: string }
+  { ok: true; rows: RawImportRow[] } | { ok: false; error: string }
 
 /** Lowercase, no accents, collapsed whitespace — for comparing what people type. */
 export function foldText(text: string): string {
-  return text
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .toLowerCase()
-    .replace(/\s+/g, ' ')
-    .trim()
+  return text.normalize('NFD').replace(/[\u0300-\u036F]/g, '').toLowerCase().replace(/\s+/g, ' ').trim()
 }
 
 // --- Values -----------------------------------------------------------------
@@ -225,7 +218,7 @@ function parseJson(text: string): ParseImportResult {
 
 /** Read pasted text or a file's contents. JSON when it looks like JSON, CSV otherwise. */
 export function parsePlanImport(input: string): ParseImportResult {
-  const text = input.replace(/^﻿/, '')
+  const text = input.replace(/^\uFEFF/, '')
   if (text.trim() === '') return { ok: true, rows: [] }
   const result = text.trimStart().startsWith('[') ? parseJson(text) : parseCsv(text)
   if (result.ok && result.rows.length > IMPORT_MAX_ROWS) {
@@ -273,7 +266,8 @@ export function resolveImport(
       term,
       status: raw.status,
     }
-    const problem = raw.problem ?? manualProblem({ name: raw.name, yearLevel: raw.yearLevel, term })
+    const problem =
+      raw.problem ?? manualProblem({ name: raw.name, yearLevel: raw.yearLevel, term })
     if (problem) return { ...base, outcome: 'invalid', reason: problem }
     const key = foldText(raw.name)
     if (existing.has(key)) {

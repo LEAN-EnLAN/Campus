@@ -1,10 +1,10 @@
 import { useNavigate } from '@tanstack/react-router'
-import { Download, Trash2 } from 'lucide-react'
+import { Download, Trash2, UserX } from 'lucide-react'
 import { useId, useState, type FormEvent } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { TextField } from '@/components/ui/field'
-import { Modal } from '@/components/ui/modal'
+import { Modal, ModalFooter, ModalHeader } from '@/components/ui/modal'
 import { rememberAccountDeleted } from '@/features/account/account-deleted-notice'
 import { useDeleteAccount } from '@/features/account/queries'
 import { useAuth } from '@/features/auth/auth-context'
@@ -34,7 +34,7 @@ export function DeleteAccountCard() {
           <Download aria-hidden="true" />
           Descargar mis datos
         </a>
-        <Button variant="danger" onClick={() => setOpen(true)}>
+        <Button variant="danger-outline" onClick={() => setOpen(true)}>
           <Trash2 aria-hidden="true" />
           Borrar mi cuenta
         </Button>
@@ -83,10 +83,14 @@ export function DeleteAccountDialog({ open, onClose }: { open: boolean; onClose:
   return (
     <Modal open={open} onClose={close} labelledBy={titleId}>
       <form onSubmit={handleSubmit} className="flex flex-col gap-4 p-4 sm:p-6">
-        <h2 id={titleId} className="text-ink font-serif text-lg">
-          ¿Borrar tu cuenta?
-        </h2>
-        <p className="text-ink-muted -mt-2 text-sm">
+        <ModalHeader
+          titleId={titleId}
+          title="¿Borrar tu cuenta?"
+          description="Es definitivo: no se puede deshacer."
+          icon={<UserX />}
+          tone="danger"
+        />
+        <p className="text-ink-muted text-sm">
           Se borran tu cuenta, tu carrera, los estados de tus materias, tus fechas y tu
           material. No se puede deshacer. Si querés quedarte con una copia, primero{' '}
           <a
@@ -112,14 +116,14 @@ export function DeleteAccountDialog({ open, onClose }: { open: boolean; onClose:
             No pudimos borrar tu cuenta. Probá de nuevo.
           </p>
         ) : null}
-        <div className="border-rule-soft mt-1 flex justify-end gap-2 border-t pt-4">
+        <ModalFooter>
           <Button variant="ghost" disabled={pending} onClick={close}>
             Cancelar
           </Button>
           <Button type="submit" variant="danger" disabled={!confirmed || pending}>
             {pending ? 'Borrando…' : 'Borrar mi cuenta'}
           </Button>
-        </div>
+        </ModalFooter>
       </form>
     </Modal>
   )

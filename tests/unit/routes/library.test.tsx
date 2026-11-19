@@ -50,8 +50,8 @@ describe('/library add material', () => {
     expect(state.reset).toHaveBeenCalledOnce()
     const title = within(dialog).getByRole('textbox', { name: /Título/ })
     const link = within(dialog).getByRole('textbox', { name: /Link/ })
-    expect(title.className).toContain('h-10')
-    expect(link.className).toContain('h-10')
+    expect(title.className).toContain('h-12')
+    expect(link.className).toContain('h-12')
   })
 
   it('answers an empty save in Spanish, inline, without the browser bubble', async () => {

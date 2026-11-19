@@ -184,14 +184,23 @@ describe('Ajustes with an account', () => {
   })
 })
 
-describe('blue design preferences', () => {
-  it('offers only the supported light and blue choices, with accessible pressed state', async () => {
+describe('appearance preferences', () => {
+  it('offers Claro / Oscuro / Sistema and five accents, with accessible pressed state', async () => {
+    localStorage.setItem(THEME_STORAGE_KEY, 'light')
     mount({ folder: FOLDER, change: vi.fn() }, false)
 
     const themeGroup = await screen.findByRole('group', { name: 'Tema de la aplicación' })
     const colorGroup = screen.getByRole('group', { name: 'Color de acento' })
-    expect(within(themeGroup).getAllByRole('button')).toHaveLength(1)
-    expect(within(colorGroup).getAllByRole('button')).toHaveLength(1)
+    expect(
+      within(themeGroup)
+        .getAllByRole('button')
+        .map((b) => b.textContent),
+    ).toEqual(['Claro', 'Oscuro', 'Sistema'])
+    expect(
+      within(colorGroup)
+        .getAllByRole('button')
+        .map((b) => b.textContent),
+    ).toEqual(['Azul Campus', 'Índigo', 'Verde', 'Coral', 'Violeta'])
     expect(within(themeGroup).getByRole('button', { name: 'Claro' })).toHaveAttribute(
       'aria-pressed',
       'true',
@@ -200,27 +209,46 @@ describe('blue design preferences', () => {
       'aria-pressed',
       'true',
     )
-    expect(
-      screen.queryByRole('button', { name: /Oscuro|Como el sistema|Verde|Rosa|Violeta/ }),
-    ).toBeNull()
   })
 
-  it('migrates older device preferences to light/blue using the actual ThemeProvider', async () => {
-    localStorage.setItem(THEME_STORAGE_KEY, 'dark')
-    localStorage.setItem(ACCENT_STORAGE_KEY, '310')
+  it('applies and remembers the chosen mode and accent through the real ThemeProvider', async () => {
+    localStorage.setItem(THEME_STORAGE_KEY, 'light')
     const user = userEvent.setup()
     mount({ folder: FOLDER, change: vi.fn() }, false)
 
+    await user.click(await screen.findByRole('button', { name: 'Oscuro' }))
+    await waitFor(() => expect(document.documentElement).toHaveAttribute('data-theme', 'dark'))
+    expect(localStorage.getItem(THEME_STORAGE_KEY)).toBe('dark')
+    expect(screen.getByRole('button', { name: 'Oscuro' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Verde' }))
+    await waitFor(() =>
+      expect(document.documentElement).toHaveAttribute('data-accent', 'verde'),
+    )
+    expect(localStorage.getItem(ACCENT_STORAGE_KEY)).toBe('150')
+    expect(screen.getByRole('button', { name: 'Verde' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+
+    // No inline accent override: an inline custom property on <html> is what
+    // `.campus-blue` used to shadow, leaving the picker inert.
+    expect(document.documentElement.style.getPropertyValue('--color-accent')).toBe('')
+  })
+
+  it('keeps an older saved preference instead of forcing light', async () => {
+    localStorage.setItem(THEME_STORAGE_KEY, 'dark')
+    localStorage.setItem(ACCENT_STORAGE_KEY, '290')
+    mount({ folder: FOLDER, change: vi.fn() }, false)
+
     await waitFor(() => {
-      expect(localStorage.getItem(THEME_STORAGE_KEY)).toBe('light')
-      expect(localStorage.getItem(ACCENT_STORAGE_KEY)).toBe('225')
-      expect(document.documentElement).toHaveAttribute('data-theme', 'light')
-      expect(document.documentElement.style.getPropertyValue('--color-accent')).toMatch(/oklch/)
+      expect(document.documentElement).toHaveAttribute('data-theme', 'dark')
+      expect(document.documentElement).toHaveAttribute('data-accent', 'violeta')
     })
-    await user.click(screen.getByRole('button', { name: 'Claro' }))
-    await user.click(screen.getByRole('button', { name: 'Azul Campus' }))
-    expect(localStorage.getItem(THEME_STORAGE_KEY)).toBe('light')
-    expect(localStorage.getItem(ACCENT_STORAGE_KEY)).toBe('225')
+    expect(localStorage.getItem(THEME_STORAGE_KEY)).toBe('dark')
   })
 })
 

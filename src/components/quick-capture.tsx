@@ -1,6 +1,8 @@
+import { CalendarPlus, PencilLine } from 'lucide-react'
 import { useEffect, useId, useRef, useState } from 'react'
 
 import type { AcademicItem, AcademicItemKind, SubjectView } from '@/domain/types'
+import { quickDateChips } from '@/features/items/date-chips'
 import { finalNoteSentence, finalPrerequisiteNote } from '@/features/items/final-check'
 import {
   combineDue,
@@ -9,8 +11,10 @@ import {
   parseTimeInput,
 } from '@/features/items/date-input'
 import { Button } from './ui/button'
-import { Modal } from './ui/modal'
-import { SelectField, TextField } from './ui/field'
+import { Modal, ModalFooter, ModalHeader } from './ui/modal'
+import { Field, SelectField, TextField } from './ui/field'
+import { MaskedDateInput } from './ui/masked-date-input'
+import { MaskedTimeInput } from './ui/masked-time-input'
 
 /**
  * Quick capture — CAP-CAPTURE-001.
@@ -117,6 +121,8 @@ export function QuickCapture({
   // while the student is still typing "2" on the way to "23/10/2026".
   const [submitted, setSubmitted] = useState(false)
   const dateRef = useRef<HTMLInputElement>(null)
+  // Computed per render: the dialog can stay open across midnight.
+  const dateChips = quickDateChips(new Date())
   const timeRef = useRef<HTMLInputElement>(null)
   // `isPending` arrives a render late; a double click lands before it does.
   const submitting = useRef(false)
@@ -240,14 +246,16 @@ export function QuickCapture({
         aria-busy={isPending}
         className="flex flex-col gap-4 p-4 sm:p-6"
       >
-        <h2 id={titleId} className="text-ink font-serif text-lg">
-          {(editing ? EDIT_TITLE_BY_KIND : TITLE_BY_KIND)[kind]}
-        </h2>
-        <p className="text-ink-muted -mt-2 text-sm">
-          {editing
-            ? 'Cambiá lo que necesites. La materia y la fecha son opcionales.'
-            : 'Anotá lo importante. La materia y la fecha son opcionales.'}
-        </p>
+        <ModalHeader
+          titleId={titleId}
+          title={(editing ? EDIT_TITLE_BY_KIND : TITLE_BY_KIND)[kind]}
+          description={
+            editing
+              ? 'Cambiá lo que necesites. La materia y la fecha son opcionales.'
+              : 'Anotá lo importante. La materia y la fecha son opcionales.'
+          }
+          icon={editing ? <PencilLine /> : <CalendarPlus />}
+        />
 
         <TextField
           ref={firstFieldRef}
@@ -294,30 +302,52 @@ export function QuickCapture({
         </div>
 
         <div className="grid min-w-0 grid-cols-2 gap-3">
-          <TextField
-            ref={dateRef}
-            label="Fecha"
-            placeholder="dd/mm/aaaa"
-            inputMode="numeric"
-            autoComplete="off"
-            value={dueDate}
-            onChange={(e) => setDueDate(e.target.value)}
-            onBlur={() => dueDate.trim() !== '' && setSubmitted(true)}
-            error={dateError}
-          />
-          <TextField
-            ref={timeRef}
+          <div className="flex min-w-0 flex-col gap-2">
+            <Field label="Fecha" error={dateError}>
+              {({ id, describedBy, invalid }) => (
+                <MaskedDateInput
+                  ref={dateRef}
+                  id={id}
+                  aria-describedby={describedBy}
+                  aria-invalid={invalid}
+                  value={dueDate}
+                  onChange={setDueDate}
+                  onBlur={() => dueDate.trim() !== '' && setSubmitted(true)}
+                />
+              )}
+            </Field>
+            <div className="flex flex-wrap gap-1.5">
+              {dateChips.map((chip) => (
+                <button
+                  key={chip.label}
+                  type="button"
+                  aria-pressed={dueDate === chip.date}
+                  onClick={() => setDueDate(chip.date)}
+                  className="border-rule text-ink-muted hover:text-ink aria-pressed:bg-accent-soft aria-pressed:text-accent-ink focus-visible:ring-focus/35 rounded-pill border px-3 py-1 text-xs font-medium transition-colors focus-visible:ring-2 focus-visible:outline-none aria-pressed:border-transparent"
+                >
+                  {chip.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <Field
             label="Hora"
-            placeholder="hh:mm"
-            inputMode="numeric"
-            autoComplete="off"
-            value={dueTime}
-            onChange={(e) => setDueTime(e.target.value)}
-            onBlur={() => dueTime.trim() !== '' && setSubmitted(true)}
             error={timeError}
             // Only while it is true: with a time typed it contradicts the form.
             hint={dueTime.trim() === '' ? 'Sin hora, queda para todo el día.' : undefined}
-          />
+          >
+            {({ id, describedBy, invalid }) => (
+              <MaskedTimeInput
+                ref={timeRef}
+                id={id}
+                aria-describedby={describedBy}
+                aria-invalid={invalid}
+                value={dueTime}
+                onChange={setDueTime}
+                onBlur={() => dueTime.trim() !== '' && setSubmitted(true)}
+              />
+            )}
+          </Field>
         </div>
 
         {finalNote ? (
@@ -332,7 +362,7 @@ export function QuickCapture({
           </p>
         ) : null}
 
-        <div className="border-rule-soft mt-1 flex justify-end gap-2 border-t pt-4">
+        <ModalFooter>
           <Button
             variant="ghost"
             disabled={isPending}
@@ -346,7 +376,7 @@ export function QuickCapture({
           <Button type="submit" variant="primary" disabled={isPending}>
             {isPending ? 'Guardando…' : editing ? 'Guardar cambios' : 'Guardar'}
           </Button>
-        </div>
+        </ModalFooter>
       </form>
     </Modal>
   )

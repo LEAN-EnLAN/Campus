@@ -500,3 +500,26 @@
     background-clip: content-box;
   }
 }
+
+/* Dialogs: a centred sheet rises 8px; a bottom sheet slides up from the edge. */
+@keyframes sheet-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes sheet-up {
+  from {
+    opacity: 0.6;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}

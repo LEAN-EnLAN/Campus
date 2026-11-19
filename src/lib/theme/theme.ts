@@ -59,3 +59,29 @@ export function readAccentHue(raw: string | null): number | null {
   const hue = Number(raw)
   return Number.isFinite(hue) && hue >= 0 && hue <= 360 ? hue : null
 }
+
+/**
+ * The accents a student can choose. The stored value stays a HUE (old builds
+ * wrote one, and `readAccentHue` already guards it); the hue is only an id here
+ * — the actual colours live in tokens.css under `[data-accent='<id>']`, hand
+ * tuned per theme so every fill takes white text at AA.
+ *
+ * `index.html` REPEATS this hue → id table for its boot script; `theme.test.ts`
+ * pins it so the two cannot drift.
+ */
+export const ACCENTS = [
+  { id: 'azul', label: 'Azul Campus', hue: 225 },
+  { id: 'indigo', label: 'Índigo', hue: 250 },
+  { id: 'verde', label: 'Verde', hue: 150 },
+  { id: 'coral', label: 'Coral', hue: 30 },
+  { id: 'violeta', label: 'Violeta', hue: 290 },
+] as const
+
+export type AccentId = (typeof ACCENTS)[number]['id']
+export const DEFAULT_ACCENT_HUE = 225
+export const ACCENT_ATTRIBUTE = 'data-accent'
+
+/** The accent a stored hue names; anything unknown is Azul Campus. */
+export function accentIdForHue(hue: number | null): AccentId {
+  return ACCENTS.find((accent) => accent.hue === hue)?.id ?? 'azul'
+}

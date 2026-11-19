@@ -1,8 +1,9 @@
+import { GraduationCap } from 'lucide-react'
 import { useId, useRef, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { TextField } from '@/components/ui/field'
-import { Modal } from '@/components/ui/modal'
+import { Modal, ModalFooter, ModalHeader } from '@/components/ui/modal'
 
 export type FinalOutcome = 'passed' | 'failed' | 'absent'
 
@@ -94,9 +95,12 @@ export function FinalOutcomeDialog({
   return (
     <Modal open={open} onClose={onClose} labelledBy={titleId}>
       <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4 p-4 sm:p-6">
-        <h2 id={titleId} className="text-ink font-serif text-lg">
-          ¿Cómo te fue en {title}?
-        </h2>
+        <ModalHeader
+          titleId={titleId}
+          title={<>¿Cómo te fue en {title}?</>}
+          description="Registrá el resultado del final."
+          icon={<GraduationCap />}
+        />
 
         <fieldset
           aria-describedby={outcomeError ? outcomeErrorId : undefined}
@@ -106,7 +110,7 @@ export function FinalOutcomeDialog({
           {OUTCOMES.map(({ value, label }) => (
             <label
               key={value}
-              className="border-rule has-[:checked]:border-accent has-[:checked]:bg-accent-soft flex min-h-11 cursor-pointer items-center gap-3 rounded-md border px-3 text-sm"
+              className="border-rule bg-paper-elevated hover:border-field has-[:checked]:border-accent has-[:checked]:bg-accent-soft has-[:checked]:text-accent-ink has-focus-visible:outline-focus flex min-h-12 cursor-pointer items-center gap-3 rounded-xl border px-4 text-sm font-medium transition-colors duration-150 has-focus-visible:outline-2 has-focus-visible:outline-offset-2"
             >
               <input
                 type="radio"
@@ -160,14 +164,14 @@ export function FinalOutcomeDialog({
           </div>
         ) : null}
 
-        <div className="border-rule-soft mt-1 flex justify-end gap-2 border-t pt-4">
+        <ModalFooter>
           <Button variant="ghost" onClick={onClose}>
             Cancelar
           </Button>
           <Button type="submit" variant="primary">
             Guardar
           </Button>
-        </div>
+        </ModalFooter>
       </form>
     </Modal>
   )

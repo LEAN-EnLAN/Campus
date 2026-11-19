@@ -49,9 +49,6 @@ body:has(.blue-startup) {
   object-fit: contain;
   align-self: center;
 }
-.blue-startup-option button {
-  border-radius: var(--radius-md);
-}
 .blue-startup button:focus-visible,
 .blue-startup input:focus-visible {
   outline: 2px solid var(--color-accent);

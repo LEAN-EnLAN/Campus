@@ -25,7 +25,7 @@ describe('parseDateInput (dd/mm/aaaa, whatever the browser locale)', () => {
     expect(parseDateInput('')).toBeNull()
     expect(parseDateInput('mañana')).toBeNull()
     expect(parseDateInput('23/10')).toBeNull()
-    expect(parseDateInput('23/10/26')).toBeNull()
+    expect(parseDateInput('23/10/202')).toBeNull()
   })
 })
 

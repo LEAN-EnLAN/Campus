@@ -3,11 +3,11 @@ import userEvent from '@testing-library/user-event'
 import { useState } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 
-import type { ValidResource } from '@/domain/resource-draft'
+import type { NewMaterial } from './add-resource-dialog'
 
 import { AddResourceDialog } from './add-resource-dialog'
 
-const FILE_MESSAGE = /Por ahora Campus guarda links y notas; subir archivos llega más adelante/
+const FILE_MESSAGE = /Subir archivos está disponible en Campus Cloud/
 
 /** The route's wiring, minus the backend: a trigger, the dialog, a save spy. */
 function Harness({
@@ -15,8 +15,10 @@ function Harness({
   readClipboard,
   pasteClipboard,
   error = null,
+  canUploadFiles = false,
 }: {
-  onSave: (resource: ValidResource) => Promise<unknown>
+  onSave: (resource: NewMaterial) => Promise<unknown>
+  canUploadFiles?: boolean
   readClipboard: () => Promise<string | null>
   pasteClipboard: () => Promise<string | null>
   error?: unknown
@@ -35,6 +37,7 @@ function Harness({
         error={error}
         readClipboard={readClipboard}
         pasteClipboard={pasteClipboard}
+        canUploadFiles={canUploadFiles}
       />
     </>
   )
@@ -43,12 +46,14 @@ function Harness({
 async function mount({
   clipboard = null,
   pasted = null,
-  onSave = vi.fn<(resource: ValidResource) => Promise<unknown>>().mockResolvedValue(undefined),
+  onSave = vi.fn<(resource: NewMaterial) => Promise<unknown>>().mockResolvedValue(undefined),
   error = null,
+  canUploadFiles = false,
 }: {
+  canUploadFiles?: boolean
   clipboard?: string | null
   pasted?: string | null
-  onSave?: ReturnType<typeof vi.fn<(resource: ValidResource) => Promise<unknown>>>
+  onSave?: ReturnType<typeof vi.fn<(resource: NewMaterial) => Promise<unknown>>>
   error?: unknown
 } = {}) {
   const user = userEvent.setup()
@@ -58,6 +63,7 @@ async function mount({
       readClipboard={() => Promise.resolve(clipboard)}
       pasteClipboard={() => Promise.resolve(pasted)}
       error={error}
+      canUploadFiles={canUploadFiles}
     />,
   )
   await user.click(screen.getByRole('button', { name: 'Agregar material' }))
@@ -165,6 +171,47 @@ describe('AddResourceDialog', () => {
 
     expect(screen.getByRole('status')).toHaveTextContent(FILE_MESSAGE)
     expect(screen.queryByRole('textbox', { name: /Título/ })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Guardar' })).toBeDisabled()
+    expect(onSave).not.toHaveBeenCalled()
+  })
+
+  it('shows the file option disabled in a Local workspace, saying where it exists', async () => {
+    await mount()
+
+    const pick = screen.getByRole('button', { name: 'Elegir archivo' })
+    expect(pick).toBeDisabled()
+    expect(pick).toHaveAccessibleDescription('Disponible en Campus Cloud')
+    expect(screen.queryByLabelText('Elegir archivo', { selector: 'input' })).toBeNull()
+  })
+
+  it('takes a dropped PDF where uploads exist and saves it as a file', async () => {
+    const { user, onSave } = await mount({ canUploadFiles: true })
+    const pdf = new File(['%PDF'], 'guia_tp-1.pdf', { type: 'application/pdf' })
+
+    dropOn(surface(), { files: [pdf] })
+
+    expect(screen.getByText('guia_tp-1.pdf')).toBeInTheDocument()
+    expect(screen.getByRole('textbox', { name: /Título/ })).toHaveValue('guia tp 1')
+    await user.click(screen.getByRole('button', { name: 'Guardar' }))
+    expect(onSave).toHaveBeenCalledWith({ kind: 'file', title: 'guia tp 1', file: pdf })
+  })
+
+  it('takes a file from the picker', async () => {
+    const { user, onSave } = await mount({ canUploadFiles: true })
+    const png = new File(['png'], 'pizarron.png', { type: 'image/png' })
+
+    await user.upload(screen.getByLabelText('Elegir archivo'), png)
+    await user.click(screen.getByRole('button', { name: 'Guardar' }))
+
+    expect(onSave).toHaveBeenCalledWith({ kind: 'file', title: 'pizarron', file: png })
+  })
+
+  it('refuses a file type outside the allowlist, saying why', async () => {
+    const { onSave } = await mount({ canUploadFiles: true })
+
+    dropOn(surface(), { files: [new File(['<p>'], 'pagina.html', { type: 'text/html' })] })
+
+    expect(screen.getByRole('alert')).toHaveTextContent(/pagina\.html: Ese tipo de archivo/)
     expect(screen.getByRole('button', { name: 'Guardar' })).toBeDisabled()
     expect(onSave).not.toHaveBeenCalled()
   })
@@ -282,7 +329,7 @@ describe('AddResourceDialog', () => {
 
   it('keeps the dialog and the draft when saving fails, and shows the error', async () => {
     const onSave = vi
-      .fn<(resource: ValidResource) => Promise<unknown>>()
+      .fn<(resource: NewMaterial) => Promise<unknown>>()
       .mockRejectedValue(new Error('No pudimos guardar el material.'))
     const { user } = await mount({
       onSave,
@@ -304,7 +351,7 @@ describe('AddResourceDialog', () => {
   })
 
   it('lets the library file the material under a subject, or under none', async () => {
-    const saved: { resource: ValidResource; subjectId: string | null }[] = []
+    const saved: { resource: NewMaterial; subjectId: string | null }[] = []
     function LibraryHarness() {
       const [open, setOpen] = useState(true)
       const [subjectId, setSubjectId] = useState<string | null>(null)

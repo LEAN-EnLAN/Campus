@@ -14,6 +14,8 @@ import type { StoredSubjectStatus } from '@/domain/types'
 import { OrderConflictNote } from '@/features/academic/order-conflict-note'
 import { useAcademicPlan, useSetSubjectStatus } from '@/features/academic/queries'
 import { AddResourceDialog } from '@/features/courses/add-resource-dialog'
+import { MaterialFileLink } from '@/features/courses/material-file-link'
+import { useCanUploadMaterialFiles } from '@/features/courses/use-material-files'
 import { CorrelativasPanel, correlativasNote } from '@/features/courses/correlativas-panel'
 import { SubjectDateRow } from '@/features/courses/subject-dates'
 import { SubjectNotes } from '@/features/courses/subject-notes'
@@ -56,6 +58,7 @@ function CourseDetailScreen() {
   const plan = useAcademicPlan()
   const itemsQuery = useAcademicItems()
   const resourcesQuery = useResources()
+  const canUploadFiles = useCanUploadMaterialFiles()
 
   const setStatus = useSetSubjectStatus()
   // Same "done" as Hoy and the calendar: feedback, Deshacer, and a Final asks how it went.
@@ -287,7 +290,9 @@ function CourseDetailScreen() {
                     className="border-rule-soft flex items-center gap-3 border-b py-2.5"
                   >
                     <div className="min-w-0 flex-1">
-                      {resource.kind === 'link' && resource.url ? (
+                      {resource.kind === 'file' ? (
+                        <MaterialFileLink resource={resource} />
+                      ) : resource.kind === 'link' && resource.url ? (
                         <a
                           href={resource.url}
                           target="_blank"
@@ -358,6 +363,7 @@ function CourseDetailScreen() {
               onSave={(resource) =>
                 createResource.mutateAsync({ ...resource, curriculumSubjectId: courseId })
               }
+              canUploadFiles={canUploadFiles}
               saving={createResource.isPending}
               error={createResource.error}
             />

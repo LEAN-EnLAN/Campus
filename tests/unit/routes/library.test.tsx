@@ -24,6 +24,10 @@ vi.mock('@/features/items/queries', () => ({
   }),
   useDeleteResource: () => ({ mutate: vi.fn(), error: null }),
 }))
+// A Local workspace: no `resources.files` capability.
+vi.mock('@/features/courses/use-material-files', () => ({
+  useCanUploadMaterialFiles: () => false,
+}))
 
 const Library = Route.options.component as () => ReactNode
 

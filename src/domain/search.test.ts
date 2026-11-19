@@ -220,9 +220,9 @@ describe('groupResults', () => {
       ...noteResults([{ path: 'a.md', title: 'Análisis', snippet: '' }]),
     ]
     const groups = groupResults(results)
-    expect(groups.map((g) => g.kind)).toEqual(['subject', 'item', 'resource', 'note'].filter(
-      (k) => results.some((r) => r.kind === k),
-    ))
+    expect(groups.map((g) => g.kind)).toEqual(
+      ['subject', 'item', 'resource', 'note'].filter((k) => results.some((r) => r.kind === k)),
+    )
     expect(groups.reduce((n, g) => n + g.results.length, 0)).toBe(results.length)
   })
 })

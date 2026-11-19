@@ -23,12 +23,7 @@ const DIACRITICS = /[̀-ͯ]/g
 
 /** Lowercase, strip diacritics, collapse whitespace. */
 export function normalize(text: string): string {
-  return text
-    .normalize('NFD')
-    .replace(DIACRITICS, '')
-    .toLowerCase()
-    .replace(/\s+/g, ' ')
-    .trim()
+  return text.normalize('NFD').replace(DIACRITICS, '').toLowerCase().replace(/\s+/g, ' ').trim()
 }
 
 export type SearchResultKind = 'subject' | 'item' | 'resource' | 'note'
@@ -224,7 +219,9 @@ export function search(
     const contextScore =
       titleScore === null
         ? score(
-            normalize([kind.label, kind.also, materia ?? '', date ? dateTerms(date) : ''].join(' ')),
+            normalize(
+              [kind.label, kind.also, materia ?? '', date ? dateTerms(date) : ''].join(' '),
+            ),
             needle,
           )
         : null
@@ -242,7 +239,8 @@ export function search(
       kind: 'item',
       id: item.id,
       title: item.title,
-      subtitle: notesScore !== null && item.notes ? snippet(item.notes, query) : parts.join(' · '),
+      subtitle:
+        notesScore !== null && item.notes ? snippet(item.notes, query) : parts.join(' · '),
       // Subjects outrank items at equal quality.
       score: (titleScore ?? best + SECONDARY) + 1,
       subjectId: item.curriculumSubjectId,

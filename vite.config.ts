@@ -1,11 +1,11 @@
-import { readFileSync } from 'node:fs'
+import { copyFileSync, readFileSync } from 'node:fs'
 import process from 'node:process'
 import { fileURLToPath, URL } from 'node:url'
 
 import tailwindcss from '@tailwindcss/vite'
 import { tanstackRouter } from '@tanstack/router-plugin/vite'
 import react from '@vitejs/plugin-react'
-import { defineConfig, loadEnv, type ServerOptions } from 'vite'
+import { defineConfig, loadEnv, type Plugin, type ServerOptions } from 'vite'
 
 import { isTesterEnabled } from './src/lib/runtime/build-flags'
 
@@ -30,6 +30,25 @@ const hmrHost = process.env.CAMPUS_HMR_HOST
 
 const https: ServerOptions['https'] =
   certFile && keyFile ? { cert: readFileSync(certFile), key: readFileSync(keyFile) } : undefined
+
+/**
+ * GitHub Pages has no SPA rewrite: a deep link like `/plan` is a real 404 there.
+ * Pages serves `404.html` for any missing path, so making it a copy of the app
+ * shell lets the router take over. Build only; dev and preview rewrite already.
+ */
+function spaFallback404(): Plugin {
+  let outDir = 'dist'
+  return {
+    name: 'campus-spa-404',
+    apply: 'build',
+    configResolved(config) {
+      outDir = config.build.outDir
+    },
+    closeBundle() {
+      copyFileSync(`${outDir}/index.html`, `${outDir}/404.html`)
+    },
+  }
+}
 
 export default defineConfig(({ mode }) => ({
   // Tester tooling is decided HERE, once, from the same predicate the tests
@@ -56,6 +75,7 @@ export default defineConfig(({ mode }) => ({
     // deletes and recreates that directory — after which the catalog silently
     // becomes index.html at status 200.
     campusCatalogPlugin(),
+    spaFallback404(),
   ],
   resolve: {
     alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },

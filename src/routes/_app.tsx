@@ -3,10 +3,15 @@ import { useEffect, useState } from 'react'
 
 import { AcademicShell } from '@/components/academic-shell'
 import type { AccountIdentity } from '@/components/account-menu'
-import { QuickCapture, type QuickCaptureValues } from '@/components/quick-capture'
+import {
+  QuickCapture,
+  type QuickCaptureInitialValues,
+  type QuickCaptureValues,
+} from '@/components/quick-capture'
 import { titleForPath } from '@/components/nav-model'
 import { ToastProvider, useToast } from '@/components/toast'
 import { FeedbackDialog } from '@/features/account/feedback-dialog'
+import { AssistantPanel } from '@/features/assistant/assistant-panel'
 import { feedbackAvailable } from '@/features/account/feedback-channel'
 import { SearchPalette } from '@/features/search/search-palette'
 import { InstallOfferBanner } from '@/features/install/install-offer-banner'
@@ -57,6 +62,9 @@ function AppFrame() {
   const [captureOpen, setCaptureOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [feedbackOpen, setFeedbackOpen] = useState(false)
+  const [assistantOpen, setAssistantOpen] = useState(false)
+  // A date the assistant proposed: Quick capture opens on it, nothing is saved yet.
+  const [capturePrefill, setCapturePrefill] = useState<QuickCaptureInitialValues | null>(null)
   const backend = useBackend()
 
   const plan = useAcademicPlan()
@@ -107,6 +115,11 @@ function AppFrame() {
         setSearchOpen(true)
         return
       }
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'j') {
+        event.preventDefault()
+        setAssistantOpen((open) => !open)
+        return
+      }
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'n' && !typing) {
         event.preventDefault()
         setCaptureOpen(true)
@@ -144,6 +157,7 @@ function AppFrame() {
       })
       // "Guardado: …" comes from the mutation itself, wherever an item is created.
       setCaptureOpen(false)
+      setCapturePrefill(null)
     } catch {
       /* surfaced through createItem.error */
     }
@@ -172,6 +186,7 @@ function AppFrame() {
         academicLabel={plan.programName ?? plan.context?.unmappedLabel}
         onQuickCapture={() => setCaptureOpen(true)}
         onSearch={() => setSearchOpen(true)}
+        onAssistant={() => setAssistantOpen(true)}
       >
         {/* On Hoy only, the screen a visit starts on; from the second visit on,
             when the browser can install. See install-offer.ts. */}
@@ -181,7 +196,11 @@ function AppFrame() {
 
       <QuickCapture
         open={captureOpen}
-        onOpenChange={setCaptureOpen}
+        onOpenChange={(open) => {
+          setCaptureOpen(open)
+          if (!open) setCapturePrefill(null)
+        }}
+        initialValues={capturePrefill}
         subjects={plan.views}
         items={itemsQuery.data ?? []}
         // Opened from a course, the dialog stays about that course.
@@ -189,6 +208,21 @@ function AppFrame() {
         onSubmit={handleCapture}
         isPending={createItem.isPending}
         error={createItem.error ? (createItem.error as Error).message : null}
+      />
+
+      <AssistantPanel
+        open={assistantOpen}
+        onOpenChange={setAssistantOpen}
+        onProposeItem={(proposal) => {
+          setAssistantOpen(false)
+          setCapturePrefill({
+            title: proposal.title,
+            kind: proposal.kind,
+            curriculumSubjectId: proposal.curriculumSubjectId,
+            dueAt: proposal.dueAt,
+          })
+          setCaptureOpen(true)
+        }}
       />
 
       <FeedbackDialog open={feedbackOpen} onClose={() => setFeedbackOpen(false)} />

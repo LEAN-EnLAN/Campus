@@ -7,6 +7,7 @@ import { Illustration } from '@/components/ui/illustration'
 import type { IllustrationName } from '@/components/ui/illustrations'
 import { SegmentedControl } from '@/components/ui/segmented-control'
 import { useAcademicPlan } from '@/features/academic/queries'
+import { AssistantSettingsSection } from '@/features/assistant/assistant-settings'
 import { useAuth } from '@/features/auth/auth-context'
 import { useSignOut } from '@/features/auth/use-sign-out'
 import { ExportSection } from '@/features/settings/export-section'
@@ -302,6 +303,7 @@ export function SettingsScreen() {
           </SettingsCard>
 
           <PrivacySection />
+          <AssistantSettingsSection />
           <ExportSection />
         </div>
       </div>

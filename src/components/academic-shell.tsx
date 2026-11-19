@@ -1,5 +1,5 @@
 import { Link, useRouterState } from '@tanstack/react-router'
-import { Ellipsis, Plus, Search } from 'lucide-react'
+import { Ellipsis, Plus, Search, Sparkles } from 'lucide-react'
 import { useEffect, useState, type ReactNode } from 'react'
 
 import { cn } from '@/lib/utils'
@@ -44,6 +44,7 @@ export function AcademicShell({
   rail,
   onQuickCapture,
   onSearch,
+  onAssistant,
   academicLabel,
   account,
 }: {
@@ -51,6 +52,8 @@ export function AcademicShell({
   rail?: ReactNode
   onQuickCapture: () => void
   onSearch: () => void
+  /** Opens the study assistant (Ctrl/Cmd+J). Absent, no button. */
+  onAssistant?: () => void
   academicLabel?: string | null
   /** The avatar menu. Tone is the shell's call (navy on mobile, paper on desktop). */
   account?: Omit<AccountMenuProps, 'tone'>
@@ -124,10 +127,11 @@ export function AcademicShell({
 
         {/* ---- Main + rail ---- */}
         <div className={cn('flex min-w-0 flex-1 flex-col', isWorkspace && 'min-h-0')}>
-          <MobileTopBar onSearch={onSearch} account={account} />
+          <MobileTopBar onSearch={onSearch} onAssistant={onAssistant} account={account} />
 
           <DesktopTopBar
             onSearch={onSearch}
+            onAssistant={onAssistant}
             onQuickCapture={onQuickCapture}
             account={account}
           />
@@ -215,10 +219,12 @@ function NavLink({ item, current }: { item: NavItem; current: boolean }) {
 
 function DesktopTopBar({
   onSearch,
+  onAssistant,
   onQuickCapture,
   account,
 }: {
   onSearch: () => void
+  onAssistant?: () => void
   onQuickCapture: () => void
   account?: Omit<AccountMenuProps, 'tone'>
 }) {
@@ -237,6 +243,17 @@ function DesktopTopBar({
         <kbd className="campus-blue-kbd text-xs">Ctrl + K</kbd>
       </button>
       <div className="flex shrink-0 items-center gap-3">
+        {onAssistant ? (
+          <button
+            type="button"
+            onClick={onAssistant}
+            className="campus-blue-top-action"
+            aria-label="Abrir asistente"
+            title="Asistente (Ctrl + J)"
+          >
+            <Sparkles className="size-5" aria-hidden="true" />
+          </button>
+        ) : null}
         <button
           type="button"
           onClick={onQuickCapture}
@@ -253,9 +270,11 @@ function DesktopTopBar({
 
 function MobileTopBar({
   onSearch,
+  onAssistant,
   account,
 }: {
   onSearch: () => void
+  onAssistant?: () => void
   account?: Omit<AccountMenuProps, 'tone'>
 }) {
   return (
@@ -272,6 +291,16 @@ function MobileTopBar({
         >
           <Search aria-hidden="true" className="size-5" />
         </button>
+        {onAssistant ? (
+          <button
+            type="button"
+            onClick={onAssistant}
+            aria-label="Abrir asistente"
+            className="campus-blue-shell-icon"
+          >
+            <Sparkles aria-hidden="true" className="size-5" />
+          </button>
+        ) : null}
         {account ? <AccountMenu {...account} tone="shell" /> : null}
       </div>
     </header>

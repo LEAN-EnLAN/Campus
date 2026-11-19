@@ -118,6 +118,8 @@ export function resolveRuntimeCapabilities(
 
     demoRequested: demoRequested(),
 
+    loginRequested: window.location.pathname === '/login',
+
     openDemo: async () => {
       // The SAME LocalBackend a folder gets, over files that live in this tab.
       const access = memoryVaultAccess()

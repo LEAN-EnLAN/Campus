@@ -3,7 +3,12 @@ import { VaultError } from '@/lib/vault/errors'
 import type { FolderListing } from '@/lib/vault/http-vault-access'
 import type { VaultAccess } from '@/lib/vault/vault-access'
 
-import { readDeviceConfig, type DeviceStore } from './device-config'
+import {
+  readDeviceConfig,
+  rememberCloud,
+  writeDeviceConfig,
+  type DeviceStore,
+} from './device-config'
 import type { CampusRuntime, StartupState, VaultDescriptor } from './types'
 
 /**
@@ -50,6 +55,12 @@ export interface RuntimeCapabilities {
    * once at the composition root, like the build flag.
    */
   demoRequested?: boolean
+  /**
+   * Did the visitor open `/login` itself? That is the cloud, asked for by name:
+   * when nothing remembered would open, it opens the cloud instead of the
+   * picker (or the public landing a hosted build shows in its place).
+   */
+  loginRequested?: boolean
   /** Build a fresh demo runtime: in memory, seeded, no account. */
   openDemo?(): Promise<CampusRuntime>
   /** Forget the demo for this tab, so the next load resolves as usual. */
@@ -78,6 +89,27 @@ export async function resolveCampusRuntime(caps: RuntimeCapabilities): Promise<S
     return { status: 'ready', runtime: await caps.openDemo() }
   }
 
+  const remembered = await resolveRemembered(caps)
+
+  // `/login` only answers what the device left open. A remembered vault still
+  // wins (see above); a cloud that cannot be reached leaves the picker, which
+  // already explains that case.
+  if (remembered.status === 'needs-choice' && caps.loginRequested) {
+    let runtime: CampusRuntime
+    try {
+      runtime = await caps.openCloud()
+    } catch {
+      return remembered
+    }
+    // Remembered like the picker's own cloud choice, so the reload after
+    // signing in lands in the cloud and not back on the picker.
+    writeDeviceConfig(caps.store, rememberCloud(readDeviceConfig(caps.store)))
+    return { status: 'ready', runtime }
+  }
+  return remembered
+}
+
+async function resolveRemembered(caps: RuntimeCapabilities): Promise<StartupState> {
   const config = readDeviceConfig(caps.store)
   const last = config.lastRuntime
 

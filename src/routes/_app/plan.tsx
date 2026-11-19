@@ -6,6 +6,7 @@ import { EmptyState, ErrorState, LoadingRows } from '@/components/empty-state'
 import { AcademicYearDisclosure } from '@/components/academic-year-disclosure'
 import { PageHeader, SectionHeading } from '@/components/page-header'
 import { ProgressLine } from '@/components/progress-line'
+import { SubjectBubbles, TrophyFill } from '@/components/progress-art'
 import { SubjectRow } from '@/components/subject-row'
 import { buttonVariants } from '@/components/ui/button'
 import {
@@ -17,6 +18,7 @@ import { useAcademicPlan } from '@/features/academic/queries'
 import { SubjectStatusControl } from '@/features/academic/subject-status-control'
 import { PendingFinalsSection } from '@/features/plan/pending-finals-section'
 import { PlanSimulation } from '@/features/plan/plan-simulation'
+import { plural } from '@/lib/text/plural'
 import { cn } from '@/lib/utils'
 
 export const Route = createFileRoute('/_app/plan')({
@@ -227,12 +229,13 @@ function PlanScreen() {
           <div className="blue-panel-soft">
             <div className="blue-panel-head">
               <h2>Tu progreso en la carrera</h2>
-              <span className="blue-chip">
-                {plan.progress.total ? Math.round((earned / plan.progress.total) * 100) : 0}%
-                completado
-              </span>
             </div>
-            <ProgressLine value={earned} total={plan.progress.total} />
+            {/* The one place the percentage is said; the aside shows counts by state. */}
+            <ProgressLine
+              value={earned}
+              total={plan.progress.total}
+              label={plural(plan.progress.total, 'materia aprobada', 'materias aprobadas')}
+            />
           </div>
 
           {plan.progress.flagged > 0 ? (
@@ -250,9 +253,10 @@ function PlanScreen() {
 
           {plan.prerequisitesKnown && plan.progress.blocked > 0 ? (
             <p className="text-ink-muted text-sm">
-              {plan.progress.available} disponible{plan.progress.available === 1 ? '' : 's'} ·{' '}
-              {plan.progress.blocked} bloqueada{plan.progress.blocked === 1 ? '' : 's'} por
-              correlativas
+              {plan.progress.available}{' '}
+              {plural(plan.progress.available, 'disponible', 'disponibles')} ·{' '}
+              {plan.progress.blocked} {plural(plan.progress.blocked, 'bloqueada', 'bloqueadas')}{' '}
+              por correlativas
             </p>
           ) : null}
 
@@ -273,7 +277,7 @@ function PlanScreen() {
             <AcademicYearDisclosure
               key={group.yearLevel}
               year={group.yearLevel}
-              summary={`${group.subjects.length} ${group.subjects.length === 1 ? 'materia' : 'materias'}`}
+              summary={`${group.subjects.length} ${plural(group.subjects.length, 'materia', 'materias')}`}
               initiallyOpen={
                 plan.byYear.find((year) =>
                   year.subjects.some((subject) => subject.status === 'in_progress'),
@@ -291,42 +295,21 @@ function PlanScreen() {
           ))}
         </div>
         <aside aria-label="Resumen del plan" className="grid min-w-0 content-start gap-4">
-          <section className="blue-panel">
+          <section className="blue-panel" aria-labelledby="plan-avance">
             <div className="blue-panel-head">
-              <h2>Tu avance</h2>
+              <h2 id="plan-avance">Tu avance</h2>
             </div>
-            <div className="flex items-center justify-center py-4">
-              <div className="border-accent-soft flex size-28 items-center justify-center rounded-full border-8 text-center">
-                <div>
-                  <strong className="text-accent-ink block text-2xl">
-                    {plan.progress.total ? Math.round((earned / plan.progress.total) * 100) : 0}
-                    %
-                  </strong>
-                  <span className="text-ink-muted text-xs">completado</span>
-                </div>
-              </div>
+            <div className="flex items-center gap-4">
+              <TrophyFill
+                value={earned}
+                total={plan.progress.total}
+                className="w-20 shrink-0"
+              />
+              <p className="text-ink-muted min-w-0 text-sm">
+                Cada materia aprobada llena un poco la copa.
+              </p>
             </div>
-            <p className="text-ink-muted text-center text-sm">
-              {earned} de {plan.progress.total} materias aprobadas o equivalentes
-            </p>
-            <div className="blue-stat-row">
-              <span className="blue-status-dot" data-status="passed" />
-              Aprobadas y equivalentes<strong className="ml-auto">{earned}</strong>
-            </div>
-            <div className="blue-stat-row">
-              <span className="blue-status-dot" />
-              Cursando
-              <strong className="ml-auto">
-                {plan.views.filter((v) => v.status === 'in_progress').length}
-              </strong>
-            </div>
-            <div className="blue-stat-row">
-              <span className="blue-status-dot" data-status="regularized" />
-              Final pendiente
-              <strong className="ml-auto">
-                {plan.views.filter((v) => v.status === 'regularized').length}
-              </strong>
-            </div>
+            <SubjectBubbles subjects={plan.views} className="mt-4" />
           </section>
           <section className="blue-panel">
             <div className="blue-panel-head">
@@ -334,7 +317,7 @@ function PlanScreen() {
             </div>
             <p className="text-ink-muted text-sm">
               {plan.prerequisitesKnown
-                ? `Campus muestra ${plan.progress.available} materias disponibles según las correlativas registradas.`
+                ? `Campus muestra ${plan.progress.available} ${plural(plan.progress.available, 'materia disponible', 'materias disponibles')} según las correlativas registradas.`
                 : 'Todavía no tenemos información oficial suficiente para afirmar qué materias tenés habilitadas.'}
             </p>
           </section>

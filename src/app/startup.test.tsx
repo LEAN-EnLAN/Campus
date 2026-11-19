@@ -35,10 +35,12 @@ function mount(over: Partial<RuntimeCapabilities> & { store: DeviceStore }) {
 }
 
 describe('Startup on a build with a Vault API', () => {
-  it('offers this computer and the cloud as two equal choices', async () => {
+  it('offers the cloud and this computer as the two choices', async () => {
     mount({ store: memoryStore() })
 
-    expect(await screen.findByRole('heading', { name: 'En esta computadora' })).toBeTruthy()
+    expect(
+      await screen.findByRole('heading', { name: 'Solo en esta computadora, sin cuenta' }),
+    ).toBeTruthy()
     expect(screen.getByRole('heading', { name: 'En la nube' })).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Abrir' })).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Entrar o crear cuenta' })).toBeTruthy()
@@ -51,7 +53,9 @@ describe('Startup on a hosted build (no Vault API)', () => {
     mount({ store: memoryStore(), vaultAvailable: false })
 
     expect(await screen.findByRole('button', { name: 'Entrar o crear cuenta' })).toBeTruthy()
-    expect(screen.queryByRole('heading', { name: 'En esta computadora' })).toBeNull()
+    expect(
+      screen.queryByRole('heading', { name: 'Solo en esta computadora, sin cuenta' }),
+    ).toBeNull()
     expect(screen.queryByLabelText('Ruta de la carpeta')).toBeNull()
     expect(screen.queryByRole('button', { name: 'Abrir' })).toBeNull()
   })
@@ -109,6 +113,8 @@ describe('Campus Cloud failing to open', () => {
     const alert = await screen.findByRole('alert')
     expect(alert).toHaveTextContent('Campus Cloud no responde ahora')
     expect(alert).not.toHaveTextContent('Revisá tu conexión')
-    expect(screen.getByRole('heading', { name: 'En esta computadora' })).toBeTruthy()
+    expect(
+      screen.getByRole('heading', { name: 'Solo en esta computadora, sin cuenta' }),
+    ).toBeTruthy()
   })
 })

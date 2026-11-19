@@ -55,21 +55,30 @@ function mount(over: Partial<RuntimeCapabilities> = {}) {
 }
 
 describe('the first screen', () => {
-  it('asks one plain question and puts two equal choices under it', async () => {
+  it('recommends the cloud first and keeps this computer as the account-free option', async () => {
     mount()
 
-    expect(
-      await screen.findByText('¿Dónde querés guardar tus materias y tus notas?'),
-    ).toBeInTheDocument()
-    const local = screen.getByRole('region', { name: 'En esta computadora' })
+    const local = await screen.findByRole('region', {
+      name: 'Solo en esta computadora, sin cuenta',
+    })
     const cloud = screen.getByRole('region', { name: 'En la nube' })
+    expect(cloud).toHaveTextContent('Recomendado')
+    expect(cloud).toHaveTextContent('Tu progreso sincronizado en todos tus dispositivos')
     expect(local).toHaveTextContent('Funciona sin internet y no necesitás cuenta')
-    expect(cloud).toHaveTextContent('Necesitás un mail y una contraseña')
+    // Cloud comes first in the reading order.
+    expect(cloud.compareDocumentPosition(local) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(
+      within(cloud).getByRole('button', { name: 'Entrar o crear cuenta' }).className,
+    ).toMatch(/bg-accent/)
+    expect(screen.getByRole('link', { name: 'Probar la demo sin cuenta' })).toHaveAttribute(
+      'href',
+      '/demo',
+    )
   })
 
   it('does not say Vault, plan B or guest anywhere', async () => {
     mount()
-    await screen.findByRole('region', { name: 'En esta computadora' })
+    await screen.findByRole('region', { name: 'Solo en esta computadora, sin cuenta' })
 
     const text = document.body.textContent ?? ''
     expect(text).not.toMatch(/Vault/i)
@@ -90,7 +99,9 @@ describe('the first screen', () => {
     const user = userEvent.setup()
     const caps = mount()
 
-    const local = await screen.findByRole('region', { name: 'En esta computadora' })
+    const local = await screen.findByRole('region', {
+      name: 'Solo en esta computadora, sin cuenta',
+    })
     expect(await within(local).findByText('Documents/Campus')).toBeInTheDocument()
     expect(local).toHaveTextContent('Si no existe, la creamos')
 
@@ -108,7 +119,9 @@ describe('the first screen', () => {
       listFolders: async () => ({ path: HOME, parent: null, dirs: ['Facultad'] }),
     })
 
-    const local = await screen.findByRole('region', { name: 'En esta computadora' })
+    const local = await screen.findByRole('region', {
+      name: 'Solo en esta computadora, sin cuenta',
+    })
     expect(await within(local).findByText('Campus')).toBeInTheDocument()
   })
 

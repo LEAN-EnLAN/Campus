@@ -254,9 +254,6 @@
   flex-wrap: wrap;
   margin-top: 27px;
 }
-.blue-onboarding-actions button {
-  border-radius: var(--radius-md);
-}
 .blue-onboarding-manual-toggle {
   display: inline-block;
   margin-top: 20px;

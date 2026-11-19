@@ -111,6 +111,11 @@ export function resolveRuntimeCapabilities(
       return { mode: 'cloud', backend: createSupabaseBackend() }
     },
 
+    openCopyFolder: async (path) => {
+      const session = await openVaultSession(baseUrl, token, path, { create: true })
+      return httpVaultAccess({ vaultId: session.id, token, baseUrl })
+    },
+
     demoRequested: demoRequested(),
 
     openDemo: async () => {

@@ -25,3 +25,16 @@ export function suggestFolder(top: {
   const label = documents ? `${documents}${separator}Campus` : 'Campus'
   return { path: `${base}${separator}${label}`, label }
 }
+
+/**
+ * Where a cloud workspace's local copy goes by default: next to the suggested
+ * Campus folder, never inside it — a student's local workspace and a copy that
+ * gets overwritten must not share a folder.
+ */
+export function suggestCopyFolder(top: {
+  path: string
+  dirs: readonly string[]
+}): FolderSuggestion {
+  const { path, label } = suggestFolder(top)
+  return { path: `${path} (copia de la nube)`, label: `${label} (copia de la nube)` }
+}

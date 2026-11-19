@@ -156,7 +156,11 @@ describe('device config stays device-scoped', () => {
 
   it('survives corrupt preferences rather than blocking startup', () => {
     const store: DeviceStore = { get: () => 'not json{', set: () => {} }
-    expect(readDeviceConfig(store)).toEqual({ recentVaults: [], lastRuntime: null })
+    expect(readDeviceConfig(store)).toEqual({
+      recentVaults: [],
+      lastRuntime: null,
+      localCopy: null,
+    })
   })
 
   it('stores no vault-scoped data — only paths and the last choice', () => {

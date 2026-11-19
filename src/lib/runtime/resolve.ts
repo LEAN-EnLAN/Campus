@@ -1,6 +1,7 @@
 import { vaultErrorMessage } from '@/lib/vault/error-messages'
 import { VaultError } from '@/lib/vault/errors'
 import type { FolderListing } from '@/lib/vault/http-vault-access'
+import type { VaultAccess } from '@/lib/vault/vault-access'
 
 import { readDeviceConfig, type DeviceStore } from './device-config'
 import type { CampusRuntime, StartupState, VaultDescriptor } from './types'
@@ -55,6 +56,11 @@ export interface RuntimeCapabilities {
   closeDemo?(): void
   /** Leave the demo for good: forget it and reload at `/`. */
   leaveDemo?(): void
+  /**
+   * Open (creating it if it is the one missing folder) a folder to keep the
+   * per-device copy of a cloud workspace in. Absent where there is no Vault API.
+   */
+  openCopyFolder?(path: string): Promise<VaultAccess>
 }
 
 /**

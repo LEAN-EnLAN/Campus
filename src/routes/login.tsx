@@ -1,18 +1,18 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import {
   ArrowLeft,
-  ArrowRight,
-  CheckCircle2,
+  CalendarCheck,
   Cloud,
   GraduationCap,
-  ShieldCheck,
+  Lock,
+  Mail,
+  NotebookPen,
+  User,
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 import { CampusLogo } from '@/components/brand/campus-logo'
 import { Button } from '@/components/ui/button'
-import { Illustration } from '@/components/ui/illustration'
-import type { IllustrationName } from '@/components/ui/illustrations'
 import { TextField } from '@/components/ui/field'
 import {
   ACCOUNT_DELETED_MESSAGE,
@@ -20,7 +20,6 @@ import {
 } from '@/features/account/account-deleted-notice'
 import { MetricsConsentCheckbox } from '@/features/account/metrics-consent-checkbox'
 import { useAuth } from '@/features/auth/auth-context'
-import { isCloudUnreachable } from '@/features/auth/auth-errors'
 import { useDocumentTitle } from '@/lib/hooks/use-document-title'
 import { useWorkspace } from '@/lib/runtime/workspace'
 
@@ -29,14 +28,6 @@ export const Route = createFileRoute('/login')({
 })
 
 type Mode = 'signin' | 'signup' | 'reset' | 'new-password'
-
-/** The aside's picture per form. A sent email (`notice`) and an offline error override it. */
-const MODE_ART: Record<Mode, IllustrationName> = {
-  signin: 'login-signin',
-  signup: 'login-signup',
-  reset: 'password-recovery',
-  'new-password': 'password-new',
-}
 
 function LoginScreen() {
   const { signIn, signUp, session, loading, recovering, requestPasswordReset, updatePassword } =
@@ -135,28 +126,44 @@ function LoginScreen() {
     void navigate({ to: '/today' })
   }
 
+  const resetFeedback = () => {
+    setError(null)
+    setNotice(null)
+    setSubmitted(false)
+  }
+  const modeBtn =
+    'h-10 flex-1 rounded-pill px-4 text-sm font-medium transition-colors text-ink-muted hover:text-ink ' +
+    'aria-pressed:bg-paper-elevated aria-pressed:text-ink aria-pressed:shadow-raised'
+  const messageClass =
+    'rounded-xl border border-rule bg-paper-sunken px-3.5 py-3 text-sm text-ink'
+
   return (
-    <main className="blue-onboarding">
-      <div className="blue-onboarding-container">
-        <header className="blue-onboarding-top">
-          <CampusLogo wordmark className="blue-onboarding-brand" />
-          <button
-            type="button"
-            onClick={workspace.change}
-            className="blue-onboarding-text-link"
-          >
-            <ArrowLeft size={16} aria-hidden="true" /> Elegir otro espacio
-          </button>
-        </header>
-        <div className="blue-login-grid">
-          <div className="blue-login-panel">
-            {/* Choosing Campus Cloud was a choice, not a sentence: the way back to the
-            picker (a local folder, another account) has to be on this screen. */}
-            <div>
-              <p className="blue-onboarding-eyebrow">
+    <main className="bg-paper text-ink min-h-dvh overflow-x-hidden">
+      <div className="mx-auto grid min-h-dvh max-w-[1500px] lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] lg:gap-6 lg:p-6">
+        <div className="flex flex-col px-5 py-6 sm:px-10 lg:px-8 lg:py-4">
+          <header className="flex items-center justify-between gap-3">
+            <CampusLogo wordmark />
+            <Button type="button" variant="ghost" size="sm" onClick={workspace.change}>
+              <ArrowLeft aria-hidden="true" /> Elegir otro espacio
+            </Button>
+          </header>
+
+          {/* Mobile: the brand reduced to a band. The full panel lives on lg+. */}
+          <div className="mt-5 rounded-2xl bg-[image:var(--brand-gradient)] px-5 py-4 text-white lg:hidden">
+            <p className="text-base font-semibold tracking-tight">Tu cursada, ordenada.</p>
+            <p className="mt-0.5 text-sm text-white/80">
+              Materias, entregas y notas en un solo lugar.
+            </p>
+          </div>
+
+          {/* Choosing Campus Cloud was a choice, not a sentence: the way back to the
+          picker (a local folder, another account) has to be on this screen. */}
+          <div className="mx-auto flex w-full max-w-[420px] flex-1 flex-col justify-center gap-6 py-8">
+            <div className="flex flex-col gap-3">
+              <p className="text-accent-ink inline-flex items-center gap-2 text-sm font-medium">
                 <Cloud size={16} aria-hidden="true" /> Acceso a Campus Cloud
               </p>
-              <h1>
+              <h1 className="text-ink text-4xl font-semibold tracking-[-0.03em] text-balance sm:text-[2.5rem] sm:leading-[1.05]">
                 {mode === 'signup'
                   ? 'Tu recorrido empieza acá.'
                   : mode === 'reset'
@@ -165,7 +172,7 @@ function LoginScreen() {
                       ? 'Elegí una contraseña nueva.'
                       : 'Bienvenido de nuevo.'}
               </h1>
-              <p className="blue-login-lead">
+              <p className="text-ink-muted text-base">
                 {mode === 'reset'
                   ? 'Te enviaremos un enlace a tu correo para recuperar el acceso.'
                   : mode === 'new-password'
@@ -176,34 +183,36 @@ function LoginScreen() {
               </p>
             </div>
 
-            <div className="blue-login-mode" role="group" aria-label="Acción de cuenta">
+            <div
+              className="bg-paper-sunken rounded-pill flex gap-1 p-1"
+              role="group"
+              aria-label="Acción de cuenta"
+            >
               <button
                 type="button"
+                className={modeBtn}
                 aria-pressed={mode === 'signup'}
                 onClick={() => {
                   setMode('signup')
-                  setError(null)
-                  setNotice(null)
-                  setSubmitted(false)
+                  resetFeedback()
                 }}
               >
                 Crear cuenta
               </button>
               <button
                 type="button"
+                className={modeBtn}
                 aria-pressed={mode === 'signin'}
                 onClick={() => {
                   setMode('signin')
-                  setError(null)
-                  setNotice(null)
-                  setSubmitted(false)
+                  resetFeedback()
                 }}
               >
                 Iniciar sesión
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} noValidate className="blue-login-fields">
+            <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
               {mode === 'signup' ? (
                 <TextField
                   label="¿Cómo te llamás?"
@@ -211,6 +220,7 @@ function LoginScreen() {
                   onChange={(e) => setDisplayName(e.target.value)}
                   autoComplete="given-name"
                   placeholder="Camila"
+                  leadingIcon={<User aria-hidden="true" />}
                 />
               ) : null}
 
@@ -223,6 +233,7 @@ function LoginScreen() {
                   autoComplete="email"
                   error={submitted ? emailError : null}
                   required
+                  leadingIcon={<Mail aria-hidden="true" />}
                 />
               )}
 
@@ -236,35 +247,36 @@ function LoginScreen() {
                   hint={mode === 'signup' ? 'Mínimo 6 caracteres.' : undefined}
                   error={submitted ? passwordError : null}
                   required
+                  leadingIcon={<Lock aria-hidden="true" />}
                 />
               )}
 
               {mode === 'signin' ? (
-                <button
+                <Button
                   type="button"
-                  className="blue-onboarding-text-link"
+                  variant="link"
+                  size="sm"
+                  className="self-start"
                   onClick={() => {
                     setMode('reset')
-                    setNotice(null)
-                    setError(null)
-                    setSubmitted(false)
+                    resetFeedback()
                   }}
                 >
                   Recuperar contraseña
-                </button>
+                </Button>
               ) : mode === 'reset' ? (
-                <button
+                <Button
                   type="button"
-                  className="blue-onboarding-text-link"
+                  variant="link"
+                  size="sm"
+                  className="self-start"
                   onClick={() => {
                     setMode('signin')
-                    setNotice(null)
-                    setError(null)
-                    setSubmitted(false)
+                    resetFeedback()
                   }}
                 >
                   Volver a iniciar sesión
-                </button>
+                </Button>
               ) : null}
 
               {mode === 'signup' ? (
@@ -272,24 +284,35 @@ function LoginScreen() {
               ) : null}
 
               {farewell ? (
-                <p role="status" className="blue-login-message">
+                <p role="status" className={messageClass}>
                   {farewell}
                 </p>
               ) : null}
 
               {notice ? (
-                <p role="status" className="blue-login-message">
+                <p role="status" className={messageClass}>
                   {notice}
                 </p>
               ) : null}
 
               {error ? (
-                <p role="alert" className="blue-login-message" data-error="true">
+                <p
+                  role="alert"
+                  className="border-danger/40 bg-danger-soft text-danger rounded-xl border px-3.5 py-3 text-sm"
+                  data-error="true"
+                >
                   {error}
                 </p>
               ) : null}
 
-              <Button type="submit" variant="primary" size="lg" disabled={pending}>
+              <Button
+                type="submit"
+                variant="primary"
+                size="lg"
+                disabled={pending}
+                trailingArrow={!pending}
+                className="w-full"
+              >
                 {pending
                   ? 'Un momento…'
                   : mode === 'signup'
@@ -299,48 +322,48 @@ function LoginScreen() {
                       : mode === 'new-password'
                         ? 'Guardar contraseña'
                         : 'Entrar'}
-                {!pending && <ArrowRight size={17} aria-hidden="true" />}
               </Button>
             </form>
 
-            <p className="blue-login-legal">
+            <p className="text-ink-muted text-xs">
               Campus no te pide las credenciales de tu autogestión universitaria, y nunca lo va
               a hacer.
             </p>
           </div>
-          <aside className="blue-login-side" aria-label="Campus Cloud">
-            {/* Same frame in every state: the picture follows the form (and says when
-                the connection, not the form, failed); the words stay in the form. */}
-            <Illustration
-              name={
-                isCloudUnreachable(error)
-                  ? 'offline-study'
-                  : notice
-                    ? 'auth-email'
-                    : MODE_ART[mode]
-              }
-              eager
-              size="lg"
-            />
-            <span className="blue-onboarding-eyebrow">Todo tu espacio académico</span>
-            <h2>Tu cursada, siempre a mano.</h2>
-            <p>
-              Con tu cuenta podés acceder a tu espacio de Campus desde la computadora o el
-              celular.
-            </p>
-            <ul>
-              <li>
-                <GraduationCap size={18} aria-hidden="true" /> Tu carrera y tu plan de estudios
-              </li>
-              <li>
-                <CheckCircle2 size={18} aria-hidden="true" /> Materias y progreso académico
-              </li>
-              <li>
-                <ShieldCheck size={18} aria-hidden="true" /> Acceso con email y contraseña
-              </li>
-            </ul>
-          </aside>
         </div>
+
+        <aside
+          aria-label="Campus Cloud"
+          className="relative hidden overflow-hidden rounded-[28px] bg-[image:var(--brand-gradient)] p-12 text-white lg:flex lg:flex-col lg:justify-center"
+        >
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute -top-24 -right-24 size-96 rounded-full bg-white/15 blur-3xl"
+          />
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute -bottom-32 -left-20 size-[28rem] rounded-full bg-white/10 blur-3xl"
+          />
+          <div className="relative flex max-w-md flex-col gap-8">
+            <h2 className="text-5xl leading-[1.05] font-semibold tracking-[-0.03em] text-balance">
+              Tu cursada, ordenada.
+            </h2>
+            <ul className="flex flex-col gap-4">
+              {[
+                { Icon: GraduationCap, text: 'Plan de estudios y correlativas claras.' },
+                { Icon: CalendarCheck, text: 'Entregas y parciales en un solo lugar.' },
+                { Icon: NotebookPen, text: 'Notas por materia, tuyas.' },
+              ].map(({ Icon, text }) => (
+                <li key={text} className="flex items-center gap-3.5 text-base text-white">
+                  <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-white/20">
+                    <Icon size={20} aria-hidden="true" />
+                  </span>
+                  {text}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </aside>
       </div>
     </main>
   )

@@ -233,6 +233,12 @@ export function CampusCalendar({
     [itemsQuery.data, subjectNames],
   )
 
+  // "+N más" in a crowded month cell opens that day. The vendor only navigates
+  // on its own when NO app-level handler exists, and the app always has one
+  // (it forwards to `callbacks`), so without this the "+N" did nothing at all.
+  // A ref, because the config is built before the app it would navigate.
+  const openDayRef = useRef<(date: Date) => void>(() => {})
+
   // `dataUpdatedAt` is the version: it changes exactly when the item list does,
   // which is what tells the calendar app to adopt a new event set.
   const calendar = useCalendarApp(
@@ -271,6 +277,7 @@ export function CampusCalendar({
       // single click doing nothing a student could see.
       eventDetailTrigger: 'click',
       timeFormat: '24h',
+      callbacks: { onMoreEventsClick: (date) => openDayRef.current(date) },
     },
     // Re-key on the palette too: a theme or accent change repaints every
     // calendar, and the app has to adopt the new colours.
@@ -301,13 +308,20 @@ export function CampusCalendar({
   // from the palette) moves the grid there. The first one is the config's
   // `initialDate`; re-applying it on every item refresh would yank the student
   // back to it after each "marcar como hecho".
+  useEffect(() => {
+    openDayRef.current = (date) => {
+      calendar.setCurrentDate(date)
+      calendar.changeView(ViewType.DAY)
+    }
+  }, [calendar])
+
   const appliedFocus = useRef(focusDate)
   useEffect(() => {
     if (focusDate === appliedFocus.current) return
     appliedFocus.current = focusDate
     if (!focusDay) return
     setAgendaOpen(false)
-    calendar.app.setCurrentDate(focusDay)
+    calendar.setCurrentDate(focusDay)
     calendar.changeView(ViewType.DAY)
   }, [focusDate, focusDay, calendar])
 

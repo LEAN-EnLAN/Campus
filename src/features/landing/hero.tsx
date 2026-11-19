@@ -35,7 +35,7 @@ export function LandingHero() {
     <section aria-labelledby="lp-hero-title" className="lp-container">
       <div className="lp-band">
         <div className="lp-hero">
-          <div className="min-w-0">
+          <div className="lp-hero-text">
             <h1 id="lp-hero-title" className="lp-hero-title">
               Tu plan de estudios, convertido en qué hacer hoy.
             </h1>
@@ -61,8 +61,8 @@ export function LandingHero() {
             <img
               src="/landing/hero.webp"
               width={1600}
-              height={1200}
-              alt="Escritorio de estudiante con apuntes, un calendario y Campus abierto en la notebook y el celular"
+              height={900}
+              alt="Notebook y celular con el calendario y las tareas de Campus, junto a un cuaderno, un lápiz, un café y una copa"
               loading="eager"
               fetchPriority="high"
               decoding="async"

@@ -62,7 +62,7 @@ export function CommunityBand() {
           src="/landing/rosario.webp"
           width={1600}
           height={900}
-          alt="Costanera de Rosario con el Monumento a la Bandera al atardecer"
+          alt="Costanera al atardecer, con estudiantes caminando junto al río"
           loading="lazy"
           decoding="async"
         />

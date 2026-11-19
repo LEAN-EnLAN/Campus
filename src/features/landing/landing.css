@@ -251,20 +251,26 @@ body:has(.campus-landing) {
 }
 .lp-hero {
   display: grid;
-  gap: 2rem;
-  align-items: center;
+  gap: 1.5rem;
   padding: 2.5rem 1.5rem 0;
+}
+.lp-hero-text {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
 }
 @media (min-width: 64rem) {
   .lp-hero {
-    grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
-    gap: 1rem;
-    padding: 4.5rem 0 4.5rem 4rem;
-    min-height: 34rem;
+    min-height: clamp(34rem, 40vw, 40rem);
+    align-content: center;
+    padding: 4.5rem 4rem;
+  }
+  .lp-hero-text {
+    max-width: min(34rem, 44%);
   }
 }
 .lp-hero-title {
-  font-size: clamp(2.25rem, 1.4rem + 3.6vw, 4.25rem);
+  font-size: clamp(2.25rem, 1.4rem + 3.2vw, 4rem);
   font-weight: 600;
   letter-spacing: -0.035em;
   line-height: 1.02;
@@ -298,16 +304,10 @@ body:has(.campus-landing) {
 .lp-hero-download:hover {
   text-decoration-color: currentColor;
 }
+/* The art is a scene with its own empty left side, made to sit behind the
+   copy. On a phone it moves below the copy and shows only the objects. */
 .lp-hero-art {
-  position: relative;
-  align-self: end;
   margin-inline: -1.5rem;
-}
-@media (min-width: 64rem) {
-  .lp-hero-art {
-    align-self: center;
-    margin-inline: 0;
-  }
 }
 .lp-hero-art img {
   display: block;
@@ -315,13 +315,25 @@ body:has(.campus-landing) {
   height: auto;
   aspect-ratio: 4 / 3;
   object-fit: cover;
-  -webkit-mask-image: linear-gradient(to bottom, #000 80%, transparent);
-  mask-image: linear-gradient(to bottom, #000 80%, transparent);
+  object-position: 78% 50%;
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 22%);
+  mask-image: linear-gradient(to bottom, transparent, #000 22%);
 }
 @media (min-width: 64rem) {
+  /* The right 62% of the band, faded in from the left so the scene's own
+     violet melts into the band instead of meeting it at a seam. */
+  .lp-hero-art {
+    position: absolute;
+    inset: 0 0 0 auto;
+    width: 62%;
+    margin: 0;
+  }
   .lp-hero-art img {
-    -webkit-mask-image: linear-gradient(to right, transparent, #000 14%);
-    mask-image: linear-gradient(to right, transparent, #000 14%);
+    height: 100%;
+    aspect-ratio: auto;
+    object-position: right center;
+    -webkit-mask-image: linear-gradient(to right, transparent, #000 22%);
+    mask-image: linear-gradient(to right, transparent, #000 22%);
   }
 }
 
@@ -453,6 +465,7 @@ body:has(.campus-landing) {
   background: var(--lp-tile-progress);
 }
 .lp-tile[data-tone='share'] {
+  min-height: 15rem;
   background: var(--lp-tile-share);
 }
 .lp-tile-title {
@@ -478,16 +491,16 @@ body:has(.campus-landing) {
   aspect-ratio: 1;
   margin-top: auto;
   margin-left: auto;
-  margin-right: -1rem;
+  margin-right: -1.75rem;
   object-fit: cover;
-  border-radius: 1rem 1rem 0 0;
+  border-radius: 1.25rem 0 0 0;
   transition: transform 420ms var(--lp-ease);
 }
 .lp-tile--wide .lp-tile-art {
   width: min(62%, 26rem);
 }
 .lp-tile:hover .lp-tile-art {
-  transform: translateY(-6px) rotate(-1deg);
+  transform: translate(-4px, -4px);
 }
 .lp-share-badges {
   display: flex;
@@ -816,6 +829,11 @@ body:has(.campus-landing) {
 }
 
 /* ---- Closing band + footer ------------------------------------------- */
+/* The closing band keeps its buttons on indigo and blue: white type on the
+   sky end of the hero gradient falls under 3:1. */
+.lp-band:has(.lp-cta) {
+  background: linear-gradient(105deg, var(--lp-indigo) 0%, var(--lp-blue) 100%);
+}
 .lp-cta {
   display: grid;
   gap: 1.5rem;

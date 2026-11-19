@@ -67,7 +67,7 @@ export function FeatureMosaic() {
           art={
             <TileArt
               name="tile-calendar"
-              alt="Calendario con parciales y entregas de la semana marcados"
+              alt="Calendario con fechas marcadas, libros y un despertador"
             />
           }
         >
@@ -82,7 +82,7 @@ export function FeatureMosaic() {
           art={
             <TileArt
               name="tile-plan"
-              alt="Plan de estudios año por año con las materias conectadas por correlativas"
+              alt="Árbol de materias conectadas, coloreadas según su estado"
             />
           }
         >
@@ -93,12 +93,7 @@ export function FeatureMosaic() {
           tone="progress"
           span="third"
           title="Finales que más destraban"
-          art={
-            <TileArt
-              name="tile-progress"
-              alt="Lista de finales ordenada por cuántas materias habilita cada uno"
-            />
-          }
+          art={<TileArt name="tile-progress" alt="Copa de vidrio que se va llenando" />}
         >
           Qué final rendir primero para habilitar más materias.
         </Tile>
@@ -107,12 +102,7 @@ export function FeatureMosaic() {
           span="third"
           title="Asistente con tu propia clave"
           tag="BYOK"
-          art={
-            <TileArt
-              name="tile-assistant"
-              alt="Asistente de Campus respondiendo una consulta sobre la cursada"
-            />
-          }
+          art={<TileArt name="tile-assistant" alt="Globo de chat con una llave dorada" />}
         >
           Conectá tu clave de IA: elegís el proveedor y controlás lo que gastás.
         </Tile>

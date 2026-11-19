@@ -410,6 +410,8 @@
   --color-canvas: #0f1220;
   --color-startup: #0f1220;
   --color-startup-wash: #151a2e;
+  /* The wordmark's navy would vanish on the night canvas: it inverts. */
+  --brand-navy: #e8ecf7;
   --blue-01: #080e1c;
   --blue-02: #dbe7ff;
   --blue-03: #cfe0ff;

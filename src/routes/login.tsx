@@ -138,7 +138,7 @@ function LoginScreen() {
     'rounded-xl border border-rule bg-paper-sunken px-3.5 py-3 text-sm text-ink'
 
   return (
-    <main className="bg-paper text-ink min-h-dvh overflow-x-hidden">
+    <main className="blue-onboarding bg-paper text-ink min-h-dvh overflow-x-hidden">
       <div className="mx-auto grid min-h-dvh max-w-[1500px] lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] lg:gap-6 lg:p-6">
         <div className="flex flex-col px-5 py-6 sm:px-10 lg:px-8 lg:py-4">
           <header className="flex items-center justify-between gap-3">

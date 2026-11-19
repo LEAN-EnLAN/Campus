@@ -1,3 +1,4 @@
+import { CalendarPlus, PencilLine } from 'lucide-react'
 import { useEffect, useId, useRef, useState } from 'react'
 
 import type { AcademicItem, AcademicItemKind, SubjectView } from '@/domain/types'
@@ -10,7 +11,7 @@ import {
   parseTimeInput,
 } from '@/features/items/date-input'
 import { Button } from './ui/button'
-import { Modal } from './ui/modal'
+import { Modal, ModalFooter, ModalHeader } from './ui/modal'
 import { Field, SelectField, TextField } from './ui/field'
 import { MaskedDateInput } from './ui/masked-date-input'
 import { MaskedTimeInput } from './ui/masked-time-input'
@@ -245,14 +246,16 @@ export function QuickCapture({
         aria-busy={isPending}
         className="flex flex-col gap-4 p-4 sm:p-6"
       >
-        <h2 id={titleId} className="text-ink font-serif text-lg">
-          {(editing ? EDIT_TITLE_BY_KIND : TITLE_BY_KIND)[kind]}
-        </h2>
-        <p className="text-ink-muted -mt-2 text-sm">
-          {editing
-            ? 'Cambiá lo que necesites. La materia y la fecha son opcionales.'
-            : 'Anotá lo importante. La materia y la fecha son opcionales.'}
-        </p>
+        <ModalHeader
+          titleId={titleId}
+          title={(editing ? EDIT_TITLE_BY_KIND : TITLE_BY_KIND)[kind]}
+          description={
+            editing
+              ? 'Cambiá lo que necesites. La materia y la fecha son opcionales.'
+              : 'Anotá lo importante. La materia y la fecha son opcionales.'
+          }
+          icon={editing ? <PencilLine /> : <CalendarPlus />}
+        />
 
         <TextField
           ref={firstFieldRef}
@@ -359,7 +362,7 @@ export function QuickCapture({
           </p>
         ) : null}
 
-        <div className="border-rule-soft mt-1 flex justify-end gap-2 border-t pt-4">
+        <ModalFooter>
           <Button
             variant="ghost"
             disabled={isPending}
@@ -373,7 +376,7 @@ export function QuickCapture({
           <Button type="submit" variant="primary" disabled={isPending}>
             {isPending ? 'Guardando…' : editing ? 'Guardar cambios' : 'Guardar'}
           </Button>
-        </div>
+        </ModalFooter>
       </form>
     </Modal>
   )

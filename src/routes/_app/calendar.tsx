@@ -1,10 +1,13 @@
 import { createFileRoute } from '@tanstack/react-router'
 
 import { EmptyState, ErrorState, LoadingRows } from '@/components/empty-state'
+import { validateCalendarSearch } from '@/features/calendar/calendar-search'
 import { CampusCalendar } from '@/features/calendar/campus-calendar'
 import { useAcademicItems } from '@/features/items/queries'
 
 export const Route = createFileRoute('/_app/calendar')({
+  // `?date=YYYY-MM-DD` opens the day view on that date; anything else is dropped.
+  validateSearch: validateCalendarSearch,
   component: CalendarScreen,
 })
 
@@ -17,6 +20,7 @@ export const Route = createFileRoute('/_app/calendar')({
  */
 function CalendarScreen() {
   const itemsQuery = useAcademicItems()
+  const { date } = Route.useSearch()
 
   if (itemsQuery.error) {
     return (
@@ -49,5 +53,5 @@ function CalendarScreen() {
     )
   }
 
-  return <CampusCalendar />
+  return <CampusCalendar focusDate={date} />
 }

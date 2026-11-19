@@ -156,7 +156,11 @@ describe('device config stays device-scoped', () => {
 
   it('survives corrupt preferences rather than blocking startup', () => {
     const store: DeviceStore = { get: () => 'not json{', set: () => {} }
-    expect(readDeviceConfig(store)).toEqual({ recentVaults: [], lastRuntime: null })
+    expect(readDeviceConfig(store)).toEqual({
+      recentVaults: [],
+      lastRuntime: null,
+      localCopy: null,
+    })
   })
 
   it('stores no vault-scoped data — only paths and the last choice', () => {
@@ -336,5 +340,73 @@ describe('resolveCampusRuntime — a hosted build has no Vault API', () => {
       caps({ store, vaultAvailable: false, cloudSession: async () => true }),
     )
     expect(state.status).toBe('ready')
+  })
+})
+
+describe('resolveCampusRuntime — the demo', () => {
+  const demoRuntime = { mode: 'demo', backend: localBackend } as CampusRuntime
+
+  it('opens the demo when it was asked for, over a remembered vault', async () => {
+    const store = memoryStore(rememberVault({ recentVaults: [], lastRuntime: null }, VAULT))
+    const before = store.get()
+    const state = await resolveCampusRuntime(
+      caps({ store, demoRequested: true, openDemo: async () => demoRuntime }),
+    )
+    expect(state).toEqual({ status: 'ready', runtime: demoRuntime })
+    // The demo never becomes what this device reopens.
+    expect(store.get()).toBe(before)
+  })
+
+  it('is not opened unless asked for', async () => {
+    const openDemo = vi.fn(async () => demoRuntime)
+    const state = await resolveCampusRuntime(caps({ store: memoryStore(), openDemo }))
+    expect(state.status).toBe('needs-choice')
+    expect(openDemo).not.toHaveBeenCalled()
+  })
+})
+
+describe('resolveCampusRuntime — /login asks for the cloud', () => {
+  it('opens the cloud instead of the picker and remembers it', async () => {
+    const store = memoryStore()
+    const state = await resolveCampusRuntime(
+      caps({ store, vaultAvailable: false, loginRequested: true }),
+    )
+    expect(state.status).toBe('ready')
+    if (state.status === 'ready') expect(state.runtime.mode).toBe('cloud')
+    expect(readDeviceConfig(store).lastRuntime?.mode).toBe('cloud')
+  })
+
+  it('does not take a remembered vault away from its student', async () => {
+    const store = memoryStore(rememberVault({ recentVaults: [], lastRuntime: null }, VAULT))
+    const state = await resolveCampusRuntime(caps({ store, loginRequested: true }))
+    expect(state.status === 'ready' && state.runtime.mode).toBe('local')
+  })
+
+  it('falls back to the picker when the cloud cannot open', async () => {
+    const store = memoryStore()
+    const state = await resolveCampusRuntime(
+      caps({
+        store,
+        loginRequested: true,
+        openCloud: async () => {
+          throw new Error('sin nube')
+        },
+      }),
+    )
+    expect(state.status).toBe('needs-choice')
+    expect(readDeviceConfig(store).lastRuntime).toBeNull()
+  })
+
+  it('leaves /demo to the demo', async () => {
+    const demoRuntime = { mode: 'demo', backend: localBackend } as CampusRuntime
+    const state = await resolveCampusRuntime(
+      caps({
+        store: memoryStore(),
+        loginRequested: true,
+        demoRequested: true,
+        openDemo: async () => demoRuntime,
+      }),
+    )
+    expect(state).toEqual({ status: 'ready', runtime: demoRuntime })
   })
 })

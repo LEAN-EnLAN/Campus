@@ -9,9 +9,12 @@ import { createRoot } from 'react-dom/client'
 import { TelemetryBridge } from '@/features/account/telemetry-bridge'
 import { AuthProvider } from '@/features/auth/auth-context'
 import { WorkspaceQueryProvider } from '@/features/auth/workspace-query-provider'
+import { DemoBanner } from '@/features/demo/demo-banner'
+import { LocalCopyPrompt } from '@/features/settings/local-copy-section'
 import { RuntimeProvider } from '@/lib/runtime/context'
 import { ThemeProvider } from '@/lib/theme/theme-context'
 
+import { LocalCopySync } from './local-copy-sync'
 import { resolveRuntimeCapabilities } from './runtime-capabilities'
 import { Startup } from './startup'
 
@@ -60,7 +63,12 @@ createRoot(rootElement).render(
         >
           <WorkspaceQueryProvider>
             <TelemetryBridge />
-            <RouterProvider router={router} />
+            <LocalCopySync capabilities={capabilities}>
+              {/* Above the router: both notices belong to every screen. */}
+              <DemoBanner />
+              <LocalCopyPrompt />
+              <RouterProvider router={router} />
+            </LocalCopySync>
           </WorkspaceQueryProvider>
         </RuntimeProvider>
       </AuthProvider>

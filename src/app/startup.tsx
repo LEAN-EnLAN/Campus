@@ -145,7 +145,10 @@ export function Startup() {
           </section>
 
           <p className="text-ink-muted border-t pt-6 text-sm">
-            Si querés guardar todo en tu computadora, abrí Campus ahí.
+            Si querés guardar todo en tu computadora, abrí Campus ahí.{' '}
+            <a href="/demo" className="text-accent-ink underline underline-offset-4">
+              Probar la demo sin cuenta
+            </a>
           </p>
         </div>
       </main>
@@ -165,7 +168,9 @@ export function Startup() {
           <CampusLogo wordmark className="mb-6 text-xl" />
           <p className="blue-startup-step">Tu espacio de trabajo</p>
           <h1 className="text-3xl font-semibold">Elegí cómo querés usar Campus</h1>
-          <p className="text-ink-muted">¿Dónde querés guardar tus materias y tus notas?</p>
+          <p className="text-ink-muted">
+            Lo más simple es la nube: tu progreso te sigue a todos lados.
+          </p>
         </header>
 
         {state.status === 'vault-unavailable' && (
@@ -257,6 +262,42 @@ export function Startup() {
 
         <div className="blue-startup-options grid gap-4 sm:grid-cols-2">
           <section
+            aria-labelledby="startup-cloud"
+            className="blue-startup-option border-rule bg-paper-elevated flex flex-col gap-3 rounded-lg border p-5"
+          >
+            {/* Same frame either way, so the swap never moves the button. */}
+            <Illustration
+              name={cloudError ? 'sync-offline' : 'workspace-cloud'}
+              decorative
+              eager
+              size="lg"
+              className="blue-startup-illustration"
+            />
+            <p className="blue-startup-step">Recomendado</p>
+            <h2 id="startup-cloud" className="font-serif text-lg">
+              En la nube
+            </h2>
+            <p className="text-ink-muted text-sm">
+              Tu progreso sincronizado en todos tus dispositivos: la compu, el celu, la de la
+              facultad. Necesitás un mail y una contraseña.
+            </p>
+            <div>
+              <Button
+                type="button"
+                variant="primary"
+                disabled={busy}
+                onClick={() => void startCloud()}
+              >
+                Entrar o crear cuenta
+              </Button>
+            </div>
+            {cloudError ? (
+              <p className="text-danger text-sm" role="alert">
+                {cloudError}
+              </p>
+            ) : null}
+          </section>
+          <section
             aria-labelledby="startup-local"
             className="blue-startup-option border-rule bg-paper-elevated flex flex-col gap-3 rounded-lg border p-5"
           >
@@ -268,7 +309,7 @@ export function Startup() {
               className="blue-startup-illustration"
             />
             <h2 id="startup-local" className="font-serif text-lg">
-              En esta computadora
+              Solo en esta computadora, sin cuenta
             </h2>
             <p className="text-ink-muted text-sm">
               Todo queda en una carpeta tuya, como cualquier otro archivo. Funciona sin internet
@@ -286,7 +327,7 @@ export function Startup() {
               {suggestion ? (
                 <Button
                   type="button"
-                  variant="primary"
+                  variant="secondary"
                   disabled={busy}
                   onClick={() => void open(suggestion.path, { create: true })}
                 >
@@ -371,46 +412,13 @@ export function Startup() {
               {error}
             </p>
           </section>
-
-          <section
-            aria-labelledby="startup-cloud"
-            className="blue-startup-option border-rule bg-paper-elevated flex flex-col gap-3 rounded-lg border p-5"
-          >
-            {/* Same frame either way, so the swap never moves the button. */}
-            <Illustration
-              name={cloudError ? 'sync-offline' : 'workspace-cloud'}
-              decorative
-              eager
-              size="lg"
-              className="blue-startup-illustration"
-            />
-            <h2 id="startup-cloud" className="font-serif text-lg">
-              En la nube
-            </h2>
-            <p className="text-ink-muted text-sm">
-              Entrás con tu cuenta y ves lo mismo desde la compu y el celu. Necesitás un mail y
-              una contraseña.
-            </p>
-            <div>
-              <Button
-                type="button"
-                variant="secondary"
-                disabled={busy}
-                onClick={() => void startCloud()}
-              >
-                Entrar o crear cuenta
-              </Button>
-            </div>
-            {cloudError ? (
-              <p className="text-danger text-sm" role="alert">
-                {cloudError}
-              </p>
-            ) : null}
-          </section>
         </div>
 
         <p className="text-ink-muted border-t pt-6 text-sm">
-          Tus notas son archivos de texto: te los podés llevar cuando quieras.
+          Tus notas son archivos de texto: te los podés llevar cuando quieras.{' '}
+          <a href="/demo" className="text-accent-ink underline underline-offset-4">
+            Probar la demo sin cuenta
+          </a>
         </p>
 
         {picking && listFolders ? (

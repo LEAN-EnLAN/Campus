@@ -1,11 +1,14 @@
-import { supabase } from '@/lib/supabase'
+import { supabase, supabaseConfigured } from '@/lib/supabase'
 import { loadPortableCatalog, type PortableCatalog } from '@/lib/backends/local/catalog'
 import { LocalBackend } from '@/lib/backends/local/local-backend'
 import { createSupabaseBackend } from '@/lib/backends/supabase-backend'
 import { isVaultAvailable, type BuildEnv } from '@/lib/runtime/build-flags'
 import { browserDeviceStore } from '@/lib/runtime/device-config'
 import type { RuntimeCapabilities } from '@/lib/runtime/resolve'
+import { seedDemo } from '@/lib/demo/seed'
+import { clearDemoSession, demoRequested, markDemoSession } from '@/lib/demo/session'
 import { VaultError } from '@/lib/vault/errors'
+import { memoryVaultAccess } from '@/lib/vault/memory-vault-access'
 import {
   httpVaultAccess,
   listVaultFolders,
@@ -100,6 +103,39 @@ export function resolveRuntimeCapabilities(
       return data.session !== null
     },
 
-    openCloud: async () => ({ mode: 'cloud', backend: createSupabaseBackend() }),
+    openCloud: async () => {
+      // A build without the cloud's values can still run the demo; it must not
+      // then pretend it can open the cloud.
+      if (!supabaseConfigured)
+        throw new Error('Esta versión de Campus no tiene la nube configurada.')
+      return { mode: 'cloud', backend: createSupabaseBackend() }
+    },
+
+    openCopyFolder: async (path) => {
+      const session = await openVaultSession(baseUrl, token, path, { create: true })
+      return httpVaultAccess({ vaultId: session.id, token, baseUrl })
+    },
+
+    demoRequested: demoRequested(),
+
+    loginRequested: window.location.pathname === '/login',
+
+    openDemo: async () => {
+      // The SAME LocalBackend a folder gets, over files that live in this tab.
+      const access = memoryVaultAccess()
+      const backend = new LocalBackend(access, await catalog())
+      await seedDemo(backend)
+      markDemoSession()
+      return { mode: 'demo', backend, access }
+    },
+
+    closeDemo: clearDemoSession,
+
+    leaveDemo: () => {
+      clearDemoSession()
+      // A full load, not a route change: the in-memory demo must not survive
+      // into whatever this device opens next.
+      window.location.assign('/')
+    },
   }
 }

@@ -23,9 +23,21 @@ export interface DeviceConfig {
   recentVaults: VaultDescriptor[]
   /** What to reopen on next launch. `null` means "ask me". */
   lastRuntime: { mode: 'local'; path: string } | { mode: 'cloud' } | null
+  /**
+   * Whether THIS device also keeps a copy of the cloud workspace in a folder.
+   * `null` means it was never asked here. Device-scoped on purpose: the laptop
+   * may keep a copy while the faculty's computer must not.
+   */
+  localCopy?: LocalCopyChoice | null
 }
 
-const EMPTY: DeviceConfig = { recentVaults: [], lastRuntime: null }
+export interface LocalCopyChoice {
+  enabled: boolean
+  /** Absolute folder path on this machine; null when declined. */
+  path: string | null
+}
+
+const EMPTY: DeviceConfig = { recentVaults: [], lastRuntime: null, localCopy: null }
 
 export interface DeviceStore {
   get(): string | null
@@ -58,12 +70,25 @@ export function readDeviceConfig(store: DeviceStore): DeviceConfig {
     return {
       recentVaults: Array.isArray(parsed.recentVaults) ? parsed.recentVaults : [],
       lastRuntime: parsed.lastRuntime ?? null,
+      localCopy: parseLocalCopy(parsed.localCopy),
     }
   } catch {
     // Corrupt device preferences must never block startup. Nothing here is the
     // student's work — it is all rebuildable by opening a folder again.
     return EMPTY
   }
+}
+
+function parseLocalCopy(raw: unknown): LocalCopyChoice | null {
+  if (typeof raw !== 'object' || raw === null) return null
+  const { enabled, path } = raw as Record<string, unknown>
+  if (typeof enabled !== 'boolean') return null
+  return { enabled, path: typeof path === 'string' && path.length > 0 ? path : null }
+}
+
+/** Record this device's answer about keeping a local copy. */
+export function setLocalCopy(config: DeviceConfig, choice: LocalCopyChoice): DeviceConfig {
+  return { ...config, localCopy: choice }
 }
 
 export function writeDeviceConfig(store: DeviceStore, config: DeviceConfig): void {
@@ -74,6 +99,7 @@ export function writeDeviceConfig(store: DeviceStore, config: DeviceConfig): voi
 export function rememberVault(config: DeviceConfig, vault: VaultDescriptor): DeviceConfig {
   const rest = config.recentVaults.filter((v) => v.path !== vault.path)
   return {
+    ...config,
     recentVaults: [vault, ...rest].slice(0, MAX_RECENT),
     lastRuntime: { mode: 'local', path: vault.path },
   }
@@ -87,6 +113,7 @@ export function rememberVault(config: DeviceConfig, vault: VaultDescriptor): Dev
  */
 export function forgetVault(config: DeviceConfig, path: string): DeviceConfig {
   return {
+    ...config,
     recentVaults: config.recentVaults.filter((v) => v.path !== path),
     lastRuntime:
       config.lastRuntime?.mode === 'local' && config.lastRuntime.path === path

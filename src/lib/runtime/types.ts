@@ -21,6 +21,12 @@ export type CampusRuntime =
       access: VaultAccess
     }
   | { mode: 'cloud'; backend: CampusBackend }
+  /**
+   * The free demo: a LocalBackend over an in-memory vault, seeded with an
+   * example student. No account, no folder, nothing persisted, and never
+   * remembered as the device's last runtime.
+   */
+  | { mode: 'demo'; backend: CampusBackend; access: VaultAccess }
 
 /** A vault the student chose, as the DEVICE knows it. */
 export interface VaultDescriptor {

@@ -1,8 +1,14 @@
 import { vaultErrorMessage } from '@/lib/vault/error-messages'
 import { VaultError } from '@/lib/vault/errors'
 import type { FolderListing } from '@/lib/vault/http-vault-access'
+import type { VaultAccess } from '@/lib/vault/vault-access'
 
-import { readDeviceConfig, type DeviceStore } from './device-config'
+import {
+  readDeviceConfig,
+  rememberCloud,
+  writeDeviceConfig,
+  type DeviceStore,
+} from './device-config'
 import type { CampusRuntime, StartupState, VaultDescriptor } from './types'
 
 /**
@@ -44,6 +50,28 @@ export interface RuntimeCapabilities {
   cloudSession(): Promise<boolean>
   /** Build the cloud runtime. */
   openCloud(): Promise<CampusRuntime>
+  /**
+   * Did the student ask for the demo (`/demo`, or a reload inside it)? Read
+   * once at the composition root, like the build flag.
+   */
+  demoRequested?: boolean
+  /**
+   * Did the visitor open `/login` itself? That is the cloud, asked for by name:
+   * when nothing remembered would open, it opens the cloud instead of the
+   * picker (or the public landing a hosted build shows in its place).
+   */
+  loginRequested?: boolean
+  /** Build a fresh demo runtime: in memory, seeded, no account. */
+  openDemo?(): Promise<CampusRuntime>
+  /** Forget the demo for this tab, so the next load resolves as usual. */
+  closeDemo?(): void
+  /** Leave the demo for good: forget it and reload at `/`. */
+  leaveDemo?(): void
+  /**
+   * Open (creating it if it is the one missing folder) a folder to keep the
+   * per-device copy of a cloud workspace in. Absent where there is no Vault API.
+   */
+  openCopyFolder?(path: string): Promise<VaultAccess>
 }
 
 /**
@@ -54,6 +82,34 @@ export interface RuntimeCapabilities {
  * a token was still fresh would silently move someone off their own files.
  */
 export async function resolveCampusRuntime(caps: RuntimeCapabilities): Promise<StartupState> {
+  // The demo outranks whatever this device remembers: whoever opened `/demo`
+  // asked for exactly that, and the demo never touches the device config, so
+  // their real workspace is still there when they leave.
+  if (caps.demoRequested && caps.openDemo) {
+    return { status: 'ready', runtime: await caps.openDemo() }
+  }
+
+  const remembered = await resolveRemembered(caps)
+
+  // `/login` only answers what the device left open. A remembered vault still
+  // wins (see above); a cloud that cannot be reached leaves the picker, which
+  // already explains that case.
+  if (remembered.status === 'needs-choice' && caps.loginRequested) {
+    let runtime: CampusRuntime
+    try {
+      runtime = await caps.openCloud()
+    } catch {
+      return remembered
+    }
+    // Remembered like the picker's own cloud choice, so the reload after
+    // signing in lands in the cloud and not back on the picker.
+    writeDeviceConfig(caps.store, rememberCloud(readDeviceConfig(caps.store)))
+    return { status: 'ready', runtime }
+  }
+  return remembered
+}
+
+async function resolveRemembered(caps: RuntimeCapabilities): Promise<StartupState> {
   const config = readDeviceConfig(caps.store)
   const last = config.lastRuntime
 

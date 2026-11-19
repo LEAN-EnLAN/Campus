@@ -24,6 +24,8 @@ import {
 import type { SubjectView } from '@/domain/types'
 import { useAcademicPlan } from '@/features/academic/queries'
 import { SubjectBoardView } from '@/features/courses/subject-board-view'
+import { StateBlocks, type BlockTone } from '@/components/progress-art'
+import { countLabel, plural } from '@/lib/text/plural'
 import { cn } from '@/lib/utils'
 
 function searchKey(text: string): string {
@@ -38,6 +40,27 @@ export const Route = createFileRoute('/_app/courses/')({
 })
 
 type Filter = StatusGroupId | 'todas'
+
+const GROUP_TONE: Record<StatusGroupId, BlockTone> = {
+  disponibles: 'pending',
+  cursando: 'cursando',
+  final_pendiente: 'regular',
+  aprobadas: 'approved',
+}
+
+/** A group's name agreeing with its count: "1 final pendiente", "3 aprobadas". */
+function groupLabel(id: StatusGroupId, count: number): string {
+  switch (id) {
+    case 'disponibles':
+      return plural(count, 'disponible', 'disponibles')
+    case 'cursando':
+      return 'cursando'
+    case 'final_pendiente':
+      return plural(count, 'final pendiente', 'finales pendientes')
+    case 'aprobadas':
+      return plural(count, 'aprobada', 'aprobadas')
+  }
+}
 type View = 'list' | 'board'
 
 const VIEWS: { value: View; label: string; Icon: LucideIcon }[] = [
@@ -348,28 +371,17 @@ function CoursesScreen() {
                 <ArrowRight aria-hidden="true" />
               </Link>
             </div>
-            <div className="flex items-center gap-4">
-              <div className="border-accent-soft text-accent-ink flex size-24 shrink-0 items-center justify-center rounded-full border-8 text-xl font-semibold">
-                {plan.progress.total
-                  ? Math.round(
-                      ((plan.progress.passed + plan.progress.equivalent) /
-                        plan.progress.total) *
-                        100,
-                    )
-                  : 0}
-                %
-              </div>
-              <div className="min-w-0 flex-1">
-                {STATUS_GROUPS.map((group) => (
-                  <div key={group.id} className="blue-stat-row">
-                    <StatusGlyph status={GROUP_STATUS[group.id]} />{' '}
-                    <strong>{groups[group.id].length}</strong>{' '}
-                    <span className="truncate">{group.label}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <p className="text-ink-muted mt-2 text-xs">Total: {plan.progress.total} materias</p>
+            <StateBlocks
+              blocks={STATUS_GROUPS.map((group) => ({
+                id: group.id,
+                label: groupLabel(group.id, groups[group.id].length),
+                count: groups[group.id].length,
+                tone: GROUP_TONE[group.id],
+              }))}
+            />
+            <p className="text-ink-muted mt-2 text-xs">
+              Total: {countLabel(plan.progress.total, 'materia', 'materias')}
+            </p>
           </section>
           <section className="blue-panel">
             <div className="blue-panel-head">
@@ -377,16 +389,20 @@ function CoursesScreen() {
             </div>
             <div className="blue-stat-row">
               <StatusGlyph status="in_progress" />
-              {groups.cursando.length} materias cursando
+              {countLabel(groups.cursando.length, 'materia cursando', 'materias cursando')}
             </div>
             <div className="blue-stat-row">
               <StatusGlyph status="regularized" />
-              {groups.final_pendiente.length} finales pendientes
+              {countLabel(
+                groups.final_pendiente.length,
+                'final pendiente',
+                'finales pendientes',
+              )}
             </div>
             {plan.prerequisitesKnown ? (
               <div className="blue-stat-row">
                 <StatusGlyph status="available" />
-                {groups.disponibles.length} disponibles
+                {countLabel(groups.disponibles.length, 'disponible', 'disponibles')}
               </div>
             ) : (
               <p className="text-ink-muted mt-2 text-xs">

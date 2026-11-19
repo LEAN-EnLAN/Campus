@@ -72,7 +72,9 @@ describe('Hoy with the Radar', () => {
       backendWith([item('late', 'Informe', -1), item('p', 'Parcial', 3, { kind: 'midterm' })]),
     )
     const radar = await screen.findByRole('region', { name: 'Radar' })
-    expect(within(radar).getByRole('heading', { name: 'Atrasada: Informe' })).toBeInTheDocument()
+    expect(
+      within(radar).getByRole('heading', { name: 'Atrasada: Informe' }),
+    ).toBeInTheDocument()
     expect(within(radar).getByRole('heading', { name: 'Rendí Análisis I' })).toBeInTheDocument()
     expect(within(radar).getByText('Habilita el final de 1 materia')).toBeInTheDocument()
     // The day lists are still there, below.
@@ -82,7 +84,9 @@ describe('Hoy with the Radar', () => {
   it('says it is live and that it runs on this device', async () => {
     await renderScreen(<BlueTodayScreen />, backendWith([]))
     expect(await screen.findByText('Radar · actualizado recién')).toBeInTheDocument()
-    expect(screen.getByText(/Corre en este dispositivo, no envía tus datos/)).toBeInTheDocument()
+    expect(
+      screen.getByText(/Corre en este dispositivo, no envía tus datos/),
+    ).toBeInTheDocument()
   })
 
   it('offers to add a date when everything is clear', async () => {

@@ -1,8 +1,12 @@
-import { createFileRoute, redirect } from '@tanstack/react-router'
+import { createFileRoute } from '@tanstack/react-router'
 
-/** `/` always lands on Today (P-01). */
+import { IndexScreen } from '@/features/landing/index-screen'
+
+/**
+ * `/` is Today (P-01) for anyone who uses Campus: the desktop app, a local
+ * server, a signed-in student. Only a visitor of the hosted web build sees the
+ * landing — see `indexDestination`.
+ */
 export const Route = createFileRoute('/')({
-  beforeLoad: () => {
-    throw redirect({ to: '/today' })
-  },
+  component: IndexScreen,
 })

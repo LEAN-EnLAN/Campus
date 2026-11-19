@@ -13,7 +13,7 @@ import { RuntimeProvider } from '@/lib/runtime/context'
 import { ThemeProvider } from '@/lib/theme/theme-context'
 
 import { resolveRuntimeCapabilities } from './runtime-capabilities'
-import { Startup } from './startup'
+import { StartupOrLanding } from './startup-or-landing'
 
 import { routeTree } from '../routeTree.gen'
 
@@ -55,7 +55,7 @@ createRoot(rootElement).render(
             BackendProvider — so both modes reach the SAME router below. */}
         <RuntimeProvider
           capabilities={capabilities}
-          fallback={() => <Startup />}
+          fallback={() => <StartupOrLanding />}
           onWorkspaceClosed={leftWorkspace}
         >
           <WorkspaceQueryProvider>

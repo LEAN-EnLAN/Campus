@@ -1,4 +1,4 @@
-import { Trash2 } from 'lucide-react'
+import { FileUp, Trash2 } from 'lucide-react'
 import { useRef, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
@@ -6,6 +6,7 @@ import { SelectField, TextField } from '@/components/ui/field'
 import { MANUAL_MAX_YEAR, manualProblem } from '@/domain/manual-subjects'
 import type { SubjectView, Term } from '@/domain/types'
 
+import { ImportSubjectsDialog } from './import-subjects-dialog'
 import { useAddManualSubject, useRemoveManualSubject } from './queries'
 
 /**
@@ -32,6 +33,7 @@ export function AddManualSubjectForm({ defaultYear = 1 }: { defaultYear?: number
   const [yearLevel, setYearLevel] = useState(defaultYear)
   const [term, setTerm] = useState<Term>('1c')
   const [problem, setProblem] = useState<string | null>(null)
+  const [importing, setImporting] = useState(false)
   const nameInput = useRef<HTMLInputElement>(null)
 
   async function submit(event: React.FormEvent) {
@@ -55,58 +57,71 @@ export function AddManualSubjectForm({ defaultYear = 1 }: { defaultYear?: number
   const error = problem ?? (add.error ? (add.error as Error).message : null)
 
   return (
-    <form
-      onSubmit={submit}
-      noValidate
-      aria-label="Agregar una materia"
-      aria-busy={add.isPending}
-      className="border-rule bg-paper-elevated grid min-w-0 items-start gap-3 rounded-lg border p-4 sm:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_5rem_10rem_auto]"
-    >
-      <TextField
-        ref={nameInput}
-        label="Nombre"
-        placeholder="Nombre de la materia"
-        value={name}
-        onChange={(e) => {
-          setName(e.target.value)
-          setProblem(null)
-        }}
-        maxLength={200}
-        autoComplete="off"
-        required
-        error={problem}
-      />
-      <SelectField
-        label="Año"
-        value={String(yearLevel)}
-        onChange={(e) => setYearLevel(Number(e.target.value))}
+    <div className="flex min-w-0 flex-col gap-2">
+      <form
+        onSubmit={submit}
+        noValidate
+        aria-label="Agregar una materia"
+        aria-busy={add.isPending}
+        className="border-rule bg-paper-elevated grid min-w-0 items-start gap-3 rounded-lg border p-4 sm:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_5rem_10rem_auto]"
       >
-        {YEARS.map((year) => (
-          <option key={year} value={year}>
-            {year}°
-          </option>
-        ))}
-      </SelectField>
-      <SelectField
-        label="Cuatrimestre"
-        value={term}
-        onChange={(e) => setTerm(e.target.value as Term)}
-      >
-        {TERMS.map((t) => (
-          <option key={t.value} value={t.value}>
-            {t.label}
-          </option>
-        ))}
-      </SelectField>
-      <Button type="submit" variant="primary" className="self-end" disabled={add.isPending}>
-        Agregar materia
-      </Button>
-      {error && !problem ? (
-        <p role="alert" className="text-danger text-sm font-medium sm:col-span-2 xl:col-span-4">
-          {error}
-        </p>
-      ) : null}
-    </form>
+        <TextField
+          ref={nameInput}
+          label="Nombre"
+          placeholder="Nombre de la materia"
+          value={name}
+          onChange={(e) => {
+            setName(e.target.value)
+            setProblem(null)
+          }}
+          maxLength={200}
+          autoComplete="off"
+          required
+          error={problem}
+        />
+        <SelectField
+          label="Año"
+          value={String(yearLevel)}
+          onChange={(e) => setYearLevel(Number(e.target.value))}
+        >
+          {YEARS.map((year) => (
+            <option key={year} value={year}>
+              {year}°
+            </option>
+          ))}
+        </SelectField>
+        <SelectField
+          label="Cuatrimestre"
+          value={term}
+          onChange={(e) => setTerm(e.target.value as Term)}
+        >
+          {TERMS.map((t) => (
+            <option key={t.value} value={t.value}>
+              {t.label}
+            </option>
+          ))}
+        </SelectField>
+        <Button type="submit" variant="primary" className="self-end" disabled={add.isPending}>
+          Agregar materia
+        </Button>
+        {error && !problem ? (
+          <p
+            role="alert"
+            className="text-danger text-sm font-medium sm:col-span-2 xl:col-span-4"
+          >
+            {error}
+          </p>
+        ) : null}
+      </form>
+      <p className="text-ink-muted flex flex-wrap items-center gap-x-2 text-sm">
+        ¿Tenés tus materias en una planilla?
+        <Button variant="link" className="h-auto px-0" onClick={() => setImporting(true)}>
+          <FileUp aria-hidden="true" />
+          Importar materias
+        </Button>
+      </p>
+      <ImportSubjectsDialog open={importing} onClose={() => setImporting(false)} />
+    </div>
   )
 }
 

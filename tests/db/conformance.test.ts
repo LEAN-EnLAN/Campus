@@ -129,11 +129,16 @@ describe('A-10 — both adapters answer the same contract', () => {
       items: ['list', 'create', 'update', 'setDone', 'remove'],
       resources: ['list', 'create', 'remove'],
     } as const
+    // Optional capabilities sit beside the methods; each adapter offers them or not.
+    const capabilities: Record<string, Record<string, readonly string[]>> = {
+      LocalBackend: {},
+      SupabaseBackend: { resources: ['files'] },
+    }
     for (const fixture of fixtures) {
       const b = await fixture.backend()
       for (const group of Object.keys(contract) as (keyof typeof contract)[]) {
         expect(Object.keys(b[group]).sort(), `${fixture.name} ${group} methods`).toEqual(
-          [...contract[group]].sort(),
+          [...contract[group], ...(capabilities[fixture.name]?.[group] ?? [])].sort(),
         )
       }
     }

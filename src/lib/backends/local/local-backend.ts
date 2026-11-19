@@ -308,6 +308,15 @@ export class LocalBackend implements CampusBackend {
     },
 
     create: async (input: CreateResourceInput): Promise<Resource> => {
+      // Files would be copied into the vault (`Materiales/<materia>/`); the vault
+      // cannot write binary yet, so a Local workspace offers no upload (no
+      // `files` capability) and refuses one that arrives anyway.
+      if (input.kind === 'file') {
+        backendError(
+          'No pudimos subir el archivo',
+          'Subir archivos está disponible en Campus Cloud.',
+        )
+      }
       const clean = normalizeResourceInput(input)
       const resource: Resource = {
         id: ulid(),

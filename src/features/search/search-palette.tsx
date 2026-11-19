@@ -1,8 +1,16 @@
 import { useNavigate } from '@tanstack/react-router'
 import { BookMarked, CalendarClock, FileText, Link2, Search as SearchIcon } from 'lucide-react'
-import { useEffect, useId, useMemo, useRef, useState } from 'react'
+import { Fragment, useEffect, useId, useMemo, useRef, useState } from 'react'
 
-import { noteResults, search, type SearchResult, type SearchResultKind } from '@/domain/search'
+import {
+  groupResults,
+  matchRange,
+  noteResults,
+  search,
+  type SearchGroup,
+  type SearchResult,
+  type SearchResultKind,
+} from '@/domain/search'
 import type { AcademicItem, Resource, SubjectView } from '@/domain/types'
 import { useNoteSearch } from '@/lib/knowledge/use-note-search'
 import { cn } from '@/lib/utils'
@@ -13,7 +21,9 @@ import { cn } from '@/lib/utils'
  *
  * A combobox, wired the way the ARIA pattern says: the input keeps focus and owns
  * `aria-activedescendant`, so arrow keys move the highlight without ever moving
- * focus into the list.
+ * focus into the list. Results are grouped by type (`role="group"` inside the
+ * listbox, each named by its heading); the arrow keys walk straight across
+ * groups. The part of each result that matched is marked, accents or not.
  */
 
 const ICON: Record<SearchResultKind, typeof BookMarked> = {
@@ -51,13 +61,15 @@ export function SearchPalette({
   // memory); without a Vault there is no such thing and nothing about notes shows.
   const notes = useNoteSearch(open)
 
-  const results = useMemo(() => {
+  const groups = useMemo(() => {
     if (query.trim().length < 2) return []
-    return [
-      ...search({ subjects, items, resources, prerequisitesKnown }, query),
+    return groupResults([
+      ...search({ subjects, items, resources, prerequisitesKnown }, query, 40),
       ...noteResults(notes.search(query)),
-    ]
+    ])
   }, [query, subjects, items, resources, prerequisitesKnown, notes.search])
+  // The keyboard order: groups top to bottom, results within each.
+  const results = useMemo(() => groups.flatMap((group) => group.results), [groups])
 
   useEffect(() => {
     if (!open) return
@@ -83,7 +95,10 @@ export function SearchPalette({
     } else if (result.kind === 'note') {
       void navigate({ to: '/vault', search: { note: result.id } })
     } else if (result.kind === 'item') {
-      void navigate({ to: '/calendar' })
+      // Land on the day of the entrega, not on "this month".
+      void navigate({ to: '/calendar', search: result.date ? { date: result.date } : {} })
+    } else if (result.subjectId) {
+      void navigate({ to: '/courses/$courseId', params: { courseId: result.subjectId } })
     } else {
       void navigate({ to: '/library' })
     }
@@ -151,45 +166,63 @@ export function SearchPalette({
           />
         </div>
 
-        <ul
+        <div
           id={listId}
           role="listbox"
           aria-label="Resultados"
-          className="max-h-80 overflow-y-auto"
+          className="max-h-96 overflow-y-auto"
         >
-          {results.map((result, index) => {
-            const Icon = ICON[result.kind]
+          {groups.map((group) => {
+            const headingId = `${listId}-group-${group.kind}`
             return (
-              // The option IS the row. A `role="option"` must not contain a focusable
-              // control — that is axe's `nested-interactive`, and it is right: focus
-              // stays on the input, which owns the selection via
-              // aria-activedescendant. Mouse handlers on a non-focusable element are
-              // correct for this pattern; the keyboard path is the input's.
-              <li
-                key={`${result.kind}-${result.id}`}
-                id={`${listId}-option-${index}`}
-                role="option"
-                aria-selected={index === active}
-                onMouseEnter={() => setActive(index)}
-                onClick={() => go(result)}
-                className={cn(
-                  'flex cursor-pointer items-center gap-3 px-4 py-2.5 transition-colors',
-                  index === active ? 'bg-accent-soft' : 'hover:bg-paper-sunken',
-                )}
-              >
-                <Icon aria-hidden="true" className="text-ink-faint size-4 shrink-0" />
-                <span className="min-w-0 flex-1">
-                  <span className="text-ink block truncate text-sm">{result.title}</span>
-                  {result.subtitle ? (
-                    <span className="text-ink-muted block truncate text-xs">
-                      {result.subtitle}
-                    </span>
-                  ) : null}
-                </span>
-              </li>
+              <div key={group.kind} role="group" aria-labelledby={headingId}>
+                <div
+                  id={headingId}
+                  className="text-ink-muted flex items-baseline justify-between px-4 pt-3 pb-1 text-xs font-medium"
+                >
+                  <span>{group.label}</span>
+                  <span className="text-ink-faint tabular-nums">{group.results.length}</span>
+                </div>
+                {group.results.map((result) => {
+                  const index = results.indexOf(result)
+                  const Icon = ICON[result.kind]
+                  return (
+                    // The option IS the row. A `role="option"` must not contain a
+                    // focusable control — that is axe's `nested-interactive`, and it
+                    // is right: focus stays on the input, which owns the selection
+                    // via aria-activedescendant. Mouse handlers on a non-focusable
+                    // element are correct for this pattern; the keyboard path is
+                    // the input's.
+                    <div
+                      key={`${result.kind}-${result.id}`}
+                      id={`${listId}-option-${index}`}
+                      role="option"
+                      aria-selected={index === active}
+                      onMouseEnter={() => setActive(index)}
+                      onClick={() => go(result)}
+                      className={cn(
+                        'flex cursor-pointer items-center gap-3 px-4 py-2.5 transition-colors',
+                        index === active ? 'bg-accent-soft' : 'hover:bg-paper-sunken',
+                      )}
+                    >
+                      <Icon aria-hidden="true" className="text-ink-faint size-4 shrink-0" />
+                      <span className="min-w-0 flex-1">
+                        <span className="text-ink block truncate text-sm">
+                          <Highlighted text={result.title} query={query} />
+                        </span>
+                        {result.subtitle ? (
+                          <span className="text-ink-muted block truncate text-xs">
+                            <Highlighted text={result.subtitle} query={query} />
+                          </span>
+                        ) : null}
+                      </span>
+                    </div>
+                  )
+                })}
+              </div>
             )
           })}
-        </ul>
+        </div>
 
         <p
           aria-live="polite"
@@ -199,9 +232,31 @@ export function SearchPalette({
             ? 'Escribí al menos dos letras.'
             : results.length === 0
               ? `No encontramos nada con "${query.trim()}".`
-              : `${results.length} resultado${results.length === 1 ? '' : 's'}.`}
+              : summary(groups)}
         </p>
       </div>
     </div>
+  )
+}
+
+/** "5 resultados: Materias 2, Material 3." — the counts, said once for screen readers too. */
+function summary(groups: readonly SearchGroup[]): string {
+  const total = groups.reduce((n, group) => n + group.results.length, 0)
+  const parts = groups.map((group) => `${group.label} ${group.results.length}`)
+  return `${total} resultado${total === 1 ? '' : 's'}: ${parts.join(', ')}.`
+}
+
+/** The text with the part that matched the query marked — accents or not. */
+function Highlighted({ text, query }: { text: string; query: string }) {
+  const range = matchRange(text, query)
+  if (!range) return text
+  return (
+    <Fragment>
+      {text.slice(0, range.start)}
+      <mark className="bg-accent-soft text-ink rounded-sm font-semibold">
+        {text.slice(range.start, range.end)}
+      </mark>
+      {text.slice(range.end)}
+    </Fragment>
   )
 }

@@ -21,14 +21,18 @@ vi.mock('@/features/items/queries', () => ({
 }))
 // The grid itself is not what is under test: only the route's loading/empty decision.
 vi.mock('@/features/calendar/campus-calendar', () => ({
-  CampusCalendar: () => <p>calendario</p>,
+  CampusCalendar: ({ focusDate }: { focusDate?: string }) => (
+    <p>calendario {focusDate ?? 'sin fecha'}</p>
+  ),
 }))
 
 const Calendar = Route.options.component as () => ReactNode
+const search = vi.spyOn(Route, 'useSearch')
 
 beforeEach(() => {
   state.isLoading = false
   state.items = []
+  search.mockReturnValue({})
 })
 
 describe('Calendario', () => {
@@ -45,5 +49,34 @@ describe('Calendario', () => {
 
     expect(screen.getByText('Todavía no anotaste nada')).toBeInTheDocument()
     expect(screen.queryByText('Cargando…')).toBeNull()
+  })
+
+  it('hands a ?date= deep link to the grid', () => {
+    state.items = [
+      {
+        id: 'i1',
+        curriculumSubjectId: null,
+        kind: 'midterm',
+        title: 'Parcial',
+        startsAt: null,
+        dueAt: '2026-11-12T13:00:00.000Z',
+        status: 'open',
+        notes: null,
+      },
+    ]
+    search.mockReturnValue({ date: '2026-11-12' })
+    render(<Calendar />)
+
+    expect(screen.getByText('calendario 2026-11-12')).toBeInTheDocument()
+  })
+})
+
+describe('Calendario search params', () => {
+  const validate = Route.options.validateSearch as (s: Record<string, unknown>) => unknown
+
+  it('keeps a real day and drops anything else', () => {
+    expect(validate({ date: '2026-11-12' })).toEqual({ date: '2026-11-12' })
+    expect(validate({ date: '2026-02-30' })).toEqual({})
+    expect(validate({})).toEqual({})
   })
 })

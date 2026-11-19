@@ -37,6 +37,7 @@ import {
   normalizeManualSubjectInput,
   normalizeResourceInput,
 } from './normalize'
+import { materialStoragePath } from '@/domain/material-file'
 import {
   backendError,
   FEEDBACK_MAX,
@@ -60,7 +61,12 @@ import {
 const ITEM_COLUMNS =
   'id, curriculum_subject_id, manual_subject_id, kind, title, starts_at, due_at, status, notes'
 const RESOURCE_COLUMNS =
-  'id, curriculum_subject_id, manual_subject_id, kind, title, url, storage_path, body, created_at'
+  'id, curriculum_subject_id, manual_subject_id, kind, title, url, storage_path, mime_type, size_bytes, body, created_at'
+
+/** Private bucket; RLS on storage.objects keys every object under `<auth.uid()>/`. */
+const MATERIALS_BUCKET = 'materials'
+/** Signed links to open a file live an hour. */
+const SIGNED_URL_SECONDS = 60 * 60
 const MANUAL_COLUMNS = 'id, name, year_level, term, status, grade'
 const CONTEXT_COLUMNS =
   'id, institution_id, academic_unit_id, program_id, curriculum_id, unmapped_label, is_active'
@@ -483,25 +489,71 @@ export function createSupabaseBackend(client?: SupabaseClient): CampusBackend {
       async create(input) {
         const userId = await requireUserId(supabase)
         const clean = normalizeResourceInput(input)
+        const subject = await subjectColumns(supabase, clean.curriculumSubjectId)
+
+        // A file is uploaded first, then recorded; if the row is refused the
+        // object is taken back out, so nothing is left behind unreferenced.
+        let file: { storage_path: string; mime_type: string; size_bytes: number } | null = null
+        if (input.kind === 'file') {
+          const path = materialStoragePath(userId, crypto.randomUUID(), input.file.name)
+          const { error: uploadError } = await supabase.storage
+            .from(MATERIALS_BUCKET)
+            .upload(path, input.file, { contentType: input.file.type, upsert: false })
+          if (uploadError) backendError('No pudimos subir el archivo', uploadError.message)
+          file = { storage_path: path, mime_type: input.file.type, size_bytes: input.file.size }
+        }
+
         const { data, error } = await supabase
           .from('resources')
           .insert({
             user_id: userId,
             title: clean.title,
             kind: clean.kind,
-            ...(await subjectColumns(supabase, clean.curriculumSubjectId)),
+            ...subject,
             url: clean.url,
             body: clean.body,
+            ...(file ?? {}),
           })
           .select(RESOURCE_COLUMNS)
           .single()
-        if (error) backendError('No pudimos guardar el material', error.message)
+        if (error) {
+          if (file) await supabase.storage.from(MATERIALS_BUCKET).remove([file.storage_path])
+          backendError('No pudimos guardar el material', error.message)
+        }
         return toResource(data as ResourceRow)
       },
 
       async remove(id) {
+        const { data: row, error: readError } = await supabase
+          .from('resources')
+          .select('storage_path')
+          .eq('id', id)
+          .maybeSingle()
+        if (readError) backendError('No pudimos borrar el material', readError.message)
         const { error } = await supabase.from('resources').delete().eq('id', id)
         if (error) backendError('No pudimos borrar el material', error.message)
+        const path = (row as { storage_path: string | null } | null)?.storage_path
+        if (path) {
+          const { error: storageError } = await supabase.storage
+            .from(MATERIALS_BUCKET)
+            .remove([path])
+          if (storageError) {
+            backendError('Borramos el material, pero no su archivo', storageError.message)
+          }
+        }
+      },
+
+      files: {
+        async openUrl(resource) {
+          if (resource.kind !== 'file' || !resource.storagePath) {
+            backendError('No pudimos abrir el archivo', 'Este material no es un archivo.')
+          }
+          const { data, error } = await supabase.storage
+            .from(MATERIALS_BUCKET)
+            .createSignedUrl(resource.storagePath, SIGNED_URL_SECONDS)
+          if (error) backendError('No pudimos abrir el archivo', error.message)
+          return data.signedUrl
+        },
       },
     },
 

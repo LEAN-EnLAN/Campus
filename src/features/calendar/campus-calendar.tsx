@@ -1,4 +1,5 @@
 import {
+  createDayView,
   createMonthView,
   createWeekView,
   DayFlowCalendar,
@@ -40,6 +41,7 @@ import { cn } from '@/lib/utils'
 
 import { chipTitle, projectAcademicItems, UNASSIGNED_CALENDAR } from './academic-events'
 import { AgendaList } from './agenda-list'
+import { parseCalendarDay } from './calendar-search'
 import { openableChip } from './openable-chip'
 import { undatedNote } from './undated-note'
 import { eventPaint, hueForSubject, type EventPaint } from './event-paint'
@@ -59,16 +61,27 @@ import { eventPaint, hueForSubject, type EventPaint } from './event-paint'
  */
 
 /**
- * The three ways to read the calendar. Month and week are DayFlow's; the agenda
- * is a list of our own (see `agenda-list.tsx`), so it is not a DayFlow view.
+ * The four ways to read the calendar. Month, week and day are DayFlow's; the
+ * agenda is a list of our own (see `agenda-list.tsx`), so it is not a DayFlow view.
+ *
+ * The day view is where a busy day becomes legible: two things at the same hour
+ * sit side by side (DayFlow's layout calculator splits the column — pinned in
+ * `overlap-layout.test.ts`), and it is where the month's "+N más" lands.
  */
-type Mode = 'month' | 'week' | 'agenda'
+type Mode = 'month' | 'week' | 'day' | 'agenda'
 
 const MODES: { value: Mode; label: string }[] = [
   { value: 'month', label: 'Mes' },
   { value: 'week', label: 'Semana' },
+  { value: 'day', label: 'Día' },
   { value: 'agenda', label: 'Agenda' },
 ]
+
+const VIEW_OF: Record<Exclude<Mode, 'agenda'>, ViewType> = {
+  month: ViewType.MONTH,
+  week: ViewType.WEEK,
+  day: ViewType.DAY,
+}
 
 /** Where the week grid opens: a student's day starts in the morning, not at midnight. */
 const WEEK_OPENS_AT_HOUR = 7
@@ -165,6 +178,12 @@ function buildCalendars(
 }
 
 const TITLE_FORMAT = new Intl.DateTimeFormat('es-AR', { month: 'long', year: 'numeric' })
+const DAY_TITLE_FORMAT = new Intl.DateTimeFormat('es-AR', {
+  weekday: 'long',
+  day: 'numeric',
+  month: 'long',
+  year: 'numeric',
+})
 
 /** The domain object every slot needs, recovered from the event we built. */
 function itemOf(meta: Record<string, unknown> | undefined): AcademicItem | null {
@@ -174,7 +193,13 @@ function itemOf(meta: Record<string, unknown> | undefined): AcademicItem | null 
 
 const timeLabel = dueTimeLabel
 
-export function CampusCalendar() {
+export function CampusCalendar({
+  focusDate,
+}: {
+  /** `YYYY-MM-DD` from the URL: open the day view on that date (search deep-links here). */
+  focusDate?: string
+} = {}) {
+  const focusDay = useMemo(() => parseCalendarDay(focusDate), [focusDate])
   const plan = useAcademicPlan()
   const itemsQuery = useAcademicItems()
   const { theme } = useTheme()
@@ -208,6 +233,12 @@ export function CampusCalendar() {
     [itemsQuery.data, subjectNames],
   )
 
+  // "+N más" in a crowded month cell opens that day. The vendor only navigates
+  // on its own when NO app-level handler exists, and the app always has one
+  // (it forwards to `callbacks`), so without this the "+N" did nothing at all.
+  // A ref, because the config is built before the app it would navigate.
+  const openDayRef = useRef<(date: Date) => void>(() => {})
+
   // `dataUpdatedAt` is the version: it changes exactly when the item list does,
   // which is what tells the calendar app to adopt a new event set.
   const calendar = useCalendarApp(
@@ -221,8 +252,12 @@ export function CampusCalendar() {
         // Not `scrollToCurrentTime`: opened at 04:00 or at 23:40 it parks the
         // grid on a night-time window. The effect below opens it at the morning.
         createWeekView({ startOfWeek: 1, scrollToCurrentTime: false }),
+        // Where "+N más" in a crowded month cell lands, and where a deep link opens.
+        createDayView({ scrollToCurrentTime: false }),
       ],
-      defaultView: ViewType.MONTH,
+      // A deep link to a date opens THAT day; otherwise the month, as always.
+      defaultView: focusDay ? ViewType.DAY : ViewType.MONTH,
+      ...(focusDay ? { initialDate: focusDay } : {}),
       events,
       calendars,
       locale: ES_AR.code,
@@ -242,6 +277,7 @@ export function CampusCalendar() {
       // single click doing nothing a student could see.
       eventDetailTrigger: 'click',
       timeFormat: '24h',
+      callbacks: { onMoreEventsClick: (date) => openDayRef.current(date) },
     },
     // Re-key on the palette too: a theme or accent change repaints every
     // calendar, and the app has to adopt the new colours.
@@ -263,8 +299,31 @@ export function CampusCalendar() {
     ? 'agenda'
     : calendar.currentView === ViewType.WEEK
       ? 'week'
-      : 'month'
+      : calendar.currentView === ViewType.DAY
+        ? 'day'
+        : 'month'
   const now = useMemo(() => new Date(), [])
+
+  // A NEW date in the URL while the calendar is already open (a second search
+  // from the palette) moves the grid there. The first one is the config's
+  // `initialDate`; re-applying it on every item refresh would yank the student
+  // back to it after each "marcar como hecho".
+  useEffect(() => {
+    openDayRef.current = (date) => {
+      calendar.setCurrentDate(date)
+      calendar.changeView(ViewType.DAY)
+    }
+  }, [calendar])
+
+  const appliedFocus = useRef(focusDate)
+  useEffect(() => {
+    if (focusDate === appliedFocus.current) return
+    appliedFocus.current = focusDate
+    if (!focusDay) return
+    setAgendaOpen(false)
+    calendar.setCurrentDate(focusDay)
+    calendar.changeView(ViewType.DAY)
+  }, [focusDate, focusDay, calendar])
 
   const gridRef = useRef<HTMLDivElement>(null)
   // Where the detail dialog mounts: beside our other dialogs, inside the Campus
@@ -272,10 +331,10 @@ export function CampusCalendar() {
   const [dialogHost, setDialogHost] = useState<HTMLDivElement | null>(null)
   useSpanishVendorLabels(gridRef)
   useEffect(() => {
-    if (mode !== 'week') return
+    if (mode !== 'week' && mode !== 'day') return
     const frame = window.requestAnimationFrame(() => {
       const scroller = gridRef.current?.querySelector<HTMLElement>(
-        '.df-week-time-grid-scroller',
+        '.df-week-time-grid-scroller, .df-day-content-grid',
       )
       if (scroller) scroller.scrollTop = WEEK_OPENS_AT_HOUR * HOUR_HEIGHT_PX
     })
@@ -300,8 +359,7 @@ export function CampusCalendar() {
 
   const selectMode = (next: Mode) => {
     setAgendaOpen(next === 'agenda')
-    if (next === 'month') calendar.changeView(ViewType.MONTH)
-    if (next === 'week') calendar.changeView(ViewType.WEEK)
+    if (next !== 'agenda') calendar.changeView(VIEW_OF[next])
   }
 
   return (
@@ -312,7 +370,11 @@ export function CampusCalendar() {
       <CalendarChrome
         // The agenda names its own period in its own header; a month title
         // above it would say something else.
-        title={mode === 'agenda' ? null : TITLE_FORMAT.format(calendar.currentDate)}
+        title={
+          mode === 'agenda'
+            ? null
+            : (mode === 'day' ? DAY_TITLE_FORMAT : TITLE_FORMAT).format(calendar.currentDate)
+        }
         mode={mode}
         onMode={selectMode}
         onPrevious={() => calendar.app.goToPrevious()}

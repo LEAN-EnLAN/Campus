@@ -144,9 +144,13 @@ export interface Resource {
   kind: ResourceKind
   title: string
   url: string | null
+  /** Set only for `kind: 'file'`: where the uploaded object lives. */
   storagePath: string | null
   body: string | null
   createdAt: string
+  /** Set only for `kind: 'file'`. Optional so link/note rows written before files existed still read. */
+  mimeType?: string | null
+  sizeBytes?: number | null
 }
 
 export interface AcademicContext {

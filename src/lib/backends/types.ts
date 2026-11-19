@@ -79,7 +79,17 @@ export interface CampusBackend {
   resources: {
     list(): Promise<Resource[]>
     create(input: CreateResourceInput): Promise<Resource>
+    /** Removes the row and, for a `file`, the stored object too. */
     remove(id: string): Promise<void>
+    /**
+     * Uploaded files — only where there is somewhere private to keep them
+     * (Cloud's Storage bucket). A Local vault leaves this out for now and the UI
+     * says so. Check for the capability, never for the mode.
+     */
+    files?: {
+      /** A short-lived URL (60 min) to open or download a `file` resource. */
+      openUrl(resource: Resource): Promise<string>
+    }
   }
 
   /*
@@ -208,12 +218,22 @@ export interface UpdateItemPatch {
   status?: AcademicItemStatus
 }
 
-export interface CreateResourceInput {
+export type CreateResourceInput = CreateTextResourceInput | CreateFileResourceInput
+
+export interface CreateTextResourceInput {
   title: string
   kind: Extract<ResourceKind, 'link' | 'note'>
   curriculumSubjectId: string | null
   url: string | null
   body: string | null
+}
+
+/** A PDF, image or document the student uploads (≤ 20 MB, see `@/domain/material-file`). */
+export interface CreateFileResourceInput {
+  title: string
+  kind: 'file'
+  curriculumSubjectId: string | null
+  file: File
 }
 
 /**

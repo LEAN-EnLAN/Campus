@@ -1,4 +1,12 @@
-import { ClipboardPaste, Info, Link2, MousePointerClick, StickyNote } from 'lucide-react'
+import {
+  ClipboardPaste,
+  FileUp,
+  Info,
+  Link2,
+  MousePointerClick,
+  StickyNote,
+  X,
+} from 'lucide-react'
 import { useEffect, useId, useRef, useState } from 'react'
 import type { ClipboardEvent, DragEvent, FormEvent } from 'react'
 
@@ -20,6 +28,12 @@ import {
   type ResourceDraft,
   type ValidResource,
 } from '@/domain/resource-draft'
+import {
+  formatFileSize,
+  MATERIAL_ACCEPT,
+  materialFileProblem,
+  titleFromFileName,
+} from '@/domain/material-file'
 import { readClipboardText, readClipboardTextIfGranted } from '@/lib/clipboard'
 import { cn } from '@/lib/utils'
 
@@ -27,7 +41,13 @@ export interface AddResourceDialogProps {
   open: boolean
   onClose: () => void
   /** Persist the material. Rejecting keeps the dialog open with the draft intact. */
-  onSave: (resource: ValidResource) => Promise<unknown>
+  onSave: (resource: NewMaterial) => Promise<unknown>
+  /**
+   * Whether this workspace can keep uploaded files (the backend's
+   * `resources.files` capability). Without it a dropped file explains where
+   * uploads exist instead of being taken.
+   */
+  canUploadFiles?: boolean
   saving: boolean
   /** The last save error, shown inside the dialog. */
   error: unknown
@@ -42,6 +62,9 @@ export interface AddResourceDialogProps {
    */
   subjectChoice?: SubjectChoice
 }
+
+/** What the dialog hands back: a link, a note, or a file to upload. */
+export type NewMaterial = ValidResource | { kind: 'file'; title: string; file: File }
 
 export interface SubjectChoice {
   subjects: readonly { id: string; name: string }[]
@@ -73,7 +96,7 @@ const KIND_OPTIONS: { value: DraftKind; label: string; Icon: typeof Link2 }[] = 
 ]
 
 const FILE_NOTICE =
-  'Por ahora Campus guarda links y notas; subir archivos llega más adelante. Si el archivo ya está en Drive o en el campus, pegá su link.'
+  'Subir archivos está disponible en Campus Cloud. Si el archivo ya está en Drive o en el campus, pegá su link.'
 
 function AddResourceForm({
   titleId,
@@ -84,8 +107,13 @@ function AddResourceForm({
   readClipboard = readClipboardTextIfGranted,
   pasteClipboard = readClipboardText,
   subjectChoice,
+  canUploadFiles = false,
 }: Omit<AddResourceDialogProps, 'open'> & { titleId: string }) {
   const [draft, setDraft] = useState<ResourceDraft | null>(null)
+  const [file, setFile] = useState<File | null>(null)
+  const [fileTitle, setFileTitle] = useState('')
+  const [fileError, setFileError] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const [titleTouched, setTitleTouched] = useState(false)
   const [errors, setErrors] = useState<DraftErrors>({})
   const [dragging, setDragging] = useState(false)
@@ -120,7 +148,31 @@ function AddResourceForm({
     if (focusRequest > 0) titleRef.current?.focus()
   }, [focusRequest])
 
+  function takeFile(picked: File | undefined) {
+    if (!picked) return
+    if (!canUploadFiles) {
+      setFileNotice(true)
+      setAnnouncement(FILE_NOTICE)
+      return
+    }
+    const problem = materialFileProblem(picked)
+    if (problem) {
+      setFileError(`${picked.name}: ${problem}`)
+      return
+    }
+    setDraft(null)
+    setFile(picked)
+    setFileTitle(titleFromFileName(picked.name))
+    setFileError(null)
+    setErrors({})
+    setFileNotice(false)
+    setAnnouncement(`Archivo ${picked.name} listo para subir.`)
+    setFocusRequest((n) => n + 1)
+  }
+
   function startDraft(next: ResourceDraft, message: string) {
+    setFile(null)
+    setFileError(null)
     setDraft(next)
     setTitleTouched(false)
     setErrors({})
@@ -173,6 +225,10 @@ function AddResourceForm({
     event.preventDefault()
     setDragging(false)
     const data = event.dataTransfer
+    if (data.files.length > 0) {
+      takeFile(data.files[0])
+      return
+    }
     accept(
       classifyIncoming({
         uriList: data.getData('text/uri-list'),
@@ -188,6 +244,10 @@ function AddResourceForm({
     if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) return
     event.preventDefault()
     const data = event.clipboardData
+    if (data.files.length > 0) {
+      takeFile(data.files[0])
+      return
+    }
     accept(
       classifyIncoming({
         uriList: data.getData('text/uri-list'),
@@ -200,6 +260,21 @@ function AddResourceForm({
   async function handleSubmit(event: FormEvent) {
     event.preventDefault()
     if (saving) return
+    if (file) {
+      const title = fileTitle.trim()
+      if (title === '') {
+        setErrors({ title: 'Ponele un título.' })
+        return
+      }
+      setErrors({})
+      try {
+        await onSave({ kind: 'file', title, file })
+        onClose()
+      } catch {
+        // The file stays selected; the save error renders below.
+      }
+      return
+    }
     if (!draft) return
     const result = validateDraft(draft)
     if (!result.ok) {
@@ -227,7 +302,7 @@ function AddResourceForm({
   }
 
   const showClipboardChip = clipboardUrl !== null && draft?.url !== clipboardUrl
-  const showPasteButton = clipboardUrl === null && draft === null
+  const showPasteButton = clipboardUrl === null && draft === null && file === null
   const saveError = error instanceof Error ? error.message : null
 
   return (
@@ -246,7 +321,11 @@ function AddResourceForm({
         <h2 id={titleId} className="text-ink font-serif text-lg">
           Agregar material
         </h2>
-        <p className="text-ink-muted text-sm">Un link o una nota para tener a mano.</p>
+        <p className="text-ink-muted text-sm">
+          {canUploadFiles
+            ? 'Un link, una nota o un archivo para tener a mano.'
+            : 'Un link o una nota para tener a mano.'}
+        </p>
       </div>
 
       <div
@@ -269,8 +348,15 @@ function AddResourceForm({
           <Illustration name="material-drop-zone" decorative size="xs" />
         )}
         <p className="text-ink text-sm font-medium">
-          {dragging ? 'Soltalo para usarlo' : 'Arrastrá un link o un texto acá'}
+          {dragging
+            ? 'Soltalo para usarlo'
+            : canUploadFiles
+              ? 'Arrastrá un archivo, un link o un texto acá'
+              : 'Arrastrá un link o un texto acá'}
         </p>
+        {canUploadFiles ? (
+          <p className="text-ink-muted text-xs">PDF, imágenes o documentos de hasta 20 MB.</p>
+        ) : null}
         <p className="text-ink-muted text-xs">
           También podés pegarlo con Ctrl+V (⌘V en Mac). Un link queda como link; cualquier otro
           texto, como nota.
@@ -288,6 +374,52 @@ function AddResourceForm({
             <ClipboardPaste aria-hidden="true" className="size-4 shrink-0" />
             <span className="truncate">Usar el link copiado: {hostLabel(clipboardUrl)}</span>
           </button>
+        ) : null}
+        {canUploadFiles && file === null ? (
+          <>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept={MATERIAL_ACCEPT}
+              aria-label="Elegir archivo"
+              className="sr-only"
+              tabIndex={-1}
+              onChange={(e) => {
+                takeFile(e.target.files?.[0])
+                e.target.value = ''
+              }}
+            />
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className={cn(
+                'border-rule bg-paper-elevated text-ink mt-1 inline-flex min-h-9 items-center gap-2',
+                'rounded-md border px-3 text-sm font-medium',
+                'hover:bg-accent-soft motion-safe:transition-colors',
+              )}
+            >
+              <FileUp aria-hidden="true" className="size-4 shrink-0" />
+              Elegir archivo
+            </button>
+          </>
+        ) : !canUploadFiles ? (
+          <span className="mt-1 inline-flex flex-col items-center gap-0.5">
+            <button
+              type="button"
+              disabled
+              aria-describedby={`${titleId}-file-cloud`}
+              className={cn(
+                'border-rule bg-paper-elevated text-ink-muted inline-flex min-h-9 items-center gap-2',
+                'cursor-not-allowed rounded-md border px-3 text-sm font-medium opacity-60',
+              )}
+            >
+              <FileUp aria-hidden="true" className="size-4 shrink-0" />
+              Elegir archivo
+            </button>
+            <span id={`${titleId}-file-cloud`} className="text-ink-muted text-xs">
+              Disponible en Campus Cloud
+            </span>
+          </span>
         ) : null}
         {showPasteButton ? (
           <button
@@ -315,6 +447,12 @@ function AddResourceForm({
         </p>
       ) : null}
 
+      {fileError ? (
+        <p role="alert" className="text-danger text-sm font-medium">
+          {fileError}
+        </p>
+      ) : null}
+
       <p
         aria-live="polite"
         className={announcement.startsWith('No pudimos') ? 'text-ink-muted text-sm' : 'sr-only'}
@@ -322,7 +460,37 @@ function AddResourceForm({
         {fileNotice ? '' : announcement}
       </p>
 
-      {draft ? (
+      {file ? (
+        <div className="flex flex-col gap-4">
+          <div className="border-rule bg-paper-sunken flex items-center gap-3 rounded-md border px-3 py-2.5">
+            <FileUp aria-hidden="true" className="text-ink-faint size-4 shrink-0" />
+            <span className="min-w-0 flex-1">
+              <span className="text-ink block truncate text-sm">{file.name}</span>
+              <span className="text-ink-muted block text-xs">{formatFileSize(file.size)}</span>
+            </span>
+            <Button
+              variant="ghost"
+              size="sm"
+              aria-label={`Quitar ${file.name}`}
+              onClick={() => {
+                setFile(null)
+                setAnnouncement('')
+              }}
+            >
+              <X aria-hidden="true" className="size-4" />
+            </Button>
+          </div>
+          <TextField
+            ref={titleRef}
+            label="Título"
+            value={fileTitle}
+            onChange={(e) => setFileTitle(e.target.value)}
+            error={errors.title}
+            required
+            autoComplete="off"
+          />
+        </div>
+      ) : draft ? (
         <div className="flex flex-col gap-4">
           <fieldset className="flex flex-col gap-1.5">
             <legend className="text-ink mb-1.5 text-sm font-medium">Tipo</legend>
@@ -445,8 +613,8 @@ function AddResourceForm({
         <Button variant="ghost" onClick={onClose}>
           Cancelar
         </Button>
-        <Button type="submit" variant="primary" disabled={!draft || saving}>
-          {saving ? 'Guardando…' : 'Guardar'}
+        <Button type="submit" variant="primary" disabled={(!draft && !file) || saving}>
+          {saving ? (file ? 'Subiendo…' : 'Guardando…') : 'Guardar'}
         </Button>
       </div>
     </form>

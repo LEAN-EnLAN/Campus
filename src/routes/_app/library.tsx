@@ -7,6 +7,8 @@ import { PageHeader, SectionHeading } from '@/components/page-header'
 import { Button } from '@/components/ui/button'
 import { useAcademicPlan } from '@/features/academic/queries'
 import { AddResourceDialog } from '@/features/courses/add-resource-dialog'
+import { MaterialFileLink } from '@/features/courses/material-file-link'
+import { useCanUploadMaterialFiles } from '@/features/courses/use-material-files'
 import { useCreateResource, useDeleteResource, useResources } from '@/features/items/queries'
 
 export const Route = createFileRoute('/_app/library')({
@@ -14,10 +16,11 @@ export const Route = createFileRoute('/_app/library')({
 })
 
 /**
- * CAP-RESOURCE-001 — links and notes. No upload until validation is proven.
+ * CAP-RESOURCE-001 — links, notes and (where the backend keeps files) uploads.
  * Adding goes through the same dialog as a subject's page, plus a subject choice.
  */
 function LibraryScreen() {
+  const canUploadFiles = useCanUploadMaterialFiles()
   const plan = useAcademicPlan()
   const resourcesQuery = useResources()
   const createResource = useCreateResource()
@@ -89,6 +92,12 @@ function LibraryScreen() {
           <span>Notas</span>
           <strong>{resources.filter((resource) => resource.kind === 'note').length}</strong>
         </div>
+        {canUploadFiles || resources.some((resource) => resource.kind === 'file') ? (
+          <div>
+            <span>Archivos</span>
+            <strong>{resources.filter((resource) => resource.kind === 'file').length}</strong>
+          </div>
+        ) : null}
       </div>
 
       <AddResourceDialog
@@ -97,6 +106,7 @@ function LibraryScreen() {
         onSave={(resource) =>
           createResource.mutateAsync({ ...resource, curriculumSubjectId: subjectId })
         }
+        canUploadFiles={canUploadFiles}
         saving={createResource.isPending}
         error={createResource.error}
         subjectChoice={{ subjects: plan.views, value: subjectId, onChange: setSubjectId }}
@@ -226,7 +236,9 @@ function LibraryScreen() {
                       )}
                     </span>
                     <span className="min-w-0 flex-1">
-                      {resource.kind === 'link' && resource.url ? (
+                      {resource.kind === 'file' ? (
+                        <MaterialFileLink resource={resource} />
+                      ) : resource.kind === 'link' && resource.url ? (
                         <a
                           href={resource.url}
                           target="_blank"

@@ -1,11 +1,11 @@
 import { useRouterState } from '@tanstack/react-router'
-import { Mail } from 'lucide-react'
+import { Mail, MessageCircleHeart } from 'lucide-react'
 import { useId, useState, type FormEvent } from 'react'
 
 import { useToast } from '@/components/toast'
 import { Button } from '@/components/ui/button'
 import { TextareaField } from '@/components/ui/field'
-import { Modal } from '@/components/ui/modal'
+import { Modal, ModalFooter, ModalHeader } from '@/components/ui/modal'
 import { useBackend } from '@/lib/backends/context'
 import { FEEDBACK_MAX } from '@/lib/backends/types'
 
@@ -22,9 +22,16 @@ export function FeedbackDialog({ open, onClose }: { open: boolean; onClose: () =
   return (
     <Modal open={open} onClose={onClose} labelledBy={titleId}>
       <div className="flex flex-col gap-4 p-4 sm:p-6">
-        <h2 id={titleId} className="text-ink font-serif text-lg">
-          Contanos algo
-        </h2>
+        <ModalHeader
+          titleId={titleId}
+          title="Contanos algo"
+          description={
+            feedback
+              ? 'Una idea, algo que no anda o algo que te gustó. Lo lee una persona del equipo.'
+              : 'En el modo Local, Campus no envía nada desde la app.'
+          }
+          icon={<MessageCircleHeart />}
+        />
         {feedback ? <FeedbackForm onDone={onClose} /> : <MailFeedback onClose={onClose} />}
       </div>
     </Modal>
@@ -55,9 +62,6 @@ function FeedbackForm({ onDone }: { onDone: () => void }) {
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-      <p className="text-ink-muted -mt-2 text-sm">
-        Una idea, algo que no anda o algo que te gustó. Lo lee una persona del equipo.
-      </p>
       <TextareaField
         label="¿Qué nos querés contar?"
         value={body}
@@ -72,14 +76,14 @@ function FeedbackForm({ onDone }: { onDone: () => void }) {
           No pudimos enviar tu mensaje. Probá de nuevo.
         </p>
       ) : null}
-      <div className="border-rule-soft mt-1 flex justify-end gap-2 border-t pt-4">
+      <ModalFooter>
         <Button variant="ghost" disabled={pending} onClick={onDone}>
           Cancelar
         </Button>
         <Button type="submit" variant="primary" disabled={empty || pending}>
           {pending ? 'Enviando…' : 'Enviar'}
         </Button>
-      </div>
+      </ModalFooter>
     </form>
   )
 }
@@ -88,9 +92,7 @@ function MailFeedback({ onClose }: { onClose: () => void }) {
   const subject = encodeURIComponent(`Campus ${APP_VERSION}`)
   return (
     <>
-      <p className="text-ink-muted -mt-2 text-sm">
-        En el modo Local, Campus no envía nada desde la app. Escribinos por email:
-      </p>
+      <p className="text-ink-muted text-sm">Escribinos por email:</p>
       {FEEDBACK_EMAIL ? (
         <a
           className="text-accent-ink inline-flex min-h-11 items-center gap-2 font-medium underline-offset-4 hover:underline"
@@ -100,11 +102,11 @@ function MailFeedback({ onClose }: { onClose: () => void }) {
           {FEEDBACK_EMAIL}
         </a>
       ) : null}
-      <div className="border-rule-soft mt-1 flex justify-end gap-2 border-t pt-4">
+      <ModalFooter>
         <Button variant="ghost" onClick={onClose}>
           Cerrar
         </Button>
-      </div>
+      </ModalFooter>
     </>
   )
 }

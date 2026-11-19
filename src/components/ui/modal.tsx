@@ -248,13 +248,15 @@ export function ModalHeader({
 /**
  * The action row of a dialog. Sticks to the bottom of the scrolling panel so
  * Save / Cancel stay reachable on a short viewport or with the keyboard open.
+ * Place it LAST inside the dialog's `p-4 sm:p-6` content wrapper.
  */
 export function ModalFooter({ className, ...props }: ComponentPropsWithoutRef<'div'>) {
   return (
     <div
       className={cn(
-        'bg-paper-elevated border-rule sticky bottom-0 z-10 -mx-4 mt-2 flex flex-wrap justify-end gap-2 border-t px-4 py-3',
-        'sm:-mx-6 sm:px-6 sm:py-4',
+        // Flush with the panel: cancels the content's p-4 / sm:p-6 on three sides.
+        'bg-paper-elevated border-rule sticky bottom-0 z-10 -mx-4 mt-2 -mb-4 flex flex-wrap justify-end gap-2 border-t px-4 py-3',
+        'sm:-mx-6 sm:-mb-6 sm:px-6 sm:py-4',
         'pb-safe',
         className,
       )}

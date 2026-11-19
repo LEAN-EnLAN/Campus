@@ -202,7 +202,7 @@ export function AccountMenu({
                   role="menuitem"
                   tabIndex={-1}
                   disabled={signingOut}
-                  className="campus-account-item"
+                  className="campus-account-item campus-account-item-danger"
                   onClick={() => select(onSignOut)}
                 >
                   <LogOut aria-hidden="true" className="size-4" />

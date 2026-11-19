@@ -1,7 +1,8 @@
+import { Trash2 } from 'lucide-react'
 import { useId } from 'react'
 
 import { Button } from '@/components/ui/button'
-import { Modal } from '@/components/ui/modal'
+import { Modal, ModalFooter, ModalHeader } from '@/components/ui/modal'
 
 /**
  * "¿Eliminar «Parcial 1»?" — the one confirmation before an item is gone.
@@ -40,13 +41,15 @@ export function DeleteItemDialog({
       describedBy={descriptionId}
     >
       {/* No `initialFocus`: the Modal lands on the first control, Cancelar. */}
-      <div className="flex flex-col gap-3 p-4 sm:p-6">
-        <h2 id={titleId} className="text-ink font-serif text-lg">
-          ¿Eliminar «{title}»?
-        </h2>
-        <p id={descriptionId} className="text-ink-muted text-sm">
-          Desaparece de Hoy, del calendario y de la materia. No se puede deshacer.
-        </p>
+      <div className="flex flex-col gap-4 p-4 sm:p-6">
+        <ModalHeader
+          titleId={titleId}
+          title={<>¿Eliminar «{title}»?</>}
+          descriptionId={descriptionId}
+          description="Desaparece de Hoy, del calendario y de la materia. No se puede deshacer."
+          icon={<Trash2 />}
+          tone="danger"
+        />
 
         {error ? (
           <p role="alert" className="text-danger text-sm font-medium">
@@ -54,7 +57,7 @@ export function DeleteItemDialog({
           </p>
         ) : null}
 
-        <div className="border-rule-soft mt-1 flex justify-end gap-2 border-t pt-4">
+        <ModalFooter>
           <Button variant="ghost" disabled={isPending} onClick={onClose}>
             Cancelar
           </Button>
@@ -66,7 +69,7 @@ export function DeleteItemDialog({
           >
             {isPending ? 'Eliminando…' : 'Eliminar'}
           </Button>
-        </div>
+        </ModalFooter>
       </div>
     </Modal>
   )

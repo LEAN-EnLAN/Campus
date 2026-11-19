@@ -108,7 +108,14 @@ type InputProps = Omit<InputHTMLAttributes<HTMLInputElement>, 'id'> & {
   ref?: Ref<HTMLInputElement>
 }
 
-export function TextField({ label, hint, error, leadingIcon, className, ...props }: InputProps) {
+export function TextField({
+  label,
+  hint,
+  error,
+  leadingIcon,
+  className,
+  ...props
+}: InputProps) {
   return (
     <Field label={label} hint={hint} error={error} required={props.required}>
       {({ id, describedBy, invalid }) => (
@@ -118,7 +125,12 @@ export function TextField({ label, hint, error, leadingIcon, className, ...props
             id={id}
             aria-describedby={describedBy}
             aria-invalid={invalid}
-            className={cn(fieldControlClass, fieldHeightClass, leadingIcon && 'pl-10', className)}
+            className={cn(
+              fieldControlClass,
+              fieldHeightClass,
+              leadingIcon && 'pl-10',
+              className,
+            )}
             {...props}
           />
         </div>
@@ -149,7 +161,12 @@ export function SelectField({
             id={id}
             aria-describedby={describedBy}
             aria-invalid={invalid}
-            className={cn(fieldControlClass, fieldHeightClass, 'appearance-none pr-9', className)}
+            className={cn(
+              fieldControlClass,
+              fieldHeightClass,
+              'appearance-none pr-9',
+              className,
+            )}
             {...props}
           >
             {children}

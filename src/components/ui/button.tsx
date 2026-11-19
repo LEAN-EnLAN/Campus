@@ -73,7 +73,7 @@ export function Button({
       {trailingArrow ? (
         <ArrowRight
           aria-hidden="true"
-          className="transition-transform duration-150 ease-out-expo motion-safe:group-hover:translate-x-0.5"
+          className="ease-out-expo transition-transform duration-150 motion-safe:group-hover:translate-x-0.5"
         />
       ) : null}
     </button>

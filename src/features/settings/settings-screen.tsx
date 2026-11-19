@@ -1,22 +1,45 @@
 import { Link } from '@tanstack/react-router'
-import { ArrowLeftRight, Check, ExternalLink, LogOut, Sun } from 'lucide-react'
-import { useEffect, type ReactNode } from 'react'
+import { ArrowLeftRight, Check, ExternalLink, LogOut, Monitor, Moon, Sun } from 'lucide-react'
+import type { ReactNode } from 'react'
 
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Illustration } from '@/components/ui/illustration'
 import type { IllustrationName } from '@/components/ui/illustrations'
+import { SegmentedControl } from '@/components/ui/segmented-control'
 import { useAcademicPlan } from '@/features/academic/queries'
 import { useAuth } from '@/features/auth/auth-context'
 import { useSignOut } from '@/features/auth/use-sign-out'
 import { ExportSection } from '@/features/settings/export-section'
 import { useRequiresAccount } from '@/lib/runtime/identity'
 import { useWorkspace } from '@/lib/runtime/workspace'
+import {
+  ACCENTS,
+  DEFAULT_ACCENT_HUE,
+  type AccentId,
+  type ThemePreference,
+} from '@/lib/theme/theme'
 import { useTheme } from '@/lib/theme/theme-context'
+import { cn } from '@/lib/utils'
 
 import { PrivacySection } from './privacy-section'
 
-/** Blue is the only available accent in Proposal 2. ThemeProvider owns persistence. */
-export const CAMPUS_BLUE_HUE = 225
+/** Azul Campus, the default accent. ThemeProvider owns persistence. */
+export const CAMPUS_BLUE_HUE = DEFAULT_ACCENT_HUE
+
+const MODES = [
+  { value: 'light', label: 'Claro', icon: <Sun /> },
+  { value: 'dark', label: 'Oscuro', icon: <Moon /> },
+  { value: 'system', label: 'Sistema', icon: <Monitor /> },
+] as const satisfies readonly { value: ThemePreference; label: string; icon: ReactNode }[]
+
+/** Literal classes so Tailwind sees them; values live in tokens.css. */
+const SWATCH: Record<AccentId, string> = {
+  azul: 'bg-(--swatch-azul)',
+  indigo: 'bg-(--swatch-indigo)',
+  verde: 'bg-(--swatch-verde)',
+  coral: 'bg-(--swatch-coral)',
+  violeta: 'bg-(--swatch-violeta)',
+}
 
 /**
  * One settings group. Hierarchy is carried by size and position, not weight:
@@ -78,14 +101,8 @@ export function SettingsScreen() {
   const requiresAccount = useRequiresAccount()
   const workspace = useWorkspace()
   const plan = useAcademicPlan()
-
-  // The accepted proposal has one visual identity: light surfaces and blue
-  // accent. Migrate older saved dark/system/multicolor choices through the real
-  // provider, so modals and screens outside this route use the same preference.
-  useEffect(() => {
-    if (preference !== 'light') setPreference('light')
-    if (accentHue !== CAMPUS_BLUE_HUE) setAccentHue(CAMPUS_BLUE_HUE)
-  }, [preference, accentHue, setPreference, setAccentHue])
+  const activeHue = accentHue ?? CAMPUS_BLUE_HUE
+  const email = session?.user.email || ''
 
   const academicName =
     plan.curriculum?.version ?? plan.curriculum?.name ?? plan.context?.unmappedLabel ?? '—'
@@ -139,77 +156,52 @@ export function SettingsScreen() {
           <SettingsCard
             id="settings-appearance"
             title="Apariencia"
-            description="El diseño azul de Campus, en modo claro."
+            description="Elegí el modo y el color con el que querés ver Campus."
             illustration="settings-appearance"
           >
-            <div className="blue-settings-choice-grid">
-              <div className="blue-settings-choice-group">
-                <h3>Modo de visualización</h3>
-                <div role="group" aria-label="Tema de la aplicación">
-                  <button
-                    type="button"
-                    aria-pressed={preference === 'light'}
-                    className="blue-settings-choice"
-                    onClick={() => setPreference('light')}
-                  >
-                    <span
-                      className="blue-settings-preview blue-settings-preview-light"
-                      aria-hidden="true"
-                    >
-                      <span className="blue-settings-preview-nav" />
-                      <span className="blue-settings-preview-content">
-                        <i />
-                        <i />
-                        <i />
-                      </span>
-                      <Sun className="blue-settings-preview-symbol" size={17} />
-                    </span>
-                    <span className="blue-settings-choice-label">
-                      <Sun size={16} aria-hidden="true" />
-                      <span>Claro</span>
-                      {preference === 'light' ? (
-                        <Check
-                          size={16}
-                          className="blue-settings-choice-check"
-                          aria-hidden="true"
-                        />
-                      ) : null}
-                    </span>
-                  </button>
-                </div>
+            <div className="flex flex-col gap-5">
+              <div className="flex flex-col gap-2">
+                <h3 className="text-ink text-sm font-medium">Modo</h3>
+                <SegmentedControl
+                  label="Tema de la aplicación"
+                  options={MODES}
+                  value={preference}
+                  onChange={setPreference}
+                />
               </div>
-              <div className="blue-settings-choice-group">
-                <h3>Color de la interfaz</h3>
-                <div role="group" aria-label="Color de acento">
-                  <button
-                    type="button"
-                    aria-pressed={accentHue === CAMPUS_BLUE_HUE}
-                    className="blue-settings-choice"
-                    onClick={() => setAccentHue(CAMPUS_BLUE_HUE)}
-                  >
-                    <span
-                      className="blue-settings-preview blue-settings-preview-blue"
-                      aria-hidden="true"
-                    >
-                      <span className="blue-settings-preview-blue-window">
-                        <i />
-                        <i />
-                        <i />
-                      </span>
-                      <span className="blue-settings-preview-blue-dot" />
-                    </span>
-                    <span className="blue-settings-choice-label">
-                      <span className="blue-settings-blue-swatch" aria-hidden="true" />
-                      <span>Azul Campus</span>
-                      {accentHue === CAMPUS_BLUE_HUE ? (
-                        <Check
-                          size={16}
-                          className="blue-settings-choice-check"
+              <div className="flex flex-col gap-2">
+                <h3 className="text-ink text-sm font-medium">Color</h3>
+                <div role="group" aria-label="Color de acento" className="flex flex-wrap gap-2">
+                  {ACCENTS.map((accent) => {
+                    const selected = accent.hue === activeHue
+                    return (
+                      <button
+                        key={accent.id}
+                        type="button"
+                        aria-pressed={selected}
+                        onClick={() => setAccentHue(accent.hue)}
+                        className={cn(
+                          'rounded-pill inline-flex min-h-10 items-center gap-2 border py-1.5 pr-3.5 pl-1.5 text-sm font-medium',
+                          'ease-out-expo transition-[background-color,border-color,color] duration-150',
+                          'focus-visible:outline-focus focus-visible:outline-2 focus-visible:outline-offset-2',
+                          selected
+                            ? 'border-accent bg-accent-soft text-accent-ink'
+                            : 'border-rule bg-paper-elevated text-ink-muted hover:border-field hover:text-ink',
+                        )}
+                      >
+                        <span
                           aria-hidden="true"
-                        />
-                      ) : null}
-                    </span>
-                  </button>
+                          className={cn(
+                            'grid size-7 place-items-center rounded-full text-white',
+                            SWATCH[accent.id],
+                          )}
+                        >
+                          {selected ? <Check className="size-4" /> : null}
+                        </span>
+                        {accent.label}
+                      </button>
+                    )
+                  })}
                 </div>
               </div>
             </div>
@@ -224,23 +216,34 @@ export function SettingsScreen() {
             <SettingsCard
               id="settings-account"
               title="Tu cuenta"
-              description="Información de acceso a Campus Cloud."
-              actions={
+              description="Con esta cuenta entrás a Campus Cloud."
+            >
+              <div className="bg-paper-sunken border-rule-soft flex flex-wrap items-center gap-3 rounded-2xl border p-3 sm:flex-nowrap">
+                <span
+                  aria-hidden="true"
+                  className="bg-accent text-on-tint grid size-11 shrink-0 place-items-center rounded-full text-base font-semibold uppercase"
+                >
+                  {email ? email.charAt(0) : '?'}
+                </span>
+                <dl className="min-w-0 flex-1">
+                  <dt className="sr-only">Email</dt>
+                  <dd className="text-ink truncate text-sm font-medium">
+                    {email || 'Email no disponible'}
+                  </dd>
+                  <dt className="sr-only">Espacio</dt>
+                  <dd className="text-ink-muted text-xs">Campus Cloud</dd>
+                </dl>
                 <Button
-                  variant="secondary"
+                  variant="danger-outline"
+                  size="md"
+                  className="w-full sm:w-auto"
                   disabled={signOut.pending}
                   onClick={() => void signOut.signOut()}
                 >
                   <LogOut aria-hidden="true" />
                   {signOut.pending ? 'Cerrando sesión…' : 'Cerrar sesión'}
                 </Button>
-              }
-            >
-              <dl className="blue-settings-rows">
-                <DetailRow label="Email">
-                  {session?.user.email || 'Email no disponible'}
-                </DetailRow>
-              </dl>
+              </div>
               {signOut.error ? (
                 <p role="alert" className="blue-settings-error">
                   {signOut.error}

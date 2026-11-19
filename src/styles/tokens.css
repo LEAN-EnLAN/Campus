@@ -330,6 +330,13 @@
  * ------------------------------------------------------------------------- */
 :root {
   --brand-gradient: linear-gradient(135deg, #3c37b2 0%, #1c5ff2 55%, #55b1ea 100%);
+  /* Each accent's own fill, for the picker's swatches (they show every accent
+     at once, whichever one is active). Same values as the light blocks below. */
+  --swatch-azul: #155dd6;
+  --swatch-indigo: #3c37b2;
+  --swatch-verde: #1d7f45;
+  --swatch-coral: #c2461f;
+  --swatch-violeta: #7c3aed;
 }
 
 /* ---------------------------------------------------------------------------
@@ -455,7 +462,8 @@
 /* Night accents: the fill stays a mid tone that still takes white text; the
    INK and the focus ring lift so they read on the dark canvas. */
 :root[data-theme='dark'][data-accent='azul'],
-:root[data-theme='dark'][data-accent='azul'] :is(.campus-blue, .blue-onboarding, .blue-startup) {
+:root[data-theme='dark'][data-accent='azul']
+  :is(.campus-blue, .blue-onboarding, .blue-startup) {
   --color-accent: #2f6be0;
   --color-accent-soft: #16254a;
   --color-accent-ink: #8db8ff;
@@ -474,7 +482,8 @@
   --color-focus: #b4b1ff;
 }
 :root[data-theme='dark'][data-accent='verde'],
-:root[data-theme='dark'][data-accent='verde'] :is(.campus-blue, .blue-onboarding, .blue-startup) {
+:root[data-theme='dark'][data-accent='verde']
+  :is(.campus-blue, .blue-onboarding, .blue-startup) {
   --color-accent: #1d7f45;
   --color-accent-soft: #12301f;
   --color-accent-ink: #7fdba5;
@@ -483,7 +492,8 @@
   --color-focus: #7fdba5;
 }
 :root[data-theme='dark'][data-accent='coral'],
-:root[data-theme='dark'][data-accent='coral'] :is(.campus-blue, .blue-onboarding, .blue-startup) {
+:root[data-theme='dark'][data-accent='coral']
+  :is(.campus-blue, .blue-onboarding, .blue-startup) {
   --color-accent: #c2461f;
   --color-accent-soft: #3a1d14;
   --color-accent-ink: #ffaa8a;

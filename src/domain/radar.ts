@@ -143,7 +143,11 @@ function withSubject(text: string, subject: string | null): string {
   return subject ? `${text} · ${subject}` : text
 }
 
-function countdownFor(entry: Dated, now: Date, hasTime: (iso: string) => boolean): RadarCountdown {
+function countdownFor(
+  entry: Dated,
+  now: Date,
+  hasTime: (iso: string) => boolean,
+): RadarCountdown {
   if (entry.offset > 0) return { unit: 'days', value: entry.offset }
   const raw = anchor(entry.item)
   if (raw && hasTime(raw)) {
@@ -231,7 +235,10 @@ function dueNow(
     id: 'due-now:many',
     kind: 'due-now',
     priority: PRIORITY['due-now'] + (overdue.length > 0 ? 50 : 0),
-    title: overdue.length > 0 ? 'Ponete al día' : `${countLabel(today.length, 'cosa', 'cosas')} más para hoy`,
+    title:
+      overdue.length > 0
+        ? 'Ponete al día'
+        : `${countLabel(today.length, 'cosa', 'cosas')} más para hoy`,
     reason: parts.join(' · '),
     target: { kind: 'agenda', section },
     actionLabel: 'Ver en la lista',
@@ -261,7 +268,8 @@ function getAhead(
     kind: 'get-ahead',
     priority: PRIORITY['get-ahead'] + (WEIGHT[best.item.kind] ?? 0),
     title: `Adelantá ${best.item.title}`,
-    reason: more > 0 ? `${reason} · y ${countLabel(more, 'otra', 'otras')} en dos semanas` : reason,
+    reason:
+      more > 0 ? `${reason} · y ${countLabel(more, 'otra', 'otras')} en dos semanas` : reason,
     target: itemTarget(best),
     actionLabel: best.item.curriculumSubjectId ? 'Ir a la materia' : 'Ver en la lista',
     item: best.item,
@@ -300,7 +308,9 @@ function heavyWeek(dated: readonly Dated[], now: Date): RadarInsight | null {
     id: `heavy-week:${dayMonth(new Date(start))}`,
     kind: 'heavy-week',
     priority: PRIORITY['heavy-week'] + (isThisWeek ? 20 : 0),
-    title: isThisWeek ? 'Semana cargada' : `Semana cargada desde el ${dayMonth(new Date(start))}`,
+    title: isThisWeek
+      ? 'Semana cargada'
+      : `Semana cargada desde el ${dayMonth(new Date(start))}`,
     reason: `${joinNames(words)} en la misma semana`,
     target: { kind: 'calendar' },
     actionLabel: 'Ver calendario',
@@ -360,7 +370,9 @@ function unlockSoon(
   }
   const best = [...opens.entries()]
     .map(([id, list]) => ({ required: byId.get(id), list }))
-    .filter((e): e is { required: SubjectView; list: SubjectView[] } => e.required !== undefined)
+    .filter(
+      (e): e is { required: SubjectView; list: SubjectView[] } => e.required !== undefined,
+    )
     .sort(
       (a, b) =>
         b.list.length - a.list.length ||

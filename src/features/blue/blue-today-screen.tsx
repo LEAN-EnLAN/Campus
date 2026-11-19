@@ -21,10 +21,27 @@ import {
   daysLeftLabel,
   laterLine,
   todayHeadline,
-  UPCOMING_DAYS,
 } from '@/features/items/today-model'
 import { dueTimeLabel } from '@/features/items/due'
 import { PENDING_FINALS_ID } from '@/features/plan/pending-finals-model'
+import {
+  RadarCards,
+  RadarHero,
+  RadarLive,
+  type AgendaSection,
+} from '@/features/radar/radar-cards'
+import { useRadar } from '@/features/radar/use-radar'
+
+/** Stable empty list, so the Radar does not recompute on every render while loading. */
+const NO_ITEMS: readonly AcademicItem[] = []
+
+/** Where each Hoy list lives, for the Radar's "Ver en la lista". */
+const SECTION_ID: Record<AgendaSection, string> = {
+  overdue: 'blue-overdue',
+  today: 'blue-today',
+  upcoming: 'blue-upcoming',
+  later: 'blue-later',
+}
 
 const dateFormat = new Intl.DateTimeFormat('es-AR', {
   weekday: 'long',
@@ -169,8 +186,17 @@ export function BlueTodayScreen() {
   const itemsQuery = useAcademicItems()
   const createItem = useCreateAcademicItem()
   const [captureOpen, setCaptureOpen] = useState(false)
-  const now = useMemo(() => new Date(), [])
-  const today = useMemo(() => buildToday(itemsQuery.data ?? [], now), [itemsQuery.data, now])
+  const items = itemsQuery.data ?? NO_ITEMS
+  // Always on: recomputed on new data, every minute, and when the window comes back.
+  const radar = useRadar({
+    items,
+    subjects: plan.views,
+    prerequisitesKnown: plan.prerequisitesKnown,
+    dataUpdatedAt: itemsQuery.dataUpdatedAt,
+  })
+  const now = radar.now
+  const today = useMemo(() => buildToday(items, now), [items, now])
+  const hero = radar.insights.find((insight) => insight.kind === 'next-up') ?? null
   const subjectName = (id: string | null) =>
     id ? (plan.subjectById.get(id)?.name ?? null) : null
   const { complete, isPending: isCompleting, dialog } = useCompleteItem(subjectName)
@@ -198,16 +224,16 @@ export function BlueTodayScreen() {
           undated: today.undated.length,
         })
       : null
-  const nextLater = today.next !== null && today.next.daysLeft > UPCOMING_DAYS
   const later = laterLine(today.later, subjectName)
 
-  /** "Ver próximas": scroll to where the next item is listed and move focus there. */
-  function showNext() {
-    if (nextLater) setLaterOpen(true)
-    const target = document.getElementById(nextLater ? 'blue-later' : 'blue-upcoming')
+  /** Scroll to one of Hoy's lists and move focus there, opening "Más adelante" if needed. */
+  function showSection(section: AgendaSection) {
+    if (section === 'later') setLaterOpen(true)
+    const target = document.getElementById(SECTION_ID[section])
     target?.scrollIntoView?.({ block: 'start' })
     target?.focus()
   }
+  const radarNav = { onAgenda: showSection, onCapture: openCapture }
   async function handleCapture(values: QuickCaptureValues) {
     try {
       await createItem.mutateAsync(values)
@@ -253,6 +279,7 @@ export function BlueTodayScreen() {
           <p className="blue-screen-subtitle">
             {dateFormat.format(now).replace(/^./, (c) => c.toUpperCase())}
           </p>
+          <RadarLive updatedAt={radar.updatedAt} now={now} />
         </div>
         <div className="flex items-center gap-2">
           <Link to="/calendar" className="blue-button-outline" aria-label="Abrir calendario">
@@ -276,50 +303,50 @@ export function BlueTodayScreen() {
       ) : itemsQuery.error ? null : (
         <div className="blue-layout blue-layout-wide">
           <div className="grid min-w-0 gap-6">
-            <div className="blue-panel-soft blue-dashboard-hero">
-              <span className="bg-accent-soft text-accent-ink flex size-11 shrink-0 items-center justify-center rounded-lg">
-                {dueCount > 0 ? (
-                  <CalendarDays aria-hidden="true" className="size-5" />
+            {hero ? <RadarHero insight={hero} nav={radarNav} /> : null}
+            {hero ? null : (
+              <div className="blue-panel-soft blue-dashboard-hero">
+                <span className="bg-accent-soft text-accent-ink flex size-11 shrink-0 items-center justify-center rounded-lg">
+                  {dueCount > 0 ? (
+                    <CalendarDays aria-hidden="true" className="size-5" />
+                  ) : (
+                    <Check aria-hidden="true" className="size-5" />
+                  )}
+                </span>
+                {quietDay && !nothingPending ? (
+                  <div>
+                    <strong>{quietDay.title}</strong>
+                    {quietDay.description ? <p>{quietDay.description}</p> : null}
+                  </div>
                 ) : (
-                  <Check aria-hidden="true" className="size-5" />
+                  <div>
+                    <strong>
+                      {dueCount > 0
+                        ? `Tenés ${dueCount} ${dueCount === 1 ? 'pendiente' : 'pendientes'} para revisar`
+                        : 'No tenés entregas para hoy'}
+                    </strong>
+                    <p>
+                      {today.overdue.length}{' '}
+                      {today.overdue.length === 1 ? 'atrasada' : 'atrasadas'} ·{' '}
+                      {today.today.length} de hoy
+                    </p>
+                  </div>
                 )}
-              </span>
-              {quietDay && !nothingPending ? (
-                <div>
-                  <strong>{quietDay.title}</strong>
-                  {quietDay.description ? <p>{quietDay.description}</p> : null}
-                  {today.next ? (
-                    <Button variant="link" size="sm" className="h-auto px-0" onClick={showNext}>
-                      {nextLater ? 'Ver más adelante' : 'Ver próximas'}
-                    </Button>
-                  ) : null}
-                </div>
-              ) : (
-                <div>
-                  <strong>
-                    {dueCount > 0
-                      ? `Tenés ${dueCount} ${dueCount === 1 ? 'pendiente' : 'pendientes'} para revisar`
-                      : 'No tenés entregas para hoy'}
-                  </strong>
-                  <p>
-                    {today.overdue.length}{' '}
-                    {today.overdue.length === 1 ? 'atrasada' : 'atrasadas'} ·{' '}
-                    {today.today.length} de hoy
-                  </p>
-                </div>
-              )}
-              {/* One spot per screen: with nothing pending the empty state below carries it. */}
-              {nothingPending ? null : (
-                // Below 400px the drawing squeezed the sentence into a 4-word column.
-                <Illustration
-                  name="today-study"
-                  decorative
-                  eager
-                  size="xs"
-                  className="ml-auto w-24 shrink-0 max-[399px]:hidden sm:w-28"
-                />
-              )}
-            </div>
+                {/* One spot per screen: with nothing pending the empty state below carries it. */}
+                {nothingPending ? null : (
+                  // Below 400px the drawing squeezed the sentence into a 4-word column.
+                  <Illustration
+                    name="today-study"
+                    decorative
+                    eager
+                    size="xs"
+                    className="ml-auto w-24 shrink-0 max-[399px]:hidden sm:w-28"
+                  />
+                )}
+              </div>
+            )}
+            {/* assistant-briefing */}
+            <RadarCards insights={radar.insights} nav={radarNav} />
             {renderSection('blue-overdue', 'Atrasadas', today.overdue, true)}
             {renderSection('blue-today', 'Hoy', today.today)}
             {renderSection('blue-upcoming', 'Próximas', today.upcoming)}

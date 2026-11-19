@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 
 import { StateBlocks, SubjectBubbles, TrophyFill } from '.'
-import { layoutBubbles } from './subject-bubbles'
+import { layoutBubbles } from './bubble-layout'
 import { countByTone, toneSentence } from './tones'
 
 describe('TrophyFill', () => {

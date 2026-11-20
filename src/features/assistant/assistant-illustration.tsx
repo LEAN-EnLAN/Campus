@@ -3,8 +3,8 @@ import { cn } from '@/lib/utils'
 /**
  * Ajustes → Asistente's spot: a chat bubble "thinking" and the student's own
  * key in front of it. Hand-drawn in the language of the raster settings set
- * (public/campus-blue-assets/settings-*.webp): navy outline, blue monochrome
- * fills, one soft lower-right shade per shape, a dotted ring behind. Same 16:10
+ * (the settings-*.webp spots of the Illustration registry): navy outline, blue
+ * monochrome fills, one soft lower-right shade per shape, a dotted ring behind. Same 16:10
  * frame and the same empty margin, so it sits beside its siblings at the same
  * size. Decorative: the card's title already says what it is.
  */

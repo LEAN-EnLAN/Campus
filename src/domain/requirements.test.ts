@@ -9,6 +9,7 @@ import {
   missingSummary,
   joinNames,
   requirementGroups,
+  takeBlockedSentence,
 } from './requirements'
 import { edge, state, subject } from './test-fixtures'
 
@@ -117,5 +118,21 @@ describe('missingSummary — the plan-row phrase', () => {
 
   it('says nothing when nothing is missing', () => {
     expect(missingSummary(viewOf(['passed', 'passed'], ['am1', 'alg']))).toBeNull()
+  })
+})
+
+describe('takeBlockedSentence', () => {
+  it('names what is missing to take a blocked subject', () => {
+    const v = viewOf(['regularized'], ['am1'])
+    expect(v.status).toBe('blocked')
+    expect(takeBlockedSentence(v)).toBe(
+      'Para cursarla te falta cursar Álgebra y Geometría Analítica.',
+    )
+  })
+
+  it('says nothing once the subject can be taken', () => {
+    expect(
+      takeBlockedSentence(viewOf(['regularized', 'regularized'], ['am1', 'alg'])),
+    ).toBeNull()
   })
 })

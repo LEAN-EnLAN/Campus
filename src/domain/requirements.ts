@@ -78,3 +78,16 @@ export function missingSummary(view: SubjectView): string | null {
   if (missing.length === 0) return null
   return missing.length === 1 ? `falta ${missing[0]!.name}` : `faltan ${missing.length}`
 }
+
+/**
+ * Why a blocked subject cannot be taken yet: "Para cursarla te falta cursar A y B."
+ *
+ * Only for `blocked`. A subject the student already marked (cursando, aprobada…)
+ * with unmet correlativas is an order conflict, and `consistency.ts` words that.
+ */
+export function takeBlockedSentence(view: SubjectView): string | null {
+  if (view.status !== 'blocked') return null
+  const missing = requirementGroups(view).cursar.filter((r) => !r.met)
+  if (missing.length === 0) return null
+  return `Para cursarla te falta cursar ${joinNames(missing.map((r) => r.name))}.`
+}

@@ -173,13 +173,15 @@ async function main() {
       await page.waitForURL(/\/courses\//, { timeout: 20_000 })
       await page.getByRole('heading', { level: 1 }).waitFor()
 
-      await page.getByLabel('¿Cómo vas?').selectOption('in_progress')
-      await page
-        .locator('section[aria-labelledby="estado"] p')
-        .filter({ hasText: 'Cursando' })
+      const picker = page.getByRole('group', { name: '¿Cómo vas?' })
+      await picker.getByRole('button', { name: 'Cursando', exact: true }).click()
+      await picker
+        .getByRole('button', { name: 'Cursando', exact: true, pressed: true })
         .waitFor({ timeout: 15_000 })
 
-      const unlocks = page.locator('section[aria-labelledby="correlativas"] ul li a')
+      const unlocks = page.locator(
+        'ul[aria-labelledby="correlativas-habilita"] .course-row-link',
+      )
       if ((await unlocks.count()) > 0) unlockSubjectName = await unlocks.first().innerText()
       return unlockSubjectName ? `habilita: ${unlockSubjectName}` : 'marcada'
     })
@@ -275,10 +277,10 @@ async function main() {
       await row.click()
       await page.waitForURL(/\/courses\//, { timeout: 20_000 })
 
-      await page.getByLabel('¿Cómo vas?').selectOption('passed')
-      await page
-        .locator('section[aria-labelledby="estado"] p')
-        .filter({ hasText: 'Aprobada' })
+      const picker = page.getByRole('group', { name: '¿Cómo vas?' })
+      await picker.getByRole('button', { name: 'Aprobada', exact: true }).click()
+      await picker
+        .getByRole('button', { name: 'Aprobada', exact: true, pressed: true })
         .waitFor({ timeout: 15_000 })
     }
 

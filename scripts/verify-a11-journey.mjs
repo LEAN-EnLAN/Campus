@@ -130,10 +130,10 @@ const authored = await session(async (page, server, supabaseCalls) => {
   // Path only: the port is the same but the object is a new server after restart.
   courseHref = new URL(courseUrl).pathname
 
-  // A select, not buttons — driven the way a student drives it.
-  const statusSelect = page.getByLabel('¿Cómo vas?')
-  await statusSelect.waitFor({ state: 'visible', timeout: 20_000 })
-  await statusSelect.selectOption('in_progress')
+  // The status picker: one pressed button per status, driven the way a student does.
+  const statusPicker = page.getByRole('group', { name: '¿Cómo vas?' })
+  await statusPicker.waitFor({ state: 'visible', timeout: 20_000 })
+  await statusPicker.getByRole('button', { name: 'Cursando', exact: true }).click()
   await page.waitForTimeout(1500)
 
   const stateFile = join(VAULT, '.campus/academic/subject-state.json')
@@ -217,11 +217,13 @@ await session(async (page, server, supabaseCalls) => {
   )
 
   await page.goto(`${server.url}${courseHref}`, { waitUntil: 'domcontentloaded' })
-  const statusSelect = page.getByLabel('¿Cómo vas?')
-  await statusSelect.waitFor({ state: 'visible', timeout: 20_000 }).catch(() => {})
+  const cursando = page
+    .getByRole('group', { name: '¿Cómo vas?' })
+    .getByRole('button', { name: 'Cursando', exact: true })
+  await cursando.waitFor({ state: 'visible', timeout: 20_000 }).catch(() => {})
   check(
     'the subject is STILL in_progress after the restart',
-    (await statusSelect.inputValue().catch(() => '')) === 'in_progress',
+    (await cursando.getAttribute('aria-pressed').catch(() => null)) === 'true',
   )
 
   check('and still made no Supabase request', supabaseCalls.length === 0)

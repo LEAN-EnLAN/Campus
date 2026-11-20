@@ -92,3 +92,30 @@ export const GROUP_STATUS: Readonly<Record<StatusGroupId, SubjectStatus>> = {
 export function statusChipClass(status: SubjectStatus): string {
   return STATUS[status].chip
 }
+
+/**
+ * The deck's status pills: Aprobada green, Regularizada amber, Cursando blue,
+ * everything not yet started white with a rule. A tone, not a new vocabulary:
+ * the word still comes from `statusLabel`, the shape from `StatusGlyph`, so the
+ * colour is never the only carrier.
+ */
+export type StatusTone = 'approved' | 'regular' | 'cursando' | 'pending' | 'blocked' | 'failed'
+
+export function statusTone(status: SubjectStatus): StatusTone {
+  switch (status) {
+    case 'passed':
+    case 'equivalent':
+      return 'approved'
+    case 'regularized':
+      return 'regular'
+    case 'in_progress':
+      return 'cursando'
+    case 'blocked':
+      return 'blocked'
+    case 'failed':
+      return 'failed'
+    case 'available':
+    case 'pending':
+      return 'pending'
+  }
+}

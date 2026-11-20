@@ -1,14 +1,16 @@
 import { Link, useNavigate } from '@tanstack/react-router'
 import { useQueryClient } from '@tanstack/react-query'
+import { NotebookPen } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 
 import { EmptyState } from '@/components/empty-state'
-import { SectionHeading } from '@/components/page-header'
 import { Button } from '@/components/ui/button'
 import { useFiles, type FilesAccess } from '@/lib/files/context'
 import { vaultErrorCode, vaultErrorMessage } from '@/lib/files/errors'
 import { ensureSessionIndex, sessionFor } from '@/lib/knowledge/session-index'
 import { vaultKeys } from '@/features/vault/queries'
+
+import { CourseSection } from './course-section'
 
 /**
  * "Notas" on a materia: the notes of the student's local folder that mention it
@@ -117,44 +119,51 @@ function Notes({ files, subject }: { files: FilesAccess; subject: NotedSubject }
 
   const shown = showAll ? mentions : mentions.slice(0, VISIBLE)
 
-  return (
-    <section aria-labelledby="notas" className="flex flex-col gap-1">
-      <div className="flex items-end justify-between gap-3">
-        <SectionHeading
-          id="notas"
-          aside={ready && mentions.length > 0 ? `${mentions.length}` : undefined}
-          className="flex-1"
-        >
-          Notas
-        </SectionHeading>
-        <Button
-          variant="secondary"
-          size="sm"
-          disabled={creating}
-          onClick={() => void createNote()}
-        >
-          + Nota de esta materia
-        </Button>
-      </div>
+  const createButton = (
+    <Button variant="secondary" size="sm" disabled={creating} onClick={() => void createNote()}>
+      + Nota de esta materia
+    </Button>
+  )
+  const empty = ready && mentions.length === 0
 
+  return (
+    <CourseSection
+      id="notas"
+      icon={<NotebookPen />}
+      title="Notas"
+      purpose={
+        ready && mentions.length > 0
+          ? `${mentions.length} ${mentions.length === 1 ? 'nota de tu carpeta la menciona' : 'notas de tu carpeta la mencionan'}.`
+          : 'Las notas de tu carpeta que la mencionan con [[link]].'
+      }
+      // Only once the index has answered: the empty state carries the button
+      // otherwise, and swapping it under a pointer loses the click.
+      action={ready && !empty ? createButton : undefined}
+    >
       {error ? (
         <p role="alert" className="text-danger text-sm font-medium">
           {error}
         </p>
       ) : null}
 
-      {ready && mentions.length === 0 ? (
-        <EmptyState quiet title="Ninguna nota menciona esta materia todavía." />
+      {empty ? (
+        <EmptyState
+          quiet
+          className="[&_img]:max-w-36"
+          illustration="course-notes-empty"
+          title="Ninguna nota menciona esta materia todavía."
+          action={createButton}
+        />
       ) : null}
 
       {shown.length > 0 ? (
-        <ul>
+        <ul className="course-rows">
           {shown.map((mention) => (
-            <li key={mention.sourcePath} className="border-rule-soft border-b">
+            <li key={mention.sourcePath}>
               <Link
                 to="/vault"
                 search={{ note: mention.sourcePath }}
-                className="hover:bg-paper-sunken flex flex-col gap-0.5 py-2.5"
+                className="course-row course-row-action flex-col items-start gap-0.5"
               >
                 <span className="text-ink text-sm">{mention.sourceTitle}</span>
                 <span className="text-ink-muted truncate text-xs">{mention.snippet}</span>
@@ -173,6 +182,6 @@ function Notes({ files, subject }: { files: FilesAccess; subject: NotedSubject }
           Ver todas ({mentions.length})
         </button>
       ) : null}
-    </section>
+    </CourseSection>
   )
 }

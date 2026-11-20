@@ -1,30 +1,42 @@
 /* Radar (Hoy) and the progress illustrations.
  *
- * Own tokens, scoped by prefix, with a dark value for each one. State colours
- * follow the design direction: approved green, regular amber, needs-attention
- * coral, cursando the Campus accent. They always sit next to a word or number. */
+ * Own tokens, scoped by prefix, with a dark value for each one. States are the
+ * Campus status palette (the pitch deck's pills): Aprobada green, Regularizada
+ * amber, Cursando blue, Disponible white with a rule. Each is a soft fill and
+ * an ink that reads on it; they always sit next to a word or a number. */
 :root {
-  --radar-approved: #25a149;
-  --radar-regular: #ffc02a;
-  --radar-attention: #ff7f50;
-  --radar-cursando: #1c5ff2;
-  --radar-pending: #c9d4e6;
-  --radar-on-tone: #10224a;
-  --radar-on-strong: #ffffff;
-  --radar-track: #e9eef7;
-  --radar-hero-from: #3c37b2;
-  --radar-hero-via: #1c5ff2;
-  --radar-hero-to: #55b1ea;
+  --radar-approved: #12684a;
+  --radar-approved-soft: #d6f2e6;
+  --radar-regular: #7a4e00;
+  --radar-regular-soft: #fbeccb;
+  --radar-cursando: #0f4aa8;
+  --radar-cursando-soft: #dce8fc;
+  --radar-pending: #4a5873;
+  --radar-pending-soft: #ffffff;
+  --radar-pending-edge: #c3cde0;
+  /* The live dot: a mid green that reads as a light, not as text. */
+  --radar-live: #1f9a6a;
+  /* Small marks (a bubble, a legend dot) need a stronger fill than a pill's
+     soft one. Approved and regular use the app's own status-dot colours
+     (--color-success, --color-warning-bright, read at the element so the blue
+     scope's values apply), so a bubble matches the plan's status dots. */
+  --radar-cursando-mark: var(--brand-blue);
+  --radar-pending-mark: #ffffff;
   --radar-ease: cubic-bezier(0.16, 1, 0.3, 1);
 }
 :root[data-theme='dark'] {
-  --radar-approved: #3fc46a;
-  --radar-regular: #ffcb4f;
-  --radar-attention: #ff946e;
-  --radar-cursando: #5b8dff;
-  --radar-pending: #3a4466;
-  --radar-on-tone: #0f1220;
-  --radar-track: #262b45;
+  --radar-approved: #c8f3e0;
+  --radar-approved-soft: #1d5a4a;
+  --radar-regular: #fbe6b8;
+  --radar-regular-soft: #5c4413;
+  --radar-cursando: #dce8fc;
+  --radar-cursando-soft: #1d4590;
+  --radar-pending: #c3d2ee;
+  --radar-pending-soft: #172c5c;
+  --radar-pending-edge: #36558f;
+  --radar-live: #3fc48c;
+  --radar-cursando-mark: #5b9bff;
+  --radar-pending-mark: #172c5c;
 }
 
 /* --- Live indicator -------------------------------------------------------- */
@@ -41,7 +53,7 @@
   width: 0.5rem;
   height: 0.5rem;
   border-radius: 999px;
-  background: var(--radar-approved);
+  background: var(--radar-live);
   flex: none;
 }
 .radar-live-dot::after {
@@ -65,75 +77,99 @@
 }
 
 /* --- Hero ------------------------------------------------------------------ */
+/* The deck's navy cover in miniature: navy surface, the giant C bleeding off the
+   right edge, white title, light-blue eyebrow and number, white pill CTA. */
 .radar-hero {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: end;
   gap: 1rem 1.5rem;
   border-radius: 24px;
-  padding: 1.5rem;
-  color: var(--radar-on-strong);
-  background: linear-gradient(
-    120deg,
-    var(--radar-hero-from),
-    var(--radar-hero-via) 55%,
-    var(--radar-hero-to)
-  );
+  padding: 1.75rem;
+  color: var(--navy-ink);
+  background: var(--navy-surface);
   min-width: 0;
 }
+:root[data-theme='dark'] .radar-hero {
+  /* Navy on the night canvas: an edge so the surface still reads as a card. */
+  box-shadow: inset 0 0 0 1px var(--navy-edge);
+}
+.radar-hero > :not(.brand-watermark) {
+  position: relative;
+  z-index: 1;
+}
+.radar-hero-watermark {
+  /* Sized so the C's hollow sits behind the countdown and the dot bleeds off
+     the right edge, as on the deck's cover. */
+  top: 50%;
+  right: -5rem;
+  height: 21rem;
+  translate: 0 -50%;
+}
 .radar-hero-eyebrow {
-  font-size: 0.8125rem;
-  font-weight: 500;
-  opacity: 0.9;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--navy-eyebrow);
 }
 .radar-hero-title {
-  margin-top: 0.35rem;
-  font-size: clamp(1.35rem, 3.2vw, 1.9rem);
+  margin-top: 0.5rem;
+  font-size: clamp(1.4rem, 3.2vw, 2rem);
   font-weight: 600;
-  line-height: 1.15;
-  letter-spacing: -0.02em;
+  line-height: 1.1;
+  letter-spacing: -0.025em;
+  color: var(--navy-ink);
   overflow-wrap: anywhere;
 }
 .radar-hero-reason {
-  margin-top: 0.35rem;
+  margin-top: 0.4rem;
   font-size: 0.875rem;
-  opacity: 0.92;
+  color: var(--navy-ink-muted);
 }
 .radar-hero-count {
-  text-align: right;
+  align-self: center;
+  min-width: 6.5rem;
+  margin-right: 1rem;
+  text-align: center;
   line-height: 1;
 }
 .radar-hero-numeral {
   display: block;
-  font-size: clamp(3.5rem, 9vw, 5rem);
+  font-size: clamp(3.5rem, 9vw, 5.5rem);
   font-weight: 600;
   letter-spacing: -0.04em;
   font-variant-numeric: tabular-nums;
+  color: var(--navy-eyebrow);
 }
 .radar-hero-unit {
   display: block;
   margin-top: 0.25rem;
   font-size: 0.8125rem;
-  opacity: 0.9;
+  color: var(--navy-ink-muted);
 }
 .radar-hero-action {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
   min-height: 2.75rem;
-  margin-top: 1rem;
-  padding: 0 1.1rem;
+  margin-top: 1.1rem;
+  padding: 0 1.2rem;
   border-radius: 999px;
-  background: var(--radar-on-strong);
-  color: var(--radar-hero-from);
+  background: var(--navy-ink);
+  color: var(--navy-surface);
   font-size: 0.875rem;
   font-weight: 600;
+  transition: background-color 150ms var(--radar-ease);
 }
 .radar-hero-action:hover {
-  background: color-mix(in srgb, var(--radar-on-strong) 88%, transparent);
+  background: var(--navy-eyebrow);
 }
 .radar-hero-action:focus-visible {
-  outline: 2px solid var(--radar-on-strong);
+  outline: 2px solid var(--navy-eyebrow);
   outline-offset: 3px;
 }
 @media (max-width: 479px) {
@@ -142,8 +178,16 @@
     padding: 1.25rem;
   }
   .radar-hero-count {
+    min-width: 0;
+    margin-right: 0;
     text-align: left;
     grid-row: 1;
+  }
+  .radar-hero-watermark {
+    top: 0;
+    right: -3rem;
+    height: 14rem;
+    translate: 0 -14%;
   }
 }
 
@@ -176,17 +220,17 @@
   background: var(--color-accent-soft);
   color: var(--color-accent-ink);
 }
-.radar-card[data-tone='attention'] .radar-card-chip {
-  background: color-mix(in srgb, var(--radar-attention) 22%, transparent);
-  color: var(--color-ink);
-}
 .radar-card[data-tone='regular'] .radar-card-chip {
-  background: color-mix(in srgb, var(--radar-regular) 30%, transparent);
-  color: var(--color-ink);
+  background: var(--radar-regular-soft);
+  color: var(--radar-regular);
 }
 .radar-card[data-tone='approved'] .radar-card-chip {
-  background: color-mix(in srgb, var(--radar-approved) 20%, transparent);
-  color: var(--color-ink);
+  background: var(--radar-approved-soft);
+  color: var(--radar-approved);
+}
+.radar-card[data-tone='cursando'] .radar-card-chip {
+  background: var(--radar-cursando-soft);
+  color: var(--radar-cursando);
 }
 .radar-card-title {
   font-size: 0.9375rem;

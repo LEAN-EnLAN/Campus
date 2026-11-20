@@ -40,8 +40,10 @@ const onPath = (exe) =>
 
 function toolchainEnv() {
   const env = { ...process.env }
+  // Windows names it `Path`; writing a second `PATH` key makes the child see only one of them.
+  const pathKey = Object.keys(env).find((k) => k.toUpperCase() === 'PATH') ?? 'PATH'
   const cargoBin = join(homedir(), '.cargo', 'bin')
-  env.PATH = [cargoBin, env.PATH].join(delimiter)
+  env[pathKey] = [cargoBin, env[pathKey]].join(delimiter)
   // cl.exe, not link.exe: Git for Windows ships a coreutils link.exe on PATH.
   if (onPath('cl.exe') || process.platform !== 'win32') return env
 
@@ -72,7 +74,7 @@ function toolchainEnv() {
   env.AR_x86_64_pc_windows_msvc = 'llvm-lib'
   env.RC = 'llvm-rc'
   const llvm = process.env.CAMPUS_LLVM_BIN ?? join(homedir(), 'scoop', 'apps', 'llvm', 'current', 'bin')
-  env.PATH = [llvm, env.PATH].join(delimiter)
+  env[pathKey] = [llvm, env[pathKey]].join(delimiter)
   return env
 }
 

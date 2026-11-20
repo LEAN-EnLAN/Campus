@@ -37,7 +37,6 @@ const MODES = [
 /** Literal classes so Tailwind sees them; values live in tokens.css. */
 const SWATCH: Record<AccentId, string> = {
   azul: 'bg-(--swatch-azul)',
-  indigo: 'bg-(--swatch-indigo)',
   verde: 'bg-(--swatch-verde)',
   coral: 'bg-(--swatch-coral)',
   violeta: 'bg-(--swatch-violeta)',

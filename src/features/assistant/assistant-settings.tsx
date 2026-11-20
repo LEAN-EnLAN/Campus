@@ -1,4 +1,4 @@
-import { KeyRound, Sparkles } from 'lucide-react'
+import { KeyRound } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
 
 import { Button } from '@/components/ui/button'
@@ -12,6 +12,7 @@ import {
   type AssistantModelId,
 } from '@/lib/ai/models'
 
+import { AssistantIllustration } from './assistant-illustration'
 import {
   clearAssistantSettings,
   maskApiKey,
@@ -85,9 +86,7 @@ export function AssistantSettingsSection() {
           <h2 id="settings-assistant">Asistente</h2>
           <p>Traé tu propia clave de Anthropic y preguntale a Claude sobre tu cursada.</p>
         </div>
-        <span className="bg-accent-soft text-accent-ink flex size-12 shrink-0 items-center justify-center rounded-2xl">
-          <Sparkles aria-hidden="true" className="size-6" />
-        </span>
+        <AssistantIllustration className="-mt-1 w-16 shrink-0 sm:w-20" />
       </header>
 
       <form className="flex flex-col gap-4" onSubmit={save} noValidate>

@@ -303,7 +303,7 @@ function PlanScreen() {
               <TrophyFill
                 value={earned}
                 total={plan.progress.total}
-                className="w-20 shrink-0"
+                className="w-24 shrink-0"
               />
               <p className="text-ink-muted min-w-0 text-sm">
                 Cada materia aprobada llena un poco la copa.

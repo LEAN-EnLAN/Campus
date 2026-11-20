@@ -11,6 +11,7 @@ import {
 } from 'lucide-react'
 import type { CSSProperties, ReactNode } from 'react'
 
+import { BrandWatermark } from '@/components/brand/brand-watermark'
 import type {
   RadarCountdown,
   RadarInsight,
@@ -105,6 +106,7 @@ export function RadarHero({ insight, nav }: { insight: RadarInsight; nav: RadarN
   const count = insight.countdown ? countdownParts(insight.countdown) : null
   return (
     <section aria-labelledby="radar-hero-title" className="radar-hero">
+      <BrandWatermark className="radar-hero-watermark" />
       <div className="min-w-0">
         <p className="radar-hero-eyebrow">
           Lo próximo{insight.item ? ` · ${itemKindLabel(insight.item.kind)}` : null}
@@ -137,12 +139,20 @@ const ICON: Record<Exclude<RadarInsightKind, 'next-up'>, LucideIcon> = {
   'all-clear': CircleCheck,
 }
 
-const TONE: Record<Exclude<RadarInsightKind, 'next-up'>, string> = {
-  'due-now': 'attention',
-  'get-ahead': 'accent',
+/**
+ * Each card's chip speaks the status palette, as the pitch deck's Radar does:
+ * late and finals to book are Regularizada amber, getting ahead and unlocking
+ * are Aprobada green, a loaded week is Cursando blue.
+ */
+const TONE: Record<
+  Exclude<RadarInsightKind, 'next-up'>,
+  'regular' | 'approved' | 'cursando'
+> = {
+  'due-now': 'regular',
+  'get-ahead': 'approved',
   'final-to-book': 'regular',
   'unlock-soon': 'approved',
-  'heavy-week': 'attention',
+  'heavy-week': 'cursando',
   'all-clear': 'approved',
 }
 

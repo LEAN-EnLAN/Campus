@@ -1,30 +1,42 @@
 /* Radar (Hoy) and the progress illustrations.
  *
- * Own tokens, scoped by prefix, with a dark value for each one. State colours
- * follow the design direction: approved green, regular amber, needs-attention
- * coral, cursando the Campus accent. They always sit next to a word or number. */
+ * Own tokens, scoped by prefix, with a dark value for each one. States are the
+ * Campus status palette (the pitch deck's pills): Aprobada green, Regularizada
+ * amber, Cursando blue, Disponible white with a rule. Each is a soft fill and
+ * an ink that reads on it; they always sit next to a word or a number. */
 :root {
-  --radar-approved: #25a149;
-  --radar-regular: #ffc02a;
-  --radar-attention: #ff7f50;
-  --radar-cursando: #1c5ff2;
-  --radar-pending: #c9d4e6;
-  --radar-on-tone: #10224a;
-  --radar-on-strong: #ffffff;
-  --radar-track: #e9eef7;
-  --radar-hero-from: #3c37b2;
-  --radar-hero-via: #1c5ff2;
-  --radar-hero-to: #55b1ea;
+  --radar-approved: #12684a;
+  --radar-approved-soft: #d6f2e6;
+  --radar-regular: #7a4e00;
+  --radar-regular-soft: #fbeccb;
+  --radar-cursando: #0f4aa8;
+  --radar-cursando-soft: #dce8fc;
+  --radar-pending: #4a5873;
+  --radar-pending-soft: #ffffff;
+  --radar-pending-edge: #c3cde0;
+  /* The live dot: a mid green that reads as a light, not as text. */
+  --radar-live: #1f9a6a;
+  /* Small marks (a bubble, a legend dot) need a stronger fill than a pill's
+     soft one. Approved and regular use the app's own status-dot colours
+     (--color-success, --color-warning-bright, read at the element so the blue
+     scope's values apply), so a bubble matches the plan's status dots. */
+  --radar-cursando-mark: var(--brand-blue);
+  --radar-pending-mark: #ffffff;
   --radar-ease: cubic-bezier(0.16, 1, 0.3, 1);
 }
 :root[data-theme='dark'] {
-  --radar-approved: #3fc46a;
-  --radar-regular: #ffcb4f;
-  --radar-attention: #ff946e;
-  --radar-cursando: #5b8dff;
-  --radar-pending: #3a4466;
-  --radar-on-tone: #0f1220;
-  --radar-track: #262b45;
+  --radar-approved: #c8f3e0;
+  --radar-approved-soft: #1d5a4a;
+  --radar-regular: #fbe6b8;
+  --radar-regular-soft: #5c4413;
+  --radar-cursando: #dce8fc;
+  --radar-cursando-soft: #1d4590;
+  --radar-pending: #c3d2ee;
+  --radar-pending-soft: #172c5c;
+  --radar-pending-edge: #36558f;
+  --radar-live: #3fc48c;
+  --radar-cursando-mark: #5b9bff;
+  --radar-pending-mark: #172c5c;
 }
 
 /* --- Live indicator -------------------------------------------------------- */
@@ -41,7 +53,7 @@
   width: 0.5rem;
   height: 0.5rem;
   border-radius: 999px;
-  background: var(--radar-approved);
+  background: var(--radar-live);
   flex: none;
 }
 .radar-live-dot::after {
@@ -65,75 +77,99 @@
 }
 
 /* --- Hero ------------------------------------------------------------------ */
+/* The deck's navy cover in miniature: navy surface, the giant C bleeding off the
+   right edge, white title, light-blue eyebrow and number, white pill CTA. */
 .radar-hero {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: end;
   gap: 1rem 1.5rem;
   border-radius: 24px;
-  padding: 1.5rem;
-  color: var(--radar-on-strong);
-  background: linear-gradient(
-    120deg,
-    var(--radar-hero-from),
-    var(--radar-hero-via) 55%,
-    var(--radar-hero-to)
-  );
+  padding: 1.75rem;
+  color: var(--navy-ink);
+  background: var(--navy-surface);
   min-width: 0;
 }
+:root[data-theme='dark'] .radar-hero {
+  /* Navy on the night canvas: an edge so the surface still reads as a card. */
+  box-shadow: inset 0 0 0 1px var(--navy-edge);
+}
+.radar-hero > :not(.brand-watermark) {
+  position: relative;
+  z-index: 1;
+}
+.radar-hero-watermark {
+  /* Sized so the C's hollow sits behind the countdown and the dot bleeds off
+     the right edge, as on the deck's cover. */
+  top: 50%;
+  right: -5rem;
+  height: 21rem;
+  translate: 0 -50%;
+}
 .radar-hero-eyebrow {
-  font-size: 0.8125rem;
-  font-weight: 500;
-  opacity: 0.9;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--navy-eyebrow);
 }
 .radar-hero-title {
-  margin-top: 0.35rem;
-  font-size: clamp(1.35rem, 3.2vw, 1.9rem);
+  margin-top: 0.5rem;
+  font-size: clamp(1.4rem, 3.2vw, 2rem);
   font-weight: 600;
-  line-height: 1.15;
-  letter-spacing: -0.02em;
+  line-height: 1.1;
+  letter-spacing: -0.025em;
+  color: var(--navy-ink);
   overflow-wrap: anywhere;
 }
 .radar-hero-reason {
-  margin-top: 0.35rem;
+  margin-top: 0.4rem;
   font-size: 0.875rem;
-  opacity: 0.92;
+  color: var(--navy-ink-muted);
 }
 .radar-hero-count {
-  text-align: right;
+  align-self: center;
+  min-width: 6.5rem;
+  margin-right: 1rem;
+  text-align: center;
   line-height: 1;
 }
 .radar-hero-numeral {
   display: block;
-  font-size: clamp(3.5rem, 9vw, 5rem);
+  font-size: clamp(3.5rem, 9vw, 5.5rem);
   font-weight: 600;
   letter-spacing: -0.04em;
   font-variant-numeric: tabular-nums;
+  color: var(--navy-eyebrow);
 }
 .radar-hero-unit {
   display: block;
   margin-top: 0.25rem;
   font-size: 0.8125rem;
-  opacity: 0.9;
+  color: var(--navy-ink-muted);
 }
 .radar-hero-action {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
   min-height: 2.75rem;
-  margin-top: 1rem;
-  padding: 0 1.1rem;
+  margin-top: 1.1rem;
+  padding: 0 1.2rem;
   border-radius: 999px;
-  background: var(--radar-on-strong);
-  color: var(--radar-hero-from);
+  background: var(--navy-ink);
+  color: var(--navy-surface);
   font-size: 0.875rem;
   font-weight: 600;
+  transition: background-color 150ms var(--radar-ease);
 }
 .radar-hero-action:hover {
-  background: color-mix(in srgb, var(--radar-on-strong) 88%, transparent);
+  background: var(--navy-eyebrow);
 }
 .radar-hero-action:focus-visible {
-  outline: 2px solid var(--radar-on-strong);
+  outline: 2px solid var(--navy-eyebrow);
   outline-offset: 3px;
 }
 @media (max-width: 479px) {
@@ -142,8 +178,16 @@
     padding: 1.25rem;
   }
   .radar-hero-count {
+    min-width: 0;
+    margin-right: 0;
     text-align: left;
     grid-row: 1;
+  }
+  .radar-hero-watermark {
+    top: 0;
+    right: -3rem;
+    height: 14rem;
+    translate: 0 -14%;
   }
 }
 
@@ -176,17 +220,17 @@
   background: var(--color-accent-soft);
   color: var(--color-accent-ink);
 }
-.radar-card[data-tone='attention'] .radar-card-chip {
-  background: color-mix(in srgb, var(--radar-attention) 22%, transparent);
-  color: var(--color-ink);
-}
 .radar-card[data-tone='regular'] .radar-card-chip {
-  background: color-mix(in srgb, var(--radar-regular) 30%, transparent);
-  color: var(--color-ink);
+  background: var(--radar-regular-soft);
+  color: var(--radar-regular);
 }
 .radar-card[data-tone='approved'] .radar-card-chip {
-  background: color-mix(in srgb, var(--radar-approved) 20%, transparent);
-  color: var(--color-ink);
+  background: var(--radar-approved-soft);
+  color: var(--radar-approved);
+}
+.radar-card[data-tone='cursando'] .radar-card-chip {
+  background: var(--radar-cursando-soft);
+  color: var(--radar-cursando);
 }
 .radar-card-title {
   font-size: 0.9375rem;
@@ -223,18 +267,77 @@
 }
 
 /* --- Progress art ----------------------------------------------------------- */
+/* Drawn in the Campus illustration language (the campus-blue-assets set): navy
+   ~2px outlines with round joins, blue monochrome fills, one soft lower-right
+   shade for depth, a dotted pale-blue ring behind. Colours come from the
+   `--art-*` brand tokens; states use the status pairs above. */
+.art-outline,
+.art-outline-fill {
+  stroke: var(--art-outline);
+  stroke-width: var(--art-stroke, 2);
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+.art-outline {
+  fill: none;
+}
+.art-fill-paper {
+  fill: var(--art-paper);
+}
+.art-fill-blue {
+  fill: var(--art-blue);
+}
+.art-fill-mid {
+  fill: var(--art-blue-mid);
+}
+.art-fill-soft {
+  fill: var(--art-blue-soft);
+}
+/* A small spot beside a card title (Ajustes): a hair finer, like the rasters. */
+.art-spot {
+  --art-stroke: 1.6;
+}
+.art-ring {
+  fill: none;
+  stroke: var(--art-ring);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-dasharray: 0 6;
+}
+.art-shade {
+  fill: var(--art-shade);
+}
+.art-spark {
+  fill: none;
+  stroke: var(--art-blue);
+  stroke-width: 4;
+  stroke-linecap: round;
+}
 .art-trophy-shape {
-  fill: var(--radar-track);
+  fill: var(--art-wash);
+}
+.art-trophy-handle-edge {
+  fill: none;
+  stroke: var(--art-outline);
+  stroke-width: 9;
+  stroke-linecap: round;
 }
 .art-trophy-handle {
   fill: none;
-  stroke: var(--radar-track);
+  stroke: var(--art-paper);
+  stroke-width: 5;
+  stroke-linecap: round;
 }
 .art-trophy-fill {
-  fill: var(--radar-approved);
+  fill: var(--art-blue);
   transform-box: fill-box;
   transform-origin: bottom;
   animation: art-fill 1100ms var(--radar-ease) both;
+}
+.art-trophy-surface {
+  fill: none;
+  stroke: var(--art-blue-mid);
+  stroke-width: 2;
 }
 @keyframes art-fill {
   from {
@@ -242,59 +345,85 @@
   }
 }
 .art-bubble {
+  stroke: var(--art-outline);
+  stroke-width: 1.25;
+}
+.art-bubble-group {
   transform-box: fill-box;
   transform-origin: center;
   animation: art-pop 420ms var(--radar-ease) both;
   animation-delay: calc(var(--art-i, 0) * 12ms);
+}
+.art-bubble-shade {
+  fill: var(--art-shade);
+  pointer-events: none;
 }
 @keyframes art-pop {
   from {
     transform: scale(0);
   }
 }
+/* State fills: the soft half of each status pair, so a block reads like the
+   pill of the same name and its number takes the pill's ink. */
 .art-tone-approved {
-  fill: var(--radar-approved);
-  background: var(--radar-approved);
+  background: var(--radar-approved-soft);
+  color: var(--radar-approved);
+  --art-mark: var(--color-success);
 }
 .art-tone-regular {
-  fill: var(--radar-regular);
-  background: var(--radar-regular);
+  background: var(--radar-regular-soft);
+  color: var(--radar-regular);
+  --art-mark: var(--color-warning-bright);
 }
 .art-tone-cursando {
-  fill: var(--radar-cursando);
-  background: var(--radar-cursando);
+  background: var(--radar-cursando-soft);
+  color: var(--radar-cursando);
+  --art-mark: var(--radar-cursando-mark);
 }
+/* Courses' "needs attention" block has no status of its own: it borrows
+   Regularizada's amber, as the deck's "Atrasada" pill does. */
 .art-tone-attention {
-  fill: var(--radar-attention);
-  background: var(--radar-attention);
+  background: var(--radar-regular-soft);
+  color: var(--radar-regular);
+  --art-mark: var(--color-warning-bright);
 }
 .art-tone-pending {
-  fill: var(--radar-pending);
-  background: var(--radar-pending);
+  background: var(--radar-pending-soft);
+  color: var(--radar-pending);
+  --art-mark: var(--radar-pending-mark);
+}
+/* Marks (bubbles, legend dots) take the strong fill. */
+.art-bubble {
+  fill: var(--art-mark);
 }
 .art-legend-dot {
-  width: 0.65rem;
-  height: 0.65rem;
+  width: 0.75rem;
+  height: 0.75rem;
   border-radius: 999px;
   flex: none;
+  background: var(--art-mark);
+  box-shadow: inset 0 0 0 1.5px var(--art-outline);
 }
 .art-blocks {
   display: flex;
-  gap: 0.375rem;
+  flex-wrap: wrap;
+  gap: 0.5rem;
   min-width: 0;
 }
+/* Width follows the share; a narrow aside wraps them two by two rather than
+   breaking "disponibles" in half. */
 .art-block {
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
-  min-width: 4.25rem;
-  min-height: 7.5rem;
+  min-width: 7rem;
+  min-height: 6.25rem;
   padding: 0.75rem;
   border-radius: 16px;
-  color: var(--radar-on-tone);
-}
-.art-block.art-tone-cursando {
-  color: var(--radar-on-strong);
+  /* Outline + one lower-right inner shade: the illustrations' fake 3D. */
+  box-shadow:
+    inset 0 0 0 2px var(--art-outline),
+    inset -6px -7px 0 var(--art-shade);
 }
 .art-block-number {
   font-size: 2rem;
@@ -310,12 +439,25 @@
   line-height: 1.2;
   overflow-wrap: anywhere;
 }
+/* At night the navy outline would vanish into the card: the edge becomes the
+   state's own ink, quieter. */
+:root[data-theme='dark'] .art-block {
+  box-shadow:
+    inset 0 0 0 1.5px color-mix(in srgb, currentColor 35%, transparent),
+    inset -6px -7px 0 rgb(0 0 0 / 0.18);
+}
+:root[data-theme='dark'] .art-legend-dot {
+  box-shadow: inset 0 0 0 1.5px var(--art-outline-night);
+}
+:root[data-theme='dark'] .art-bubble {
+  stroke: var(--art-outline-night);
+}
 
 @media (prefers-reduced-motion: reduce) {
   .radar-live-dot::after,
   .radar-card,
   .art-trophy-fill,
-  .art-bubble {
+  .art-bubble-group {
     animation: none;
   }
 }

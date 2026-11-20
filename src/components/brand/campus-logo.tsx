@@ -11,6 +11,9 @@ import { cn } from '@/lib/utils'
  * Colours come from `--brand-*` tokens via `brand.css`; the arc is `currentColor`,
  * so a surface can still recolour it by setting `color`.
  *
+ * Lockup proportions follow the pitch deck (brand.css); with the wordmark the
+ * lockup is never smaller than 22px, whatever the surface's font size.
+ *
  * With `wordmark`, "Campus" is the accessible text and the mark is decorative.
  * Without it, the mark is announced as "Campus" unless `decorative`.
  */
@@ -25,12 +28,16 @@ export function CampusLogo({
   wordmark?: boolean
   decorative?: boolean
   className?: string
-  /** Size of the mark; defaults to 1.5em so it follows the wordmark's font size. */
+  /** Size of the mark; defaults to 1.6em so it follows the wordmark's font size. */
   markClassName?: string
 }) {
   const labelled = !wordmark && !decorative
   return (
-    <span className={cn('campus-logo', className)} data-tone={tone}>
+    <span
+      className={cn('campus-logo', className)}
+      data-tone={tone}
+      data-wordmark={wordmark ? '' : undefined}
+    >
       <svg
         viewBox="0 0 64 64"
         className={cn('campus-logo-mark', markClassName)}

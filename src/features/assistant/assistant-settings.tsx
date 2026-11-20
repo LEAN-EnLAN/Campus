@@ -1,8 +1,14 @@
-import { KeyRound } from 'lucide-react'
-import { useState, type FormEvent } from 'react'
+import { ChevronDown, ExternalLink, KeyRound } from 'lucide-react'
+import { useId, useState, type FormEvent } from 'react'
 
 import { Button } from '@/components/ui/button'
-import { SelectField, TextField } from '@/components/ui/field'
+import { fieldControlClass, fieldHeightClass } from '@/components/ui/field'
+import {
+  SettingsCallout,
+  SettingsPanel,
+  SettingsRow,
+  SettingsStatement,
+} from '@/features/settings/settings-ui'
 import { checkApiKey } from '@/lib/ai/anthropic-client'
 import { toAssistantError } from '@/lib/ai/errors'
 import {
@@ -11,6 +17,7 @@ import {
   isAssistantModel,
   type AssistantModelId,
 } from '@/lib/ai/models'
+import { cn } from '@/lib/utils'
 
 import { AssistantIllustration } from './assistant-illustration'
 import {
@@ -38,6 +45,11 @@ export function AssistantSettingsSection() {
   const [draftModel, setDraftModel] = useState<AssistantModelId | null>(null)
   const [keyError, setKeyError] = useState<string | null>(null)
   const [status, setStatus] = useState<Status>({ kind: 'idle' })
+  const keyId = useId()
+  const keyHintId = useId()
+  const keyErrorId = useId()
+  const modelId = useId()
+  const modelHintId = useId()
 
   const model = draftModel ?? settings?.model ?? DEFAULT_ASSISTANT_MODEL
   const modelHint = ASSISTANT_MODELS.find((m) => m.id === model)?.hint
@@ -80,93 +92,141 @@ export function AssistantSettingsSection() {
   }
 
   return (
-    <section id="asistente" className="blue-settings-card" aria-labelledby="settings-assistant">
-      <header className="blue-settings-card-head">
-        <div className="min-w-0">
-          <h2 id="settings-assistant">Asistente</h2>
-          <p>Traé tu propia clave de Anthropic y preguntale a Claude sobre tu cursada.</p>
-        </div>
-        <AssistantIllustration className="-mt-1 w-16 shrink-0 sm:w-20" />
-      </header>
+    <SettingsPanel
+      id="settings-assistant"
+      title="Asistente"
+      description="Traé tu propia clave de Anthropic y preguntale a Claude sobre tu cursada."
+      art={<AssistantIllustration fit="crop" />}
+    >
+      <form onSubmit={save} noValidate>
+        <SettingsRow label="Estado">
+          <p className="settings-value flex items-center gap-2">
+            <KeyRound aria-hidden="true" className="text-ink-muted size-4 shrink-0" />
+            {settings
+              ? `Clave guardada en este dispositivo (termina en ${maskApiKey(settings.apiKey)}).`
+              : 'Todavía no cargaste una clave.'}
+          </p>
+        </SettingsRow>
 
-      <form className="flex flex-col gap-4" onSubmit={save} noValidate>
-        <p className="text-ink flex items-center gap-2 text-sm">
-          <KeyRound aria-hidden="true" className="text-ink-muted size-4" />
-          {settings
-            ? `Clave guardada en este dispositivo (termina en ${maskApiKey(settings.apiKey)}).`
-            : 'Todavía no cargaste una clave.'}
-        </p>
-
-        <TextField
+        <SettingsRow
           label={settings ? 'Reemplazar clave' : 'Clave de API de Anthropic'}
-          hint="Empieza con sk-ant-. La creás en console.anthropic.com → API keys."
-          type="password"
-          autoComplete="off"
-          spellCheck={false}
-          placeholder={settings ? 'Dejala vacía para mantener la actual' : 'sk-ant-…'}
-          value={draftKey}
-          onChange={(event) => setDraftKey(event.target.value)}
-          error={keyError}
-        />
-
-        <SelectField
-          label="Modelo"
-          hint={modelHint}
-          value={model}
-          onChange={(event) => {
-            if (isAssistantModel(event.target.value)) setDraftModel(event.target.value)
-          }}
+          labelFor={keyId}
+          helper="Empieza con sk-ant-. La creás en console.anthropic.com → API keys."
+          helperId={keyHintId}
+          required={!settings}
+          align="start"
         >
-          {ASSISTANT_MODELS.map((option) => (
-            <option key={option.id} value={option.id}>
-              {option.label}
-            </option>
-          ))}
-        </SelectField>
-
-        <div className="flex flex-wrap gap-2">
-          <Button type="submit" variant="primary">
-            {settings ? 'Guardar cambios' : 'Guardar clave'}
-          </Button>
-          <Button onClick={() => void test()} disabled={status.kind === 'checking'}>
-            {status.kind === 'checking' ? 'Probando…' : 'Probar clave'}
-          </Button>
-          {settings ? (
-            <Button variant="danger" onClick={remove}>
-              Borrar clave
-            </Button>
+          <input
+            id={keyId}
+            type="password"
+            autoComplete="off"
+            spellCheck={false}
+            placeholder={settings ? 'Dejala vacía para mantener la actual' : 'sk-ant-…'}
+            value={draftKey}
+            onChange={(event) => setDraftKey(event.target.value)}
+            aria-describedby={keyError ? `${keyHintId} ${keyErrorId}` : keyHintId}
+            aria-invalid={Boolean(keyError)}
+            className={cn(fieldControlClass, fieldHeightClass)}
+          />
+          {keyError ? (
+            <p id={keyErrorId} role="alert" className="settings-error">
+              {keyError}
+            </p>
           ) : null}
-        </div>
+        </SettingsRow>
 
-        <p
-          aria-live="polite"
-          className={
-            status.kind === 'error'
-              ? 'text-danger text-sm font-medium'
-              : 'text-ink-muted text-sm'
-          }
+        <SettingsRow
+          label="Modelo"
+          labelFor={modelId}
+          helper={modelHint}
+          helperId={modelHintId}
+          align="start"
         >
-          {status.kind === 'ok' || status.kind === 'error' ? status.message : null}
-        </p>
+          <div className="relative">
+            <select
+              id={modelId}
+              value={model}
+              aria-describedby={modelHint ? modelHintId : undefined}
+              onChange={(event) => {
+                if (isAssistantModel(event.target.value)) setDraftModel(event.target.value)
+              }}
+              className={cn(fieldControlClass, fieldHeightClass, 'appearance-none pr-9')}
+            >
+              {ASSISTANT_MODELS.map((option) => (
+                <option key={option.id} value={option.id}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+            <ChevronDown
+              aria-hidden="true"
+              className="text-ink-muted pointer-events-none absolute top-1/2 right-3.5 size-4 -translate-y-1/2"
+            />
+          </div>
+        </SettingsRow>
+
+        <SettingsRow className="settings-row-actions">
+          <div className="flex flex-wrap gap-2">
+            <Button type="submit" variant="primary">
+              {settings ? 'Guardar cambios' : 'Guardar clave'}
+            </Button>
+            <Button onClick={() => void test()} disabled={status.kind === 'checking'}>
+              {status.kind === 'checking' ? 'Probando…' : 'Probar clave'}
+            </Button>
+            {settings ? (
+              <Button variant="danger" onClick={remove}>
+                Borrar clave
+              </Button>
+            ) : null}
+          </div>
+          <p
+            aria-live="polite"
+            className={cn(
+              'empty:hidden',
+              status.kind === 'error'
+                ? 'text-danger text-sm font-medium'
+                : 'text-ink-muted text-sm',
+            )}
+          >
+            {status.kind === 'ok' || status.kind === 'error' ? status.message : null}
+          </p>
+        </SettingsRow>
       </form>
 
-      <div className="blue-settings-prose">
-        <p>
-          <strong>Dónde queda tu clave:</strong> solo en este dispositivo, en este navegador. No
-          pasa por los servidores de Campus, no se sincroniza y no se incluye en la exportación
-          de datos. Cualquiera que use este navegador puede usarla: borrala si el dispositivo es
-          compartido.
-        </p>
-        <p>
-          <strong>Cómo viaja:</strong> cada consulta va directo de tu dispositivo a Anthropic.
-          Le pagás a Anthropic según tu uso; Campus no cobra nada.
-        </p>
-        <p>
-          <strong>Qué se envía:</strong> tu pregunta y solo los datos que el asistente necesita
-          para responderla, como nombres de materias, sus estados y tus próximas fechas. Nunca
-          tus notas, tus archivos ni tu email.
-        </p>
-      </div>
-    </section>
+      <SettingsRow label="Dónde queda tu clave" align="start">
+        <SettingsStatement detail="No pasa por los servidores de Campus, no se sincroniza y no se incluye en la exportación de datos.">
+          Queda solo en este dispositivo, en este navegador.
+        </SettingsStatement>
+      </SettingsRow>
+      <SettingsRow label="Cómo viaja" align="start">
+        <SettingsStatement detail="Le pagás a Anthropic según tu uso; Campus no cobra nada.">
+          Cada consulta va directo de tu dispositivo a Anthropic.
+        </SettingsStatement>
+      </SettingsRow>
+      <SettingsRow label="Qué se envía" align="start">
+        <SettingsStatement detail="Solo los datos que el asistente necesita para responderla, como nombres de materias, sus estados y tus próximas fechas.">
+          Tu pregunta y lo justo para responderla. Nunca tus notas, tus archivos ni tu email.
+        </SettingsStatement>
+      </SettingsRow>
+
+      <SettingsCallout
+        title="¿Compartís este dispositivo?"
+        action={
+          <a
+            className="settings-link"
+            href="https://console.anthropic.com"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Tus claves en Anthropic
+            <ExternalLink aria-hidden="true" />
+            <span className="sr-only">(se abre en otra pestaña)</span>
+          </a>
+        }
+      >
+        Cualquiera que use este navegador puede usar tu clave: borrala si el dispositivo es
+        compartido.
+      </SettingsCallout>
+    </SettingsPanel>
   )
 }

@@ -1,6 +1,6 @@
-import { useNavigate } from '@tanstack/react-router'
+import { Link, useNavigate } from '@tanstack/react-router'
 import { Download, Trash2, UserX } from 'lucide-react'
-import { useId, useState, type FormEvent } from 'react'
+import { useId, useState, type FormEvent, type ReactNode } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { TextField } from '@/components/ui/field'
@@ -9,38 +9,60 @@ import { rememberAccountDeleted } from '@/features/account/account-deleted-notic
 import { useDeleteAccount } from '@/features/account/queries'
 import { useAuth } from '@/features/auth/auth-context'
 
+import { SettingsRow } from './settings-ui'
+
 /** The word the student types. Exact, upper case — a deliberate act, not a click. */
 const DELETE_CONFIRMATION_WORD = 'BORRAR'
 
 /**
- * Where WP1's "Exportar mis datos" section lives in Ajustes. The link sits next
- * to the destructive action so nobody deletes without the chance to keep a copy.
+ * Ajustes → Cuenta → "Borrar mi cuenta". The way to download the data sits
+ * right next to the destructive action, so nobody deletes without the chance
+ * to keep a copy.
  */
-const EXPORT_SECTION_ANCHOR = '#settings-export'
-
-export function DeleteAccountCard() {
+export function DeleteAccountRow() {
   const [open, setOpen] = useState(false)
+  const titleId = useId()
+  const helperId = useId()
 
   return (
-    <section className="blue-settings-card" aria-labelledby="settings-delete-account">
-      <header className="blue-settings-card-head">
-        <div className="min-w-0">
-          <h2 id="settings-delete-account">Borrar mi cuenta</h2>
-          <p>Borra tu cuenta de Campus Cloud y todos tus datos. No se puede deshacer.</p>
+    <section aria-labelledby={titleId} aria-describedby={helperId}>
+      <SettingsRow
+        label="Borrar mi cuenta"
+        labelId={titleId}
+        headingLevel="h3"
+        helper="Borra tu cuenta de Campus Cloud y todos tus datos. No se puede deshacer."
+        helperId={helperId}
+      >
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <ExportDataLink className="settings-link">
+            <Download aria-hidden="true" />
+            Descargar mis datos
+          </ExportDataLink>
+          <Button variant="danger-outline" onClick={() => setOpen(true)}>
+            <Trash2 aria-hidden="true" />
+            Borrar mi cuenta
+          </Button>
         </div>
-      </header>
-      <div className="blue-settings-actions">
-        <a className="blue-settings-link" href={EXPORT_SECTION_ANCHOR}>
-          <Download aria-hidden="true" />
-          Descargar mis datos
-        </a>
-        <Button variant="danger-outline" onClick={() => setOpen(true)}>
-          <Trash2 aria-hidden="true" />
-          Borrar mi cuenta
-        </Button>
-      </div>
+      </SettingsRow>
       <DeleteAccountDialog open={open} onClose={() => setOpen(false)} />
     </section>
+  )
+}
+
+/** Ajustes → Tus datos, where the export lives. */
+function ExportDataLink({
+  className,
+  onClick,
+  children,
+}: {
+  className?: string
+  onClick?: () => void
+  children: ReactNode
+}) {
+  return (
+    <Link to="/settings" search={{ seccion: 'datos' }} className={className} onClick={onClick}>
+      {children}
+    </Link>
   )
 }
 
@@ -93,13 +115,12 @@ export function DeleteAccountDialog({ open, onClose }: { open: boolean; onClose:
         <p className="text-ink-muted text-sm">
           Se borran tu cuenta, tu carrera, los estados de tus materias, tus fechas y tu
           material. No se puede deshacer. Si querés quedarte con una copia, primero{' '}
-          <a
+          <ExportDataLink
             className="text-accent-ink underline underline-offset-4"
-            href={EXPORT_SECTION_ANCHOR}
             onClick={close}
           >
             descargá tus datos
-          </a>
+          </ExportDataLink>
           .
         </p>
         <TextField

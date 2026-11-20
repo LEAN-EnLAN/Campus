@@ -4,6 +4,8 @@ import { useId, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { useLocalCopy, type LocalCopyValue } from '@/lib/runtime/local-copy'
 
+import { SettingsDetail, SettingsRow } from './settings-ui'
+
 const ONE_WAY_NOTE =
   'Es una copia de un solo sentido: lo que cambies en esa carpeta todavía no se sube a la nube, y la próxima copia lo reemplaza.'
 
@@ -44,50 +46,54 @@ export function LocalCopySection() {
   }
 
   return (
-    <section
-      aria-labelledby={titleId}
-      className="border-rule bg-paper-elevated space-y-3 rounded-lg border p-5"
-    >
-      <h2 id={titleId} className="text-ink font-medium">
-        Copia en esta computadora
-      </h2>
-      <p className="text-ink-muted text-sm">
-        Guardá también una copia de tus materias y fechas en una carpeta de esta computadora,
-        como archivos que podés abrir sin Campus. Se actualiza sola cuando cambiás algo.
-      </p>
-      {on && copy.folder ? (
-        <p className="text-sm">
-          Carpeta: <code className="text-xs break-all">{copy.folder}</code>
-        </p>
-      ) : null}
-      <p className="text-ink-muted text-xs">{ONE_WAY_NOTE}</p>
-      <p
-        aria-live="polite"
-        className={copy.status === 'error' ? 'text-danger text-sm' : 'text-sm'}
+    <section aria-labelledby={titleId}>
+      <SettingsRow
+        label="Copia en esta computadora"
+        labelId={titleId}
+        headingLevel="h3"
+        helper="Tus materias y fechas en una carpeta de esta computadora, como archivos que podés abrir sin Campus. Se actualiza sola cuando cambiás algo."
+        align="start"
       >
-        {line}
-      </p>
-      <div className="flex flex-wrap gap-2">
-        {on ? (
-          <>
-            <Button
-              variant="secondary"
-              onClick={() => void copy.copyNow()}
-              disabled={copy.status === 'copying'}
-            >
-              Copiar ahora
-            </Button>
-            <Button variant="ghost" onClick={copy.disable}>
-              Dejar de guardar la copia
-            </Button>
-          </>
-        ) : (
-          <Button variant="primary" onClick={() => void turnOn()} disabled={busy}>
-            <HardDriveDownload aria-hidden="true" />
-            Guardar también una copia en esta computadora
-          </Button>
-        )}
-      </div>
+        <div className="flex flex-col items-start gap-2">
+          <div className="flex flex-wrap gap-2">
+            {on ? (
+              <>
+                <Button
+                  variant="secondary"
+                  onClick={() => void copy.copyNow()}
+                  disabled={copy.status === 'copying'}
+                >
+                  Copiar ahora
+                </Button>
+                <Button variant="ghost" onClick={copy.disable}>
+                  Dejar de guardar la copia
+                </Button>
+              </>
+            ) : (
+              <Button variant="secondary" onClick={() => void turnOn()} disabled={busy}>
+                <HardDriveDownload aria-hidden="true" />
+                Guardar también una copia en esta computadora
+              </Button>
+            )}
+          </div>
+          {on && copy.folder ? (
+            <p className="text-ink-muted text-sm">
+              Carpeta: <code className="settings-filepath">{copy.folder}</code>
+            </p>
+          ) : null}
+          <p
+            aria-live="polite"
+            className={
+              copy.status === 'error' ? 'text-danger text-sm' : 'text-ink-muted text-sm'
+            }
+          >
+            {line}
+          </p>
+          <SettingsDetail>
+            <p>{ONE_WAY_NOTE}</p>
+          </SettingsDetail>
+        </div>
+      </SettingsRow>
     </section>
   )
 }

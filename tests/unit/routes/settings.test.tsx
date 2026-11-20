@@ -1,5 +1,13 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { screen, waitFor, within } from '@testing-library/react'
+import {
+  createMemoryHistory,
+  createRootRoute,
+  createRoute,
+  createRouter,
+  Outlet,
+  RouterProvider,
+} from '@tanstack/react-router'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import type { ReactNode } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -11,8 +19,6 @@ import { RequiresAccountProvider } from '@/lib/runtime/identity'
 import { WorkspaceProvider, type WorkspaceValue } from '@/lib/runtime/workspace'
 import { ThemeProvider } from '@/lib/theme/theme-context'
 import { ACCENT_STORAGE_KEY, THEME_STORAGE_KEY } from '@/lib/theme/theme'
-
-import { renderRoute } from '../helpers/render-route'
 
 const auth = vi.hoisted(() => ({
   session: null as null | { user: { email: string } },
@@ -29,6 +35,11 @@ vi.mock('@/features/academic/queries', () => ({
 }))
 
 const Settings = Route.options.component as () => ReactNode
+/** The real route's `beforeLoad`, typed loosely enough to reuse in the test tree. */
+const legacyAnchorRedirect = Route.options.beforeLoad as unknown as (ctx: {
+  location: { hash: string }
+  search: object
+}) => void
 
 /** Cloud carries the account capabilities; Local has none of them. */
 function fakeBackend(requiresAccount: boolean) {
@@ -52,28 +63,49 @@ function fakeBackend(requiresAccount: boolean) {
   return { backend, calls }
 }
 
+/**
+ * Ajustes inside a real router with a real `/settings` route — its search
+ * validation and its legacy-anchor redirect included — so the sub-navigation's
+ * links, `?seccion=` and the back link behave as they do in the app.
+ */
 function mount(
   workspace: WorkspaceValue,
   requiresAccount: boolean,
   backend: CampusBackend = fakeBackend(requiresAccount).backend,
+  path = '/settings',
 ) {
+  window.scrollTo = vi.fn()
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   })
-  const Screen = () => (
-    <QueryClientProvider client={client}>
-      <BackendProvider backend={backend}>
-        <ThemeProvider>
-          <RequiresAccountProvider value={requiresAccount}>
-            <WorkspaceProvider value={workspace}>
-              <Settings />
-            </WorkspaceProvider>
-          </RequiresAccountProvider>
-        </ThemeProvider>
-      </BackendProvider>
-    </QueryClientProvider>
-  )
-  return renderRoute(Screen)
+  const root = createRootRoute({
+    component: () => (
+      <QueryClientProvider client={client}>
+        <BackendProvider backend={backend}>
+          <ThemeProvider>
+            <RequiresAccountProvider value={requiresAccount}>
+              <WorkspaceProvider value={workspace}>
+                <Outlet />
+              </WorkspaceProvider>
+            </RequiresAccountProvider>
+          </ThemeProvider>
+        </BackendProvider>
+      </QueryClientProvider>
+    ),
+  })
+  const settings = createRoute({
+    getParentRoute: () => root,
+    path: '/settings',
+    validateSearch: Route.options.validateSearch as (s: Record<string, unknown>) => object,
+    beforeLoad: ({ location, search }) => legacyAnchorRedirect({ location, search }),
+    component: Settings,
+  })
+  const router = createRouter({
+    routeTree: root.addChildren([settings]),
+    history: createMemoryHistory({ initialEntries: [path] }),
+  })
+  render(<RouterProvider router={router} />)
+  return router
 }
 
 const FOLDER = { name: 'Campus', path: '/home/estudiante/Campus' }
@@ -93,13 +125,14 @@ describe('Ajustes with a local folder', () => {
     mount(folder(), false)
 
     expect(await screen.findByRole('heading', { name: 'Ajustes' })).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Cuenta' })).toBeNull()
     expect(screen.queryByText('Tu cuenta')).toBeNull()
     expect(screen.queryByText('Email')).toBeNull()
     expect(screen.queryByRole('button', { name: 'Cerrar sesión' })).toBeNull()
   })
 
   it('shows which folder is open, by name and by path', async () => {
-    mount(folder(), false)
+    mount(folder(), false, undefined, '/settings?seccion=espacio')
 
     const section = await screen.findByRole('region', { name: 'Espacio de trabajo' })
     expect(within(section).getByText('En esta computadora')).toBeInTheDocument()
@@ -109,7 +142,7 @@ describe('Ajustes with a local folder', () => {
   })
 
   it('offers both exports under "Tus datos"', async () => {
-    mount(folder(), false)
+    mount(folder(), false, undefined, '/settings?seccion=datos')
 
     const section = await screen.findByRole('region', { name: 'Tus datos' })
     expect(
@@ -123,7 +156,7 @@ describe('Ajustes with a local folder', () => {
   it('offers to change workspace and hands the student back to the picker', async () => {
     const user = userEvent.setup()
     const change = vi.fn()
-    mount(folder(change), false)
+    mount(folder(change), false, undefined, '/settings?seccion=espacio')
 
     await user.click(
       await screen.findByRole('button', { name: 'Cambiar de espacio de trabajo' }),
@@ -133,7 +166,7 @@ describe('Ajustes with a local folder', () => {
   })
 
   it('describes local storage without talking about a database', async () => {
-    mount(folder(), false)
+    mount(folder(), false, undefined, '/settings?seccion=privacidad')
 
     await screen.findByRole('heading', { name: 'Ajustes' })
     expect(screen.queryByText(/base de datos/i)).toBeNull()
@@ -145,12 +178,15 @@ describe('Ajustes with an account', () => {
   const account: WorkspaceValue = { folder: null, change: vi.fn() }
 
   it('keeps the account section and still offers to change workspace', async () => {
-    mount(account, true)
+    const user = userEvent.setup()
+    mount(account, true, undefined, '/settings?seccion=cuenta')
 
     expect(await screen.findByText('Tu cuenta')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Cerrar sesión' })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('link', { name: 'Espacio de trabajo' }))
     expect(
-      screen.getByRole('button', { name: 'Cambiar de espacio de trabajo' }),
+      await screen.findByRole('button', { name: 'Cambiar de espacio de trabajo' }),
     ).toBeInTheDocument()
     expect(screen.getByText(/no se sincronizan automáticamente/i)).toBeInTheDocument()
   })
@@ -158,7 +194,7 @@ describe('Ajustes with an account', () => {
   it('shows the actual Cloud email, signs out and redirects only after success', async () => {
     const user = userEvent.setup()
     auth.session = { user: { email: 'estudiante@example.com' } }
-    mount(account, true)
+    mount(account, true, undefined, '/settings?seccion=cuenta')
 
     const section = await screen.findByRole('region', { name: 'Tu cuenta' })
     expect(within(section).getByText('estudiante@example.com')).toBeInTheDocument()
@@ -173,7 +209,7 @@ describe('Ajustes with an account', () => {
       .fn()
       .mockRejectedValueOnce(new Error('network failure'))
       .mockResolvedValueOnce(undefined)
-    mount(account, true)
+    mount(account, true, undefined, '/settings?seccion=cuenta')
 
     await user.click(await screen.findByRole('button', { name: 'Cerrar sesión' }))
     expect(await screen.findByRole('alert')).toHaveTextContent('No pudimos cerrar la sesión')
@@ -187,7 +223,7 @@ describe('Ajustes with an account', () => {
 describe('appearance preferences', () => {
   it('offers Claro / Oscuro / Sistema and four Campus accents, with accessible pressed state', async () => {
     localStorage.setItem(THEME_STORAGE_KEY, 'light')
-    mount({ folder: FOLDER, change: vi.fn() }, false)
+    mount({ folder: FOLDER, change: vi.fn() }, false, undefined, '/settings?seccion=apariencia')
 
     const themeGroup = await screen.findByRole('group', { name: 'Tema de la aplicación' })
     const colorGroup = screen.getByRole('group', { name: 'Color de acento' })
@@ -214,7 +250,7 @@ describe('appearance preferences', () => {
   it('applies and remembers the chosen mode and accent through the real ThemeProvider', async () => {
     localStorage.setItem(THEME_STORAGE_KEY, 'light')
     const user = userEvent.setup()
-    mount({ folder: FOLDER, change: vi.fn() }, false)
+    mount({ folder: FOLDER, change: vi.fn() }, false, undefined, '/settings?seccion=apariencia')
 
     await user.click(await screen.findByRole('button', { name: 'Oscuro' }))
     await waitFor(() => expect(document.documentElement).toHaveAttribute('data-theme', 'dark'))
@@ -277,11 +313,12 @@ describe('Privacidad', () => {
     /sin leer el contenido/,
     'El modo Local no mide nada.',
     'No vendemos tus datos.',
-    'Datos agregados para universidades: no existe. Si algún día existe, va a estar apagado y vas a decidir vos.',
+    'Datos agregados para universidades: no existe.',
+    'Si algún día existe, va a estar apagado y vas a decidir vos.',
   ]
 
   it('Local: states the policy, with no metrics switch and no account deletion', async () => {
-    mount({ folder: FOLDER, change: vi.fn() }, false)
+    mount({ folder: FOLDER, change: vi.fn() }, false, undefined, '/settings?seccion=privacidad')
 
     const section = await screen.findByRole('region', { name: 'Privacidad' })
     for (const line of POLICY) expect(within(section).getByText(line)).toBeInTheDocument()
@@ -292,7 +329,7 @@ describe('Privacidad', () => {
   it('Cloud: the metrics switch shows the saved choice and changes it', async () => {
     const user = userEvent.setup()
     const { backend, calls } = fakeBackend(true)
-    mount({ folder: null, change: vi.fn() }, true, backend)
+    mount({ folder: null, change: vi.fn() }, true, backend, '/settings?seccion=privacidad')
 
     const section = await screen.findByRole('region', { name: 'Privacidad' })
     for (const line of POLICY) expect(within(section).getByText(line)).toBeInTheDocument()
@@ -312,18 +349,18 @@ describe('Borrar mi cuenta', () => {
   beforeEach(() => sessionStorage.clear())
 
   it('sits next to a visible link to download the data', async () => {
-    mount({ folder: null, change: vi.fn() }, true)
+    mount({ folder: null, change: vi.fn() }, true, undefined, '/settings?seccion=cuenta')
     const section = await screen.findByRole('region', { name: 'Borrar mi cuenta' })
     expect(within(section).getByRole('link', { name: 'Descargar mis datos' })).toHaveAttribute(
       'href',
-      '#settings-export',
+      '/settings?seccion=datos',
     )
   })
 
   it('deletes only after the student types BORRAR, then signs out', async () => {
     const user = userEvent.setup()
     const { backend, calls } = fakeBackend(true)
-    mount({ folder: null, change: vi.fn() }, true, backend)
+    mount({ folder: null, change: vi.fn() }, true, backend, '/settings?seccion=cuenta')
 
     const section = await screen.findByRole('region', { name: 'Borrar mi cuenta' })
     await user.click(within(section).getByRole('button', { name: 'Borrar mi cuenta' }))
@@ -351,7 +388,7 @@ describe('Borrar mi cuenta', () => {
     const user = userEvent.setup()
     const { backend, calls } = fakeBackend(true)
     calls.deleteAccount.mockRejectedValueOnce(new Error('network'))
-    mount({ folder: null, change: vi.fn() }, true, backend)
+    mount({ folder: null, change: vi.fn() }, true, backend, '/settings?seccion=cuenta')
 
     const section = await screen.findByRole('region', { name: 'Borrar mi cuenta' })
     await user.click(within(section).getByRole('button', { name: 'Borrar mi cuenta' }))
@@ -364,5 +401,104 @@ describe('Borrar mi cuenta', () => {
     )
     expect(auth.signOut).not.toHaveBeenCalled()
     expect(sessionStorage.getItem('campus.accountDeleted')).toBeNull()
+  })
+})
+
+describe('section navigation', () => {
+  const local = (): WorkspaceValue => ({ folder: FOLDER, change: vi.fn() })
+
+  it('groups the sections under Tu cursada and Cuenta, Carrera open by default', async () => {
+    mount({ folder: null, change: vi.fn() }, true)
+
+    const nav = await screen.findByRole('navigation', { name: 'Secciones de ajustes' })
+    expect(within(nav).getByRole('list', { name: 'Tu cursada' })).toBeInTheDocument()
+    expect(
+      within(within(nav).getByRole('list', { name: 'Cuenta' }))
+        .getAllByRole('link')
+        .map((link) => link.textContent),
+    ).toEqual(['Espacio de trabajo', 'Privacidad', 'Tus datos', 'Cuenta'])
+    expect(within(nav).getByRole('link', { name: 'Carrera' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    )
+    expect(screen.getByRole('region', { name: 'Tu carrera' })).toBeInTheDocument()
+    // One section at a time.
+    expect(screen.queryByRole('region', { name: 'Apariencia' })).toBeNull()
+  })
+
+  it('opens a section from the sub-navigation and puts it in the URL', async () => {
+    const user = userEvent.setup()
+    const router = mount(local(), false)
+
+    const nav = await screen.findByRole('navigation', { name: 'Secciones de ajustes' })
+    await user.click(within(nav).getByRole('link', { name: 'Apariencia' }))
+
+    expect(await screen.findByRole('region', { name: 'Apariencia' })).toBeInTheDocument()
+    expect(screen.queryByRole('region', { name: 'Tu carrera' })).toBeNull()
+    expect(router.state.location.search).toEqual({ seccion: 'apariencia' })
+    expect(within(nav).getByRole('link', { name: 'Apariencia' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    )
+    expect(within(nav).getByRole('link', { name: 'Carrera' })).not.toHaveAttribute(
+      'aria-current',
+    )
+  })
+
+  it('deep-links a section by ?seccion=', async () => {
+    mount(local(), false, undefined, '/settings?seccion=asistente')
+    expect(await screen.findByRole('region', { name: 'Asistente' })).toBeInTheDocument()
+  })
+
+  it('drops an unknown section and shows the default one', async () => {
+    mount(local(), false, undefined, '/settings?seccion=nada')
+    expect(await screen.findByRole('region', { name: 'Tu carrera' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Carrera' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    )
+    // On a phone that is the list, not a section with a way back.
+    expect(document.querySelector('[data-view]')).toHaveAttribute('data-view', 'list')
+  })
+
+  it('does not open Cuenta where there is no account', async () => {
+    mount(local(), false, undefined, '/settings?seccion=cuenta')
+    expect(await screen.findByRole('region', { name: 'Tu carrera' })).toBeInTheDocument()
+    expect(screen.queryByRole('region', { name: 'Tu cuenta' })).toBeNull()
+  })
+
+  it.each([
+    ['#asistente', 'asistente', 'Asistente'],
+    ['#settings-export', 'datos', 'Tus datos'],
+  ])('sends the old anchor %s to its section', async (hash, seccion, region) => {
+    const router = mount(local(), false, undefined, `/settings${hash}`)
+    expect(await screen.findByRole('region', { name: region })).toBeInTheDocument()
+    expect(router.state.location.search).toEqual({ seccion })
+  })
+})
+
+describe('on a phone', () => {
+  const local = (): WorkspaceValue => ({ folder: FOLDER, change: vi.fn() })
+  const screenRoot = () => document.querySelector('[data-view]')
+
+  it('without a section, the page is the list of all settings, with no back link', async () => {
+    mount(local(), false)
+    await screen.findByRole('navigation', { name: 'Secciones de ajustes' })
+    expect(screenRoot()).toHaveAttribute('data-view', 'list')
+    expect(screen.queryByRole('link', { name: 'Todos los ajustes' })).toBeNull()
+  })
+
+  it('a picked section carries "Todos los ajustes" back to the list', async () => {
+    const user = userEvent.setup()
+    const router = mount(local(), false, undefined, '/settings?seccion=privacidad')
+
+    const back = await screen.findByRole('link', { name: 'Todos los ajustes' })
+    expect(screenRoot()).toHaveAttribute('data-view', 'section')
+    expect(back).toHaveAttribute('href', '/settings')
+
+    await user.click(back)
+    await waitFor(() => expect(screenRoot()).toHaveAttribute('data-view', 'list'))
+    expect(router.state.location.search).toEqual({})
+    expect(screen.queryByRole('link', { name: 'Todos los ajustes' })).toBeNull()
   })
 })

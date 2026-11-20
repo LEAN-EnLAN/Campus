@@ -23,6 +23,8 @@ export function SubjectDateRow({
   togglePending = false,
   onEdit,
   onDelete,
+  relative = null,
+  overdue = false,
 }: {
   item: AcademicItem
   onToggle: (done: boolean) => void
@@ -31,6 +33,10 @@ export function SubjectDateRow({
   togglePending?: boolean
   onEdit?: () => void
   onDelete?: () => void
+  /** "Mañana", "En 9 días", "Atrasada" — said after the kind. */
+  relative?: string | null
+  /** Past its date and still open: the relative label reads as a warning. */
+  overdue?: boolean
 }) {
   const date = describeItemDate(item)
   const time = dueTimeLabel(item)
@@ -38,43 +44,57 @@ export function SubjectDateRow({
   const undated = date === 'Sin fecha'
 
   return (
-    <div className="group border-rule-soft flex items-start gap-3 border-b py-3">
-      <button
-        type="button"
-        onClick={() => onToggle(!done)}
-        aria-pressed={done}
-        disabled={togglePending}
-        aria-busy={togglePending}
-        className={cn(
-          'relative mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full border transition-colors duration-150',
-          'disabled:cursor-progress disabled:opacity-50',
-          'before:absolute before:-inset-3',
-          done
-            ? 'border-success bg-success text-on-tint'
-            : 'border-rule hover:border-ink-faint text-transparent',
-        )}
-      >
-        <Check aria-hidden="true" className="size-3" strokeWidth={3} />
-        <span className="sr-only">
-          {done ? `Marcar ${item.title} como pendiente` : `Marcar ${item.title} como hecho`}
-        </span>
-      </button>
-
-      <span
-        data-numeric
-        className={cn('mt-0.5 w-24 shrink-0 text-xs', undated ? 'text-ink-faint' : 'text-ink')}
-      >
+    <div
+      className="course-date group"
+      data-done={done ? '' : undefined}
+      data-overdue={overdue ? '' : undefined}
+    >
+      <span data-numeric className={cn('course-date-when', undated && 'is-undated')}>
         {date}
-        {time ? <span className="text-ink-muted"> · {time}</span> : null}
+        {time ? (
+          <span className="course-date-time">
+            <span className="sr-only"> · </span>
+            {time}
+          </span>
+        ) : null}
       </span>
 
-      <span className="min-w-0 flex-1">
-        <span
-          className={cn('block text-sm', done ? 'text-ink-muted line-through' : 'text-ink')}
+      <span className="course-date-rail">
+        <button
+          type="button"
+          onClick={() => onToggle(!done)}
+          aria-pressed={done}
+          disabled={togglePending}
+          aria-busy={togglePending}
+          className={cn(
+            'bg-paper-elevated relative flex size-5 shrink-0 items-center justify-center rounded-full border transition-colors duration-150',
+            'disabled:cursor-progress disabled:opacity-50',
+            'before:absolute before:-inset-3',
+            done
+              ? 'border-success bg-success text-on-tint'
+              : 'border-field hover:border-accent hover:text-accent text-transparent',
+          )}
         >
-          {item.title}
+          <Check aria-hidden="true" className="size-3" strokeWidth={3} />
+          <span className="sr-only">
+            {done ? `Marcar ${item.title} como pendiente` : `Marcar ${item.title} como hecho`}
+          </span>
+        </button>
+      </span>
+
+      <span className="course-date-body">
+        <span className={cn('course-date-title', done && 'is-done')}>{item.title}</span>
+        <span className="course-date-meta">
+          {itemKindLabel(item.kind)}
+          {relative ? (
+            <>
+              {' · '}
+              <span className={overdue ? 'text-danger font-medium' : undefined}>
+                {relative}
+              </span>
+            </>
+          ) : null}
         </span>
-        <span className="text-ink-muted mt-0.5 block text-xs">{itemKindLabel(item.kind)}</span>
       </span>
 
       <ItemRowActions
@@ -84,6 +104,7 @@ export function SubjectDateRow({
         icsDisabledReason={icsUnavailableReason(item)}
         onEdit={onEdit}
         onDelete={onDelete}
+        className="course-date-actions"
       />
     </div>
   )

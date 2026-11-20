@@ -250,7 +250,7 @@ function NoKeyState({ onNavigate }: { onNavigate: () => void }) {
       </p>
       <Link
         to="/settings"
-        hash="asistente"
+        search={{ seccion: 'asistente' }}
         onClick={onNavigate}
         className={cn(buttonVariants({ variant: 'primary', size: 'lg' }), 'rounded-full')}
       >

@@ -87,7 +87,7 @@ describe('AssistantPanel', () => {
     renderRoute(() => <AssistantPanel open onOpenChange={vi.fn()} onProposeItem={vi.fn()} />)
     expect(await screen.findByRole('dialog', { name: 'Asistente' })).toBeInTheDocument()
     const link = screen.getByRole('link', { name: /Configurar el asistente/ })
-    expect(link).toHaveAttribute('href', '/settings#asistente')
+    expect(link).toHaveAttribute('href', '/settings?seccion=asistente')
     expect(screen.queryByRole('textbox', { name: 'Tu pregunta' })).not.toBeInTheDocument()
   })
 

@@ -166,9 +166,20 @@ function OnboardingScreen() {
         <header className="blue-onboarding-top">
           <CampusLogo wordmark className="blue-onboarding-brand" />
           {exit ? (
-            <Link to={exit.to} className="blue-onboarding-text-link">
-              <ArrowLeft size={16} aria-hidden="true" /> {exit.label}
-            </Link>
+            exit.to === '/settings' ? (
+              // Back to the section they left from, not to Ajustes' index.
+              <Link
+                to="/settings"
+                search={{ seccion: 'carrera' }}
+                className="blue-onboarding-text-link"
+              >
+                <ArrowLeft size={16} aria-hidden="true" /> {exit.label}
+              </Link>
+            ) : (
+              <Link to={exit.to} className="blue-onboarding-text-link">
+                <ArrowLeft size={16} aria-hidden="true" /> {exit.label}
+              </Link>
+            )
           ) : (
             <span className="blue-onboarding-top-note">Tu espacio de estudio</span>
           )}

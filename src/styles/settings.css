@@ -1,0 +1,431 @@
+/* Ajustes — two-level navigation, one section at a time.
+ *
+ *   ┌ nav ───────────┬ main ─────────────────────────────────────┐
+ *   │ TU CURSADA     │ [chip] Title                              │
+ *   │ ▸ Carrera      │        One-line purpose                   │
+ *   │   Apariencia   │        ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄ │
+ *   │ ┄┄┄┄┄┄┄┄┄┄┄┄┄┄ │        Label (+ helper)  |  control       │
+ *   │ CUENTA         │        ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄ │
+ *   └────────────────┴───────────────────────────────────────────┘
+ *
+ * Text-first and light: the sub-nav is not a second app sidebar, just words
+ * with a line icon each and a soft tinted pill on the current one. Rows are
+ * divided by DOTTED hairlines. Phones (<768px) show either the list
+ * ("Todos los ajustes") or one section with a way back — `data-view` on the
+ * screen decides which. Colours are tokens only, so dark mode and the accent
+ * picker follow on their own.
+ */
+.campus-blue .settings {
+  --settings-dot: color-mix(in srgb, var(--color-field) 70%, transparent);
+  /* A 1px dotted hairline with the reference's open rhythm (a dot every 4px):
+     a 1px dotted border packs them 1px apart and reads as a grey line. */
+  --settings-rule: linear-gradient(to right, var(--settings-dot) 1px, transparent 1px) top
+    left / 4px 1px repeat-x;
+  --settings-gutter: calc(4rem + 1.5rem);
+  color: var(--color-ink);
+}
+
+.campus-blue .settings-layout {
+  display: grid;
+  grid-template-columns: 15.5rem minmax(0, 1fr);
+  align-items: stretch;
+  min-width: 0;
+  border: 1px solid var(--color-rule-soft);
+  border-radius: 1.25rem;
+  background: var(--color-paper-elevated);
+}
+
+/* ---- Sub-navigation ------------------------------------------------------ */
+.campus-blue .settings-nav {
+  padding: 1.5rem 1rem;
+  border-right: 1px solid var(--color-rule-soft);
+}
+.campus-blue .settings-nav-group + .settings-nav-group {
+  margin-top: 1.25rem;
+  padding-top: 1.25rem;
+  background: var(--settings-rule);
+}
+.campus-blue .settings-nav-heading {
+  margin-bottom: 0.5rem;
+  padding: 0 0.75rem;
+  color: var(--color-ink-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.campus-blue .settings-nav ul {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+.campus-blue .settings-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 2.5rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.75rem;
+  color: var(--color-ink);
+  font-size: 0.9375rem;
+  font-weight: var(--font-weight-label);
+  line-height: 1.25rem;
+  text-decoration: none;
+  transition: background-color 150ms var(--ease-out-quiet, ease-out);
+}
+.campus-blue .settings-nav-item:hover {
+  background: var(--color-paper-sunken);
+}
+.campus-blue .settings-nav-item:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+.campus-blue .settings-nav-item.is-active {
+  background: var(--color-accent-soft);
+}
+.campus-blue .settings-nav-icon {
+  width: 1.125rem;
+  height: 1.125rem;
+  flex: none;
+  color: var(--color-ink-muted);
+  stroke-width: 1.75;
+}
+.campus-blue .settings-nav-item.is-active .settings-nav-icon {
+  color: var(--color-accent);
+}
+.campus-blue .settings-nav-chevron {
+  display: none;
+}
+
+/* ---- Section -------------------------------------------------------------- */
+.campus-blue .settings-main {
+  min-width: 0;
+  padding: 2rem 2.5rem 2.5rem;
+}
+.campus-blue .settings-panel {
+  max-width: 54rem;
+  overflow-wrap: anywhere;
+}
+.campus-blue .settings-back {
+  display: none;
+}
+.campus-blue .settings-panel-head {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding-bottom: 1.75rem;
+}
+.campus-blue .settings-panel-head h2 {
+  color: var(--color-ink);
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 2rem;
+  letter-spacing: -0.01em;
+}
+.campus-blue .settings-panel-head p {
+  margin-top: 0.125rem;
+  color: var(--color-ink-muted);
+  font-size: 0.9375rem;
+  line-height: 1.4rem;
+}
+
+/* The raised square: the section's illustration, cropped to its object. */
+.campus-blue .settings-chip {
+  position: relative;
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 4rem;
+  height: 4rem;
+  overflow: hidden;
+  border: 1px solid var(--color-rule);
+  border-radius: 1rem;
+  background: var(--color-paper-elevated);
+  box-shadow: 0 2px 6px rgb(var(--shadow-tint) / 0.1);
+}
+.campus-blue .settings-chip > svg:not(.settings-chip-icon) {
+  width: 100%;
+  height: 100%;
+}
+.campus-blue .settings-chip-icon {
+  width: 1.75rem;
+  height: 1.75rem;
+  color: var(--color-accent);
+  stroke-width: 1.6;
+}
+
+/* ---- Rows ----------------------------------------------------------------- */
+.campus-blue .settings-row {
+  display: grid;
+  grid-template-columns: minmax(0, 38%) minmax(0, 1fr);
+  align-items: center;
+  column-gap: 2rem;
+  row-gap: 0.625rem;
+  padding: 1.25rem 0;
+  background: var(--settings-rule);
+}
+.campus-blue .settings-row-start {
+  align-items: start;
+}
+.campus-blue .settings-row-label {
+  min-width: 0;
+}
+.campus-blue .settings-row-title {
+  display: inline-flex;
+  gap: 0.25rem;
+  color: var(--color-ink);
+  font-size: 0.9375rem;
+  font-weight: var(--font-weight-label);
+  line-height: 1.375rem;
+}
+.campus-blue .settings-row-title :is(h3, label) {
+  font: inherit;
+}
+.campus-blue .settings-required {
+  color: var(--color-accent);
+}
+.campus-blue .settings-row-helper {
+  margin-top: 0.125rem;
+  color: var(--color-ink-muted);
+  font-size: 0.8125rem;
+  line-height: 1.25rem;
+}
+.campus-blue .settings-row-control {
+  min-width: 0;
+}
+.campus-blue
+  .settings-row-start
+  .settings-row-control
+  > :is(.settings-value, .settings-statement) {
+  padding-top: 0.0625rem;
+}
+.campus-blue .settings-value,
+.campus-blue .settings-statement > p {
+  color: var(--color-ink);
+  font-size: 0.9375rem;
+  line-height: 1.375rem;
+}
+.campus-blue .settings-value-muted {
+  color: var(--color-ink-muted);
+}
+.campus-blue .settings-filepath {
+  font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace;
+  font-size: 0.8125rem;
+  word-break: break-all;
+}
+.campus-blue .settings-error {
+  margin-top: 0.5rem;
+  color: var(--color-danger);
+  font-size: var(--text-sm);
+}
+.campus-blue .settings-footnote {
+  padding-top: 1.25rem;
+  background: var(--settings-rule);
+  color: var(--color-ink-muted);
+  font-size: 0.8125rem;
+}
+
+/* "Ver detalle": the rest of a statement, a quiet link until opened. */
+.campus-blue .settings-detail {
+  margin-top: 0.25rem;
+}
+.campus-blue .settings-detail summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  width: fit-content;
+  padding: 0.125rem 0;
+  cursor: pointer;
+  color: var(--color-accent-ink);
+  font-size: 0.8125rem;
+  font-weight: var(--font-weight-label);
+  list-style: none;
+}
+.campus-blue .settings-detail summary::-webkit-details-marker {
+  display: none;
+}
+.campus-blue .settings-detail summary::after {
+  content: '';
+  width: 0.4rem;
+  height: 0.4rem;
+  margin-top: -0.2rem;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(45deg);
+  transition: transform 150ms ease-out;
+}
+.campus-blue .settings-detail[open] summary::after {
+  margin-top: 0.2rem;
+  transform: rotate(-135deg);
+}
+.campus-blue .settings-detail summary:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.campus-blue .settings-detail summary:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+  border-radius: 0.25rem;
+}
+.campus-blue .settings-detail > div {
+  max-width: 60ch;
+  margin-top: 0.25rem;
+  color: var(--color-ink-muted);
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+
+/* A notice: soft bordered box, info icon, title, body, one link. */
+.campus-blue .settings-callout {
+  display: flex;
+  gap: 0.875rem;
+  margin: 0.5rem 0 1.25rem;
+  padding: 1rem 1.25rem;
+  border: 1px solid var(--color-rule);
+  border-radius: 1rem;
+  background: var(--color-paper);
+}
+.campus-blue .settings-callout-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+  flex: none;
+  margin-top: 0.0625rem;
+  color: var(--color-accent);
+}
+.campus-blue .settings-callout-title {
+  color: var(--color-ink);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1.375rem;
+}
+.campus-blue .settings-callout-body {
+  margin-top: 0.125rem;
+  color: var(--color-ink-muted);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+.campus-blue .settings-callout-action {
+  margin-top: 0.625rem;
+}
+
+/* Inline, not flex: when it wraps on a phone the icon stays with the words. */
+.campus-blue .settings-link {
+  display: inline;
+  line-height: 2rem;
+  color: var(--color-accent-ink);
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-label);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, currentColor 35%, transparent);
+  text-underline-offset: 3px;
+}
+.campus-blue .settings-link:hover {
+  text-decoration-color: currentColor;
+}
+.campus-blue .settings-link svg {
+  display: inline-block;
+  width: 0.875rem;
+  height: 0.875rem;
+  margin: 0 0.3rem;
+  vertical-align: -0.125em;
+}
+
+/* Wide screens: the rows line up under the title, past the chip. */
+@media (min-width: 1280px) {
+  .campus-blue .settings-panel-body {
+    padding-left: var(--settings-gutter);
+  }
+}
+
+@media (max-width: 1023px) {
+  .campus-blue .settings-layout {
+    grid-template-columns: 13.5rem minmax(0, 1fr);
+  }
+  .campus-blue .settings-main {
+    padding: 1.5rem 1.5rem 2rem;
+  }
+}
+
+/* Phones: the sub-nav is the page until a section is picked. */
+@media (max-width: 767px) {
+  .campus-blue .settings-layout {
+    display: block;
+  }
+  .campus-blue .settings[data-view='list'] .settings-main,
+  .campus-blue .settings[data-view='section'] .settings-nav {
+    display: none;
+  }
+  .campus-blue .settings-nav {
+    padding: 0.75rem 0.5rem;
+    border-right: 0;
+  }
+  .campus-blue .settings-nav-heading {
+    padding-top: 0.5rem;
+  }
+  .campus-blue .settings-nav-item {
+    min-height: 3rem;
+  }
+  .campus-blue .settings-nav-item.is-active {
+    background: transparent;
+  }
+  .campus-blue .settings-nav-item.is-active .settings-nav-icon {
+    color: var(--color-ink-muted);
+  }
+  .campus-blue .settings-nav-chevron {
+    display: block;
+    width: 1rem;
+    height: 1rem;
+    color: var(--color-ink-faint);
+  }
+  .campus-blue .settings-main {
+    padding: 1.25rem 1rem 1.5rem;
+  }
+  .campus-blue .settings-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    min-height: 2.75rem;
+    margin: -0.5rem 0 0.75rem -0.25rem;
+    color: var(--color-accent-ink);
+    font-size: 0.9375rem;
+    font-weight: var(--font-weight-label);
+    text-decoration: none;
+  }
+  .campus-blue .settings-back svg {
+    width: 1.125rem;
+    height: 1.125rem;
+  }
+  .campus-blue .settings-back:focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+    border-radius: 0.375rem;
+  }
+  .campus-blue .settings-panel-head {
+    gap: 1rem;
+    padding-bottom: 1.25rem;
+  }
+  .campus-blue .settings-chip {
+    width: 3.5rem;
+    height: 3.5rem;
+    border-radius: 0.875rem;
+  }
+  .campus-blue .settings-panel-head h2 {
+    font-size: 1.25rem;
+    line-height: 1.75rem;
+  }
+  .campus-blue .settings-row {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 1rem 0;
+  }
+  .campus-blue .settings-row-actions .settings-row-label {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .campus-blue .settings-nav-item,
+  .campus-blue .settings-detail summary::after {
+    transition: none;
+  }
+}

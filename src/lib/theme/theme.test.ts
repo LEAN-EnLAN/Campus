@@ -80,6 +80,11 @@ describe('accents', () => {
     expect(accentIdForHue(202)).toBe('azul')
   })
 
+  it('reads a stored Índigo (retired, not Campus) as Azul Campus', () => {
+    expect(ACCENTS.map((accent) => accent.id)).not.toContain('indigo')
+    expect(accentIdForHue(250)).toBe('azul')
+  })
+
   it('keeps the boot script in index.html in step with ACCENTS', () => {
     // The boot script cannot import theme.ts, so it repeats the hue -> id
     // table. If the two drift, a reload paints a different accent for a frame.

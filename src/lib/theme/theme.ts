@@ -71,7 +71,6 @@ export function readAccentHue(raw: string | null): number | null {
  */
 export const ACCENTS = [
   { id: 'azul', label: 'Azul Campus', hue: 225 },
-  { id: 'indigo', label: 'Índigo', hue: 250 },
   { id: 'verde', label: 'Verde', hue: 150 },
   { id: 'coral', label: 'Coral', hue: 30 },
   { id: 'violeta', label: 'Violeta', hue: 290 },

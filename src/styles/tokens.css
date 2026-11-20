@@ -353,15 +353,13 @@
 }
 
 /* ---------------------------------------------------------------------------
- * Brand gradient — hero/feature bands and illustration accents ONLY, never
- * behind body text. Fixed across themes: it is the brand, not a surface.
+ * Accent swatches. Each accent's own fill, for the picker (it shows every
+ * accent at once, whichever one is active). Same values as the light blocks
+ * below. There is no brand gradient: Campus is navy and one blue, and a
+ * multi-hue sweep is somebody else's identity (BRAND-RESTORE).
  * ------------------------------------------------------------------------- */
 :root {
-  --brand-gradient: linear-gradient(135deg, #3c37b2 0%, #1c5ff2 55%, #55b1ea 100%);
-  /* Each accent's own fill, for the picker's swatches (they show every accent
-     at once, whichever one is active). Same values as the light blocks below. */
   --swatch-azul: #155dd6;
-  --swatch-indigo: #3c37b2;
   --swatch-verde: #1d7f45;
   --swatch-coral: #c2461f;
   --swatch-violeta: #7c3aed;
@@ -369,7 +367,7 @@
 
 /* ---------------------------------------------------------------------------
  * Accent colour. `data-accent` on <html> (set by the boot script in index.html
- * and by ThemeProvider) picks one of five accents. Each is four roles — fill,
+ * and by ThemeProvider) picks one of four accents. Each is four roles — fill,
  * soft surface, ink that reads on the page, hover — so a chosen colour is a
  * member of the palette, not a stain on it. Written for BOTH the root and the
  * blue scopes: the scopes redeclare the accent, so a rule on :root alone is
@@ -387,14 +385,6 @@
   --color-accent-ink: #1454bd;
   --color-accent-hover: #0e4dbb;
   --color-selection: #d7e7ff;
-}
-:root[data-accent='indigo'],
-:root[data-accent='indigo'] :is(.campus-blue, .blue-onboarding, .blue-startup) {
-  --color-accent: #3c37b2;
-  --color-accent-soft: #ecebff;
-  --color-accent-ink: #332ea0;
-  --color-accent-hover: #312c9a;
-  --color-selection: #dcdaff;
 }
 :root[data-accent='verde'],
 :root[data-accent='verde'] :is(.campus-blue, .blue-onboarding, .blue-startup) {
@@ -471,7 +461,7 @@
   --color-success: #3ccf91;
   --color-success-ink: #5fdca6;
   --color-success-soft: #0f2c22;
-  --color-warning: #ffc02a;
+  --color-warning: #f2b544;
   --color-warning-soft: #33280c;
   --color-danger: #ff7f6b;
   --color-danger-soft: #3a1a1d;
@@ -480,8 +470,8 @@
   --color-success-border: #1f4a37;
   --color-danger-border: #5a2a30;
   --color-danger-ink: #ff9c8f;
-  --color-warning-bright: #ffc02a;
-  --color-warning-ink: #ffcf5c;
+  --color-warning-bright: #f2b544;
+  --color-warning-ink: #fbe6b8;
   --color-success-deep: #7fe3b8;
   --color-success-mid: #3ccf91;
   --color-shell: #0b1426;
@@ -500,16 +490,6 @@
   --color-accent-hover: #3a78ee;
   --color-selection: #22396b;
   --color-focus: #8db8ff;
-}
-:root[data-theme='dark'][data-accent='indigo'],
-:root[data-theme='dark'][data-accent='indigo']
-  :is(.campus-blue, .blue-onboarding, .blue-startup) {
-  --color-accent: #5550d6;
-  --color-accent-soft: #1f1d47;
-  --color-accent-ink: #b4b1ff;
-  --color-accent-hover: #625dde;
-  --color-selection: #2c2a63;
-  --color-focus: #b4b1ff;
 }
 :root[data-theme='dark'][data-accent='verde'],
 :root[data-theme='dark'][data-accent='verde']

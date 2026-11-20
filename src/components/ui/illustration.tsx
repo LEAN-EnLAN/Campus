@@ -37,6 +37,7 @@ export function Illustration({
   alt,
   size = 'md',
   eager = false,
+  fit = 'contain',
   className,
 }: {
   name: IllustrationName
@@ -45,6 +46,13 @@ export function Illustration({
   size?: keyof typeof SIZE
   /** Above the fold on first paint. Everything else loads lazily. */
   eager?: boolean
+  /**
+   * `crop` fills a square frame with the drawing's object: the spots share a
+   * 16:10 frame with the object centred and empty margin left and right, so a
+   * square cover keeps the object and drops the margin (Ajustes' 64px chips).
+   * The caller's frame sets the size and clips.
+   */
+  fit?: 'contain' | 'crop'
   className?: string
 }) {
   const entry = ILLUSTRATIONS[name]
@@ -53,7 +61,8 @@ export function Illustration({
   // one size; raster spots ship 1x and 2x, except at icon size, where the 640px
   // file already covers any screen density and the 2x would be ~70 KB wasted.
   const vector = 'vector' in entry
-  const hasRetina = !vector && width < 1920 && size !== 'icon'
+  const crop = fit === 'crop'
+  const hasRetina = !vector && width < 1920 && size !== 'icon' && !crop
   return (
     <img
       src={`${BASE}/${name}.${vector ? 'svg' : 'webp'}`}
@@ -64,7 +73,13 @@ export function Illustration({
       loading={eager ? 'eager' : 'lazy'}
       decoding="async"
       draggable={false}
-      className={cn('h-auto w-full object-contain select-none', SIZE[size], className)}
+      className={cn(
+        'select-none',
+        crop
+          ? 'size-full max-w-none object-cover'
+          : ['h-auto w-full object-contain', SIZE[size]],
+        className,
+      )}
     />
   )
 }

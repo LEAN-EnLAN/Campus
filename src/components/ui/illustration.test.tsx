@@ -52,6 +52,15 @@ describe('Illustration', () => {
     expect(img).not.toHaveAttribute('srcset')
   })
 
+  it('crops to the object for a small square frame: covers it, 1x only, no width cap', () => {
+    render(<Illustration name="settings-privacy" fit="crop" />)
+    const img = screen.getByRole('img', { name: ILLUSTRATIONS['settings-privacy'].alt })
+    expect(img).toHaveAttribute('src', '/campus-blue-assets/settings-privacy.webp')
+    expect(img).not.toHaveAttribute('srcset')
+    expect(img).toHaveClass('object-cover', 'size-full')
+    expect(img).not.toHaveClass('object-contain')
+  })
+
   it('has every file the registry points at in public/', () => {
     const dir = join(process.cwd(), 'public', 'campus-blue-assets')
     for (const [name, entry] of Object.entries(ILLUSTRATIONS)) {

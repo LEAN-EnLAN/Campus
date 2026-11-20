@@ -8,10 +8,17 @@ import { cn } from '@/lib/utils'
  * frame and the same empty margin, so it sits beside its siblings at the same
  * size. Decorative: the card's title already says what it is.
  */
-export function AssistantIllustration({ className }: { className?: string }) {
+export function AssistantIllustration({
+  className,
+  fit = 'contain',
+}: {
+  className?: string
+  /** `crop`: a square view on the object alone, for Ajustes' 64px chip. */
+  fit?: 'contain' | 'crop'
+}) {
   return (
     <svg
-      viewBox="0 0 128 80"
+      viewBox={fit === 'crop' ? '30 2 76 76' : '0 0 128 80'}
       aria-hidden="true"
       focusable="false"
       className={cn('art-spot h-auto', className)}

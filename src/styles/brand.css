@@ -1,32 +1,89 @@
 /* The Campus mark (`<CampusLogo>`, src/components/brand). Brand colours are fixed
  * on purpose: they are the logo's, not a surface role, so they live in
- * `--brand-*` tokens and never follow the accent. */
+ * `--brand-*` tokens and never follow the accent.
+ *
+ * Lockup proportions are the pitch deck's (the reference the app must match):
+ * mark 1.6em of the wordmark, gap 0.4em, wordmark 600 at -0.017em tracking.
+ * With the wordmark, the lockup never renders below 22px (1.375rem): every
+ * size below is written against `--logo-em`, which is the surface's size or
+ * 22px, whichever is larger, so a nav or header can never shrink it into an
+ * afterthought. The bare mark keeps following its surface's em. */
 .campus-logo {
+  --logo-em: 1em;
   display: inline-flex;
   align-items: center;
-  gap: 0.4em;
+  gap: calc(var(--logo-em) * 0.4);
   color: var(--brand-navy);
   --campus-logo-dot: var(--brand-blue);
   line-height: 1;
   white-space: nowrap;
+}
+.campus-logo[data-wordmark] {
+  --logo-em: max(1em, 1.375rem);
 }
 .campus-logo[data-tone='dark'] {
   color: var(--brand-on-navy);
   --campus-logo-dot: var(--brand-blue-light);
 }
 .campus-logo-mark {
-  width: 1.5em;
-  height: 1.5em;
+  width: calc(var(--logo-em) * 1.6);
+  height: calc(var(--logo-em) * 1.6);
   flex: none;
   /* The mark's optical box is inset in its 64 frame; pull it back so the C, not
      the frame, aligns with the text column. */
-  margin-inline-start: -0.12em;
+  margin-inline-start: calc(var(--logo-em) * -0.12);
 }
 .campus-logo-dot {
   fill: var(--campus-logo-dot);
 }
 .campus-logo-word {
   font-family: var(--font-sans);
-  font-weight: var(--font-weight-title);
-  letter-spacing: -0.035em;
+  font-size: var(--logo-em);
+  font-weight: 600;
+  letter-spacing: -0.017em;
+}
+
+/* The giant C (`<BrandWatermark>`): the signature device on navy hero surfaces
+ * only. It bleeds off the surface's right edge and draws itself once. The
+ * surface owns `position: relative; overflow: hidden`; the caller places it. */
+.brand-watermark {
+  position: absolute;
+  z-index: 0;
+  aspect-ratio: 1;
+  pointer-events: none;
+  user-select: none;
+}
+.brand-watermark-arc {
+  fill: none;
+  stroke: var(--brand-watermark-arc);
+  stroke-width: 9;
+  stroke-linecap: round;
+  stroke-dasharray: 101;
+  animation: brand-watermark-draw 1400ms cubic-bezier(0.65, 0, 0.35, 1) 150ms both;
+}
+.brand-watermark-dot {
+  fill: var(--brand-watermark-dot);
+  animation: brand-watermark-dot 500ms cubic-bezier(0.16, 1, 0.3, 1) 1300ms both;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+@keyframes brand-watermark-draw {
+  from {
+    stroke-dashoffset: 101;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes brand-watermark-dot {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .brand-watermark-arc,
+  .brand-watermark-dot {
+    animation: none;
+  }
 }

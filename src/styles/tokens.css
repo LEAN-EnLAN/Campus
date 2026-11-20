@@ -259,8 +259,36 @@
      surface never paints with these, only <CampusLogo> and the icon set do. */
   --brand-navy: #10224a;
   --brand-blue: #155dd6;
-  --brand-on-navy: #ffffff;
+  --brand-on-navy: #f5f7fb;
   --brand-blue-light: #5b9bff;
+
+  /* The navy hero surface (Radar's "Lo próximo", the Cloud login panel), as the
+     pitch deck paints it. Fixed in both themes: it is the brand's own dark
+     surface, not the page. Text roles on it are the deck's `.dark` ones. */
+  --navy-surface: #10224a;
+  --navy-ink: #f5f7fb;
+  --navy-ink-muted: #c3d2ee;
+  --navy-eyebrow: #8db6ff;
+  --navy-highlight: #5b9bff;
+  --navy-chip: #2a4f9e;
+  --navy-edge: #1d3a78;
+  /* The giant C behind a navy hero: arc one step above the surface, blue dot. */
+  --brand-watermark-arc: #1d3a78;
+  --brand-watermark-dot: #155dd6;
+
+  /* The illustration palette (public/campus-blue-assets, and the hand-drawn SVGs
+     that join them): navy outline, blue monochrome fills, a pale dotted ring and
+     one soft navy shade. Fixed in both themes, like the raster set: objects
+     stay paper-white stickers on a dark card. */
+  --art-outline: #10224a;
+  --art-outline-night: #8db6ff;
+  --art-blue: #155dd6;
+  --art-blue-mid: #5b9bff;
+  --art-blue-soft: #b9d3fb;
+  --art-wash: #e8eefa;
+  --art-paper: #ffffff;
+  --art-ring: #b9d3fb;
+  --art-shade: rgb(16 34 74 / 0.1);
 
   /* Ramp primitives, darkest first. Clustered from every blue the stylesheets
      used to hardcode (OKLab distance <= 0.04, i.e. below a noticeable step).

@@ -45,8 +45,9 @@ jobs:
             echo "VITE_PUBLIC_APP_URL=$PUBLIC_APP_URL"
           } > "$RUNNER_TEMP/desktop.env"
       - name: Build
-        shell: bash
-        run: node desktop/scripts/desktop.mjs build --env-file "$RUNNER_TEMP/desktop.env"
+        # pwsh, not bash: Git Bash puts its own /usr/bin/link.exe ahead of the MSVC linker.
+        shell: pwsh
+        run: node desktop/scripts/desktop.mjs build --env-file "$env:RUNNER_TEMP/desktop.env"
       - name: Safety check of the bundled frontend
         run: pnpm deploy:check
       - uses: actions/upload-artifact@v4

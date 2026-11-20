@@ -247,7 +247,7 @@ dependencies = [
 
 [[package]]
 name = "campus-core"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "base64 0.22.1",
  "dunce",
@@ -259,7 +259,7 @@ dependencies = [
 
 [[package]]
 name = "campus-desktop"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "campus-core",
  "campus-server",
@@ -269,7 +269,7 @@ dependencies = [
 
 [[package]]
 name = "campus-server"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "campus-core",
  "junction",

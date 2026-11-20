@@ -267,18 +267,77 @@
 }
 
 /* --- Progress art ----------------------------------------------------------- */
+/* Drawn in the Campus illustration language (the campus-blue-assets set): navy
+   ~2px outlines with round joins, blue monochrome fills, one soft lower-right
+   shade for depth, a dotted pale-blue ring behind. Colours come from the
+   `--art-*` brand tokens; states use the status pairs above. */
+.art-outline,
+.art-outline-fill {
+  stroke: var(--art-outline);
+  stroke-width: var(--art-stroke, 2);
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+.art-outline {
+  fill: none;
+}
+.art-fill-paper {
+  fill: var(--art-paper);
+}
+.art-fill-blue {
+  fill: var(--art-blue);
+}
+.art-fill-mid {
+  fill: var(--art-blue-mid);
+}
+.art-fill-soft {
+  fill: var(--art-blue-soft);
+}
+/* A small spot beside a card title (Ajustes): a hair finer, like the rasters. */
+.art-spot {
+  --art-stroke: 1.6;
+}
+.art-ring {
+  fill: none;
+  stroke: var(--art-ring);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-dasharray: 0 6;
+}
+.art-shade {
+  fill: var(--art-shade);
+}
+.art-spark {
+  fill: none;
+  stroke: var(--art-blue);
+  stroke-width: 4;
+  stroke-linecap: round;
+}
 .art-trophy-shape {
-  fill: var(--radar-track);
+  fill: var(--art-wash);
+}
+.art-trophy-handle-edge {
+  fill: none;
+  stroke: var(--art-outline);
+  stroke-width: 9;
+  stroke-linecap: round;
 }
 .art-trophy-handle {
   fill: none;
-  stroke: var(--radar-track);
+  stroke: var(--art-paper);
+  stroke-width: 5;
+  stroke-linecap: round;
 }
 .art-trophy-fill {
-  fill: var(--radar-approved);
+  fill: var(--art-blue);
   transform-box: fill-box;
   transform-origin: bottom;
   animation: art-fill 1100ms var(--radar-ease) both;
+}
+.art-trophy-surface {
+  fill: none;
+  stroke: var(--art-blue-mid);
+  stroke-width: 2;
 }
 @keyframes art-fill {
   from {
@@ -286,59 +345,85 @@
   }
 }
 .art-bubble {
+  stroke: var(--art-outline);
+  stroke-width: 1.25;
+}
+.art-bubble-group {
   transform-box: fill-box;
   transform-origin: center;
   animation: art-pop 420ms var(--radar-ease) both;
   animation-delay: calc(var(--art-i, 0) * 12ms);
+}
+.art-bubble-shade {
+  fill: var(--art-shade);
+  pointer-events: none;
 }
 @keyframes art-pop {
   from {
     transform: scale(0);
   }
 }
+/* State fills: the soft half of each status pair, so a block reads like the
+   pill of the same name and its number takes the pill's ink. */
 .art-tone-approved {
-  fill: var(--radar-approved);
-  background: var(--radar-approved);
+  background: var(--radar-approved-soft);
+  color: var(--radar-approved);
+  --art-mark: var(--color-success);
 }
 .art-tone-regular {
-  fill: var(--radar-regular);
-  background: var(--radar-regular);
+  background: var(--radar-regular-soft);
+  color: var(--radar-regular);
+  --art-mark: var(--color-warning-bright);
 }
 .art-tone-cursando {
-  fill: var(--radar-cursando);
-  background: var(--radar-cursando);
+  background: var(--radar-cursando-soft);
+  color: var(--radar-cursando);
+  --art-mark: var(--radar-cursando-mark);
 }
+/* Courses' "needs attention" block has no status of its own: it borrows
+   Regularizada's amber, as the deck's "Atrasada" pill does. */
 .art-tone-attention {
-  fill: var(--radar-attention);
-  background: var(--radar-attention);
+  background: var(--radar-regular-soft);
+  color: var(--radar-regular);
+  --art-mark: var(--color-warning-bright);
 }
 .art-tone-pending {
-  fill: var(--radar-pending);
-  background: var(--radar-pending);
+  background: var(--radar-pending-soft);
+  color: var(--radar-pending);
+  --art-mark: var(--radar-pending-mark);
+}
+/* Marks (bubbles, legend dots) take the strong fill. */
+.art-bubble {
+  fill: var(--art-mark);
 }
 .art-legend-dot {
-  width: 0.65rem;
-  height: 0.65rem;
+  width: 0.75rem;
+  height: 0.75rem;
   border-radius: 999px;
   flex: none;
+  background: var(--art-mark);
+  box-shadow: inset 0 0 0 1.5px var(--art-outline);
 }
 .art-blocks {
   display: flex;
-  gap: 0.375rem;
+  flex-wrap: wrap;
+  gap: 0.5rem;
   min-width: 0;
 }
+/* Width follows the share; a narrow aside wraps them two by two rather than
+   breaking "disponibles" in half. */
 .art-block {
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
-  min-width: 4.25rem;
-  min-height: 7.5rem;
+  min-width: 7rem;
+  min-height: 6.25rem;
   padding: 0.75rem;
   border-radius: 16px;
-  color: var(--radar-on-tone);
-}
-.art-block.art-tone-cursando {
-  color: var(--radar-on-strong);
+  /* Outline + one lower-right inner shade: the illustrations' fake 3D. */
+  box-shadow:
+    inset 0 0 0 2px var(--art-outline),
+    inset -6px -7px 0 var(--art-shade);
 }
 .art-block-number {
   font-size: 2rem;
@@ -354,12 +439,25 @@
   line-height: 1.2;
   overflow-wrap: anywhere;
 }
+/* At night the navy outline would vanish into the card: the edge becomes the
+   state's own ink, quieter. */
+:root[data-theme='dark'] .art-block {
+  box-shadow:
+    inset 0 0 0 1.5px color-mix(in srgb, currentColor 35%, transparent),
+    inset -6px -7px 0 rgb(0 0 0 / 0.18);
+}
+:root[data-theme='dark'] .art-legend-dot {
+  box-shadow: inset 0 0 0 1.5px var(--art-outline-night);
+}
+:root[data-theme='dark'] .art-bubble {
+  stroke: var(--art-outline-night);
+}
 
 @media (prefers-reduced-motion: reduce) {
   .radar-live-dot::after,
   .radar-card,
   .art-trophy-fill,
-  .art-bubble {
+  .art-bubble-group {
     animation: none;
   }
 }

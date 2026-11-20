@@ -586,8 +586,12 @@
     .course-facts {
       grid-template-columns: repeat(3, minmax(0, 1fr));
     }
-    .course-fact-next {
+    .course-fact[data-tone='hero'] {
       grid-column: 1 / -1;
+    }
+    /* Nothing ahead: four plain counts, no full-width tile saying "0". */
+    .course-facts:not(:has(> [data-tone='hero'])) {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
     }
   }
 
@@ -620,6 +624,9 @@
     }
     .course-head-actions > :last-child {
       flex: 1;
+    }
+    .course-facts:not(:has(> [data-tone='hero'])) {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
     }
     .course-fact {
       padding: 0.85rem 0.9rem 0.95rem;

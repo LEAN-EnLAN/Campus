@@ -63,7 +63,7 @@ function VaultScreen() {
             Tus notas son archivos de una carpeta tuya, y Campus Cloud no las tiene. Para
             usarlas, abrí Campus en tu computadora y elegí una carpeta.
           </p>
-          <Link to="/settings" className="blue-button mt-5">
+          <Link to="/settings" search={{ seccion: 'espacio' }} className="blue-button mt-5">
             Cambiar de espacio de trabajo
             <ArrowRight aria-hidden="true" className="size-4" />
           </Link>

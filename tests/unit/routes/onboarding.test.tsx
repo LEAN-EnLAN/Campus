@@ -276,12 +276,12 @@ describe('onboarding: revisiting', () => {
     expect(screen.getByRole('radio', { name: 'TO 2024' })).toBeChecked()
   })
 
-  it('offers a way back to Ajustes when it was opened from Ajustes', async () => {
+  it('offers a way back to Ajustes, on the Carrera section, when it was opened from there', async () => {
     state.existing = existing
     mount(undefined, '/?from=settings')
 
     const back = await screen.findByRole('link', { name: 'Volver a ajustes' })
-    expect(back).toHaveAttribute('href', '/settings')
+    expect(back).toHaveAttribute('href', '/settings?seccion=carrera')
   })
 
   it('offers Hoy, not Ajustes, when it was opened from anywhere else', async () => {

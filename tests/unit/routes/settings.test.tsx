@@ -185,7 +185,7 @@ describe('Ajustes with an account', () => {
 })
 
 describe('appearance preferences', () => {
-  it('offers Claro / Oscuro / Sistema and five accents, with accessible pressed state', async () => {
+  it('offers Claro / Oscuro / Sistema and four Campus accents, with accessible pressed state', async () => {
     localStorage.setItem(THEME_STORAGE_KEY, 'light')
     mount({ folder: FOLDER, change: vi.fn() }, false)
 
@@ -200,7 +200,7 @@ describe('appearance preferences', () => {
       within(colorGroup)
         .getAllByRole('button')
         .map((b) => b.textContent),
-    ).toEqual(['Azul Campus', 'Índigo', 'Verde', 'Coral', 'Violeta'])
+    ).toEqual(['Azul Campus', 'Verde', 'Coral', 'Violeta'])
     expect(within(themeGroup).getByRole('button', { name: 'Claro' })).toHaveAttribute(
       'aria-pressed',
       'true',

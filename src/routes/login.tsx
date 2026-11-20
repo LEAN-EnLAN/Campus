@@ -11,15 +11,19 @@ import {
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
+import { BrandWatermark } from '@/components/brand/brand-watermark'
 import { CampusLogo } from '@/components/brand/campus-logo'
 import { Button } from '@/components/ui/button'
 import { TextField } from '@/components/ui/field'
+import { Illustration } from '@/components/ui/illustration'
+import type { IllustrationName } from '@/components/ui/illustrations'
 import {
   ACCOUNT_DELETED_MESSAGE,
   takeAccountDeleted,
 } from '@/features/account/account-deleted-notice'
 import { MetricsConsentCheckbox } from '@/features/account/metrics-consent-checkbox'
 import { useAuth } from '@/features/auth/auth-context'
+import { isCloudUnreachable } from '@/features/auth/auth-errors'
 import { useDocumentTitle } from '@/lib/hooks/use-document-title'
 import { useWorkspace } from '@/lib/runtime/workspace'
 
@@ -28,6 +32,20 @@ export const Route = createFileRoute('/login')({
 })
 
 type Mode = 'signin' | 'signup' | 'reset' | 'new-password'
+
+/** The picture per form. A sent email (`notice`) and an offline error override it. */
+const MODE_ART: Record<Mode, IllustrationName> = {
+  signin: 'login-signin',
+  signup: 'login-signup',
+  reset: 'password-recovery',
+  'new-password': 'password-new',
+}
+
+const LOGIN_FEATURES = [
+  { Icon: GraduationCap, text: 'Plan de estudios y correlativas claras.' },
+  { Icon: CalendarCheck, text: 'Entregas y parciales en un solo lugar.' },
+  { Icon: NotebookPen, text: 'Notas por materia, tuyas.' },
+] as const
 
 function LoginScreen() {
   const { signIn, signUp, session, loading, recovering, requestPasswordReset, updatePassword } =
@@ -149,9 +167,12 @@ function LoginScreen() {
           </header>
 
           {/* Mobile: the brand reduced to a band. The full panel lives on lg+. */}
-          <div className="mt-5 rounded-2xl bg-[image:var(--brand-gradient)] px-5 py-4 text-white lg:hidden">
-            <p className="text-base font-semibold tracking-tight">Tu cursada, ordenada.</p>
-            <p className="mt-0.5 text-sm text-white/80">
+          <div className="relative isolate mt-5 overflow-hidden rounded-2xl bg-(--navy-surface) px-5 py-4 lg:hidden">
+            <BrandWatermark className="top-1/2 -right-10 h-[190%] -translate-y-1/2" />
+            <p className="relative z-10 text-base font-semibold tracking-tight text-(--navy-ink)">
+              Tu cursada, <span className="text-(--navy-highlight)">ordenada.</span>
+            </p>
+            <p className="relative z-10 mt-0.5 text-sm text-(--navy-ink-muted)">
               Materias, entregas y notas en un solo lugar.
             </p>
           </div>
@@ -160,6 +181,20 @@ function LoginScreen() {
           picker (a local folder, another account) has to be on this screen. */}
           <div className="mx-auto flex w-full max-w-[420px] flex-1 flex-col justify-center gap-6 py-8">
             <div className="flex flex-col gap-3">
+              {/* The picture follows the form, and says when the connection, not
+                  the form, failed; the words stay in the form. */}
+              <Illustration
+                name={
+                  isCloudUnreachable(error)
+                    ? 'offline-study'
+                    : notice
+                      ? 'auth-email'
+                      : MODE_ART[mode]
+                }
+                eager
+                size="sm"
+                className="-ml-4 sm:max-w-48"
+              />
               <p className="text-accent-ink inline-flex items-center gap-2 text-sm font-medium">
                 <Cloud size={16} aria-hidden="true" /> Acceso a Campus Cloud
               </p>
@@ -332,31 +367,23 @@ function LoginScreen() {
           </div>
         </div>
 
+        {/* The deck's navy cover: the giant C bleeding off the edge, a two-tone
+            headline, the features as chip tiles. */}
         <aside
           aria-label="Campus Cloud"
-          className="relative hidden overflow-hidden rounded-[28px] bg-[image:var(--brand-gradient)] p-12 text-white lg:flex lg:flex-col lg:justify-center"
+          className="relative isolate hidden overflow-hidden rounded-[28px] bg-(--navy-surface) p-14 text-(--navy-ink) lg:flex lg:flex-col lg:justify-center"
         >
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute -top-24 -right-24 size-96 rounded-full bg-white/15 blur-3xl"
-          />
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute -bottom-32 -left-20 size-[28rem] rounded-full bg-white/10 blur-3xl"
-          />
-          <div className="relative flex max-w-md flex-col gap-8">
-            <h2 className="text-5xl leading-[1.05] font-semibold tracking-[-0.03em] text-balance">
-              Tu cursada, ordenada.
+          <BrandWatermark className="top-1/2 -right-[22%] h-[78%] -translate-y-1/2" />
+          <div className="relative z-10 flex max-w-md flex-col gap-10">
+            <h2 className="text-[3.5rem] leading-[1.02] font-semibold tracking-[-0.025em]">
+              <span className="block">Tu cursada,</span>
+              <span className="block text-(--navy-highlight)">ordenada.</span>
             </h2>
-            <ul className="flex flex-col gap-4">
-              {[
-                { Icon: GraduationCap, text: 'Plan de estudios y correlativas claras.' },
-                { Icon: CalendarCheck, text: 'Entregas y parciales en un solo lugar.' },
-                { Icon: NotebookPen, text: 'Notas por materia, tuyas.' },
-              ].map(({ Icon, text }) => (
-                <li key={text} className="flex items-center gap-3.5 text-base text-white">
-                  <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-white/20">
-                    <Icon size={20} aria-hidden="true" />
+            <ul className="flex flex-col gap-5">
+              {LOGIN_FEATURES.map(({ Icon, text }) => (
+                <li key={text} className="flex items-center gap-4 text-base font-medium">
+                  <span className="grid size-12 shrink-0 place-items-center rounded-[14px] bg-(--navy-chip)">
+                    <Icon size={24} aria-hidden="true" />
                   </span>
                   {text}
                 </li>

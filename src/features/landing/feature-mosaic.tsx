@@ -1,26 +1,28 @@
-import { CalendarPlus, MessageCircle } from 'lucide-react'
+import { CalendarPlus, KeyRound, MessageCircle } from 'lucide-react'
 import type { ReactNode } from 'react'
 
-type Tone = 'plan' | 'calendar' | 'assistant' | 'progress' | 'share'
+import { Illustration } from '@/components/ui/illustration'
+import type { IllustrationName } from '@/components/ui/illustrations'
+
 type Span = 'wide' | 'half' | 'third'
 
 function Tile({
-  tone,
   span,
   title,
   tag,
   children,
   art,
+  highlight = false,
 }: {
-  tone: Tone
   span: Span
   title: string
   tag?: string
   children: ReactNode
   art: ReactNode
+  highlight?: boolean
 }) {
   return (
-    <article className={`lp-tile lp-tile--${span}`} data-tone={tone}>
+    <article className={`lp-tile lp-tile--${span}`} data-highlight={highlight || undefined}>
       {tag ? <span className="lp-tag">{tag}</span> : null}
       <h3 className="lp-tile-title">{title}</h3>
       <p className="lp-tile-text">{children}</p>
@@ -29,17 +31,16 @@ function Tile({
   )
 }
 
-function TileArt({ name, alt }: { name: string; alt: string }) {
+/**
+ * Campus's own illustrations (public/campus-blue-assets), through the shared
+ * `Illustration` so the 1x/2x srcset, intrinsic size and lazy loading are the
+ * same as everywhere else in the app.
+ */
+function TileArt({ name, alt }: { name: IllustrationName; alt: string }) {
   return (
-    <img
-      className="lp-tile-art"
-      src={`/landing/${name}.webp`}
-      width={800}
-      height={800}
-      alt={alt}
-      loading="lazy"
-      decoding="async"
-    />
+    <div className="lp-tile-art">
+      <Illustration name={name} alt={alt} size="lg" className="lp-tile-img" />
+    </div>
   )
 }
 
@@ -50,7 +51,8 @@ export function FeatureMosaic() {
       className="lp-container lp-section"
       data-reveal
     >
-      <h2 id="lp-features-title" className="lp-heading lp-h2 max-w-3xl">
+      <p className="lp-eyebrow">Qué hace Campus</p>
+      <h2 id="lp-features-title" className="lp-heading lp-h2 mt-3 max-w-3xl">
         Todo lo que tu carrera te pide, en el orden en que te lo pide.
       </h2>
       <p className="lp-lead mt-4">
@@ -60,14 +62,13 @@ export function FeatureMosaic() {
 
       <div className="lp-mosaic">
         <Tile
-          tone="calendar"
           span="wide"
           title="Radar de Hoy"
           tag="Lo primero que ves"
           art={
             <TileArt
-              name="tile-calendar"
-              alt="Calendario con fechas marcadas, libros y un despertador"
+              name="section-today"
+              alt="Hoja con una lista tildada, una taza y un sol azul que asoma"
             />
           }
         >
@@ -75,14 +76,13 @@ export function FeatureMosaic() {
           no te agarre de sorpresa.
         </Tile>
         <Tile
-          tone="plan"
           span="half"
           title="Plan y correlativas"
           tag="Con simulador"
           art={
             <TileArt
-              name="tile-plan"
-              alt="Árbol de materias conectadas, coloreadas según su estado"
+              name="section-plan"
+              alt="Seis hojas de calendario en grilla, una por cuatrimestre"
             />
           }
         >
@@ -90,37 +90,61 @@ export function FeatureMosaic() {
           simulador: ¿qué curso el cuatri que viene?
         </Tile>
         <Tile
-          tone="progress"
           span="third"
           title="Finales que más destraban"
-          art={<TileArt name="tile-progress" alt="Copa de vidrio que se va llenando" />}
+          art={
+            <TileArt
+              name="status-approved-celebration"
+              alt="Medalla con una tilde y dos cintas, entre papelitos azules"
+            />
+          }
         >
           Qué final rendir primero para habilitar más materias.
         </Tile>
         <Tile
-          tone="assistant"
           span="third"
           title="Asistente con tu propia clave"
           tag="BYOK"
-          art={<TileArt name="tile-assistant" alt="Globo de chat con una llave dorada" />}
+          highlight
+          art={
+            <ul className="lp-key-facts" aria-label="Cómo funciona la clave propia">
+              <li>
+                <KeyRound aria-hidden size={18} />
+                Elegís el proveedor
+              </li>
+              <li>
+                <KeyRound aria-hidden size={18} />
+                Controlás lo que gastás
+              </li>
+              <li>
+                <KeyRound aria-hidden size={18} />
+                La quitás cuando quieras
+              </li>
+            </ul>
+          }
         >
-          Conectá tu clave de IA: elegís el proveedor y controlás lo que gastás.
+          Conectá tu clave de IA y usá el asistente sin pagarle nada a Campus.
         </Tile>
         <Tile
-          tone="share"
           span="third"
           title="Compartí tus fechas"
           art={
-            <div className="lp-share-badges" aria-hidden>
-              <span className="lp-share-badge">
-                <MessageCircle size={18} />
-                WhatsApp
-              </span>
-              <span className="lp-share-badge">
-                <CalendarPlus size={18} />
-                Archivo .ics
-              </span>
-            </div>
+            <>
+              <div className="lp-share-badges" aria-hidden>
+                <span className="lp-share-badge">
+                  <MessageCircle size={18} />
+                  WhatsApp
+                </span>
+                <span className="lp-share-badge">
+                  <CalendarPlus size={18} />
+                  Archivo .ics
+                </span>
+              </div>
+              <TileArt
+                name="section-calendar"
+                alt="Calendario de pie con la grilla en blanco y un día marcado"
+              />
+            </>
           }
         >
           Pasale la fecha del parcial al grupo por WhatsApp o sumala a tu calendario con un

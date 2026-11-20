@@ -1,0 +1,155 @@
+<!doctype html>
+<!--
+  The Open Graph card (public/landing/og.png, 1200x630): the deck cover in one
+  frame. Not part of the app bundle; it is the source of that PNG. Regenerate
+  after changing it:
+
+    pnpm exec playwright screenshot --channel msedge --viewport-size "1200,630" \
+      --wait-for-timeout 500 "file:///<repo>/src/features/landing/og-card.html" \
+      public/landing/og.png
+-->
+<html lang="es-AR">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Campus, tarjeta para compartir</title>
+    <style>
+      @font-face {
+        font-family: 'Prompt';
+        src: url('../../../public/fonts/prompt/Prompt-Regular.ttf') format('truetype');
+        font-weight: 400;
+      }
+      @font-face {
+        font-family: 'Prompt';
+        src: url('../../../public/fonts/prompt/Prompt-Medium.ttf') format('truetype');
+        font-weight: 500;
+      }
+      @font-face {
+        font-family: 'Prompt';
+        src: url('../../../public/fonts/prompt/Prompt-SemiBold.ttf') format('truetype');
+        font-weight: 600;
+      }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+      }
+      html,
+      body {
+        width: 1200px;
+        height: 630px;
+        overflow: hidden;
+        background: #10224a;
+      }
+      body {
+        position: relative;
+        padding: 64px 72px;
+        color: #f5f7fb;
+        font-family: 'Prompt', sans-serif;
+      }
+      .watermark {
+        position: absolute;
+        top: -10px;
+        left: 690px;
+        width: 650px;
+        height: 650px;
+      }
+      .lockup {
+        display: flex;
+        align-items: center;
+        gap: 0.4em;
+        font-size: 40px;
+        font-weight: 600;
+        letter-spacing: -0.017em;
+        line-height: 1;
+      }
+      .lockup svg {
+        width: 1.6em;
+        height: 1.6em;
+        margin-left: -0.12em;
+      }
+      h1 {
+        position: relative;
+        max-width: 760px;
+        margin-top: 64px;
+        font-size: 72px;
+        font-weight: 600;
+        letter-spacing: -0.025em;
+        line-height: 1.02;
+      }
+      h1 span {
+        display: block;
+      }
+      .blue {
+        color: #5b9bff;
+      }
+      .pills {
+        position: absolute;
+        left: 72px;
+        bottom: 64px;
+        display: flex;
+        gap: 12px;
+      }
+      .pill {
+        padding: 8px 20px;
+        border: 1px solid transparent;
+        border-radius: 999px;
+        font-size: 20px;
+        font-weight: 500;
+      }
+      .ok {
+        background: #1d5a4a;
+        color: #c8f3e0;
+      }
+      .cur {
+        background: #1d4590;
+        color: #dce8fc;
+      }
+      .reg {
+        background: #5c4413;
+        color: #fbe6b8;
+      }
+      .dis {
+        border-color: #36558f;
+        background: #172c5c;
+        color: #c3d2ee;
+      }
+    </style>
+  </head>
+  <body>
+    <svg class="watermark" viewBox="0 0 64 64" aria-hidden="true">
+      <g transform="translate(0.4 -2)">
+        <path
+          d="M39.39 16.34 A20 20 0 1 0 48.54 41.49"
+          fill="none"
+          stroke="#1d3a78"
+          stroke-width="9"
+          stroke-linecap="round"
+        />
+        <circle cx="50.67" cy="26.48" r="7" fill="#155dd6" />
+      </g>
+    </svg>
+    <div class="lockup">
+      <svg viewBox="0 0 64 64" aria-hidden="true">
+        <g transform="translate(0.4 -2)">
+          <path
+            d="M39.39 16.34 A20 20 0 1 0 48.54 41.49"
+            fill="none"
+            stroke="#f5f7fb"
+            stroke-width="9"
+          />
+          <circle cx="50.67" cy="26.48" r="7" fill="#5b9bff" />
+        </g>
+      </svg>
+      Campus
+    </div>
+    <h1>
+      <span>Tu plan de estudios,</span>
+      <span class="blue">convertido en qué hacer hoy.</span>
+    </h1>
+    <div class="pills">
+      <span class="pill ok">Aprobada</span>
+      <span class="pill cur">Cursando</span>
+      <span class="pill reg">Regularizada</span>
+      <span class="pill dis">Disponible para cursar</span>
+    </div>
+  </body>
+</html>
